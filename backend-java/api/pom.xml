@@ -67,7 +67,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.jpmonitor.api.JpmErpApplication</mainClass>
+                    <mainClass>com.jpmonitor.api.JpMonitorApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>
