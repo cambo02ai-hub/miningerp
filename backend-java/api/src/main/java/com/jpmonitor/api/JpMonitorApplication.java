@@ -77,7 +77,8 @@ public class JpMonitorApplication {
 
                 // Write password to secure file (only if no env var was set)
                 if (System.getenv("ADMIN_PASSWORD") == null) {
-                    Path passwordFile = Paths.get("/opt/jpm-erp/.admin-password");
+                    Path passwordFile = Paths.get(System.getProperty("user.home"), ".jpm-erp-admin-password");
+                    Files.createDirectories(passwordFile.getParent());
                     Files.writeString(passwordFile, 
                         "Initial admin password: " + adminPassword + "\n" +
                         "CHANGE THIS PASSWORD IMMEDIATELY after first login.\n" +
@@ -90,8 +91,8 @@ public class JpMonitorApplication {
                     } catch (UnsupportedOperationException e) {
                         // Not a POSIX filesystem, skip
                     }
-                    log.warn("Initial admin password written to /opt/jpm-erp/.admin-password");
-                    log.warn("SECURITY: Delete this file after first login: rm /opt/jpm-erp/.admin-password");
+                    log.warn("Initial admin password written to {}", passwordFile);
+                    log.warn("SECURITY: Delete this file after first login: rm {}", passwordFile);
                 }
 
                 log.info("Seeded admin user. Password must be changed on first login.");
