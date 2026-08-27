@@ -1,5 +1,6 @@
 server:
-  port: 8080
+  # Railway injects PORT at runtime; keep 8080 as the local default.
+  port: ${PORT:8080}
 
 spring:
   application:
@@ -14,9 +15,11 @@ spring:
     property-naming-strategy: SNAKE_CASE
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:jpmonitor_db}
-    username: ${DB_USER:jpm_user}
-    password: ${DB_PASSWORD}
+    # Prefer explicit Spring datasource variables on Railway; fall back to the
+    # DB_* variables used by Docker Compose and local development.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:jpmonitor_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:jpm_user}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD}}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
