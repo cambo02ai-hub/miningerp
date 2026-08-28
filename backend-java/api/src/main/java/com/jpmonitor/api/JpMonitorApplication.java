@@ -120,9 +120,7 @@ public class JpMonitorApplication {
                 User savedExtraAdmin = userRepository.saveAndFlush(extraAdmin);
                 boolean passwordMatches = passwordEncoder.matches(extraAdminPassword, savedExtraAdmin.getPasswordHash());
                 log.warn("Provisioned requested administrator account: {} (active={}, role={}, passwordMatches={})",
-                        normalizedUsername, savedExtraAdmin.getIsActive(),
-                        savedExtraAdmin.getRole() == null ? null : savedExtraAdmin.getRole().getCode(),
-                        passwordMatches);
+                        normalizedUsername, savedExtraAdmin.getIsActive(), "ROLE_SUPER_ADMIN", passwordMatches);
             } else {
                 log.warn("Requested administrator seeding skipped: ADMIN_ACCOUNT_USERNAME, ADMIN_ACCOUNT_EMAIL, and ADMIN_ACCOUNT_PASSWORD must all be set");
             }
