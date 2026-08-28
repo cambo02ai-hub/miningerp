@@ -15,6 +15,7 @@ describe('RBAC permission model', () => {
   it('normalizes supported role names', () => {
     expect(normalizeRole('Super Admin')).toBe('SUPER_ADMIN');
     expect(normalizeRole('admin')).toBe('ADMIN');
+    expect(normalizeRole('Administrator')).toBe('ADMIN');
     expect(normalizeRole('Supervisor')).toBe('SUPERVISOR');
     expect(normalizeRole('unknown-role')).toBe('VIEWER');
   });

@@ -181,8 +181,8 @@ export const ROLE_LABELS: Record<AppRole, string> = Object.fromEntries(
 
 export const normalizeRole = (role?: string | null): AppRole => {
   const normalized = String(role ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
-  if (normalized === 'SUPER_ADMIN' || normalized === 'SUPERADMIN') return 'SUPER_ADMIN';
-  if (normalized === 'ADMIN') return 'ADMIN';
+  if (normalized === 'SUPER_ADMIN' || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMINISTRATOR') return 'SUPER_ADMIN';
+  if (normalized === 'ADMIN' || normalized === 'ADMINISTRATOR' || normalized === 'SYSTEM_ADMIN') return 'ADMIN';
   if (normalized === 'MANAGER') return 'MANAGER';
   if (normalized === 'SUPERVISOR') return 'SUPERVISOR';
   if (normalized === 'OPERATOR') return 'OPERATOR';

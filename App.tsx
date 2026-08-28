@@ -17,7 +17,8 @@ const DebtView = React.lazy(() => import('./components/DebtView'))
 const UserManagementView = React.lazy(() => import('./components/UserManagementView'))
 import LoginPage from './components/LoginPage';
 import AIChatWidget from './components/AIChatWidget';
-import { getCurrentUser, clearAuthData } from './services/authStorage';
+import { getAuthToken, getCurrentUser, setAuthData, clearAuthData } from './services/authStorage';
+import { authAPI } from './services/api';
 import { hasPermission } from './services/rbac';
 
 const App: React.FC = () => {
@@ -29,9 +30,18 @@ const App: React.FC = () => {
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
-      const user = getCurrentUser();
-      if (user) {
-        setCurrentUser(user);
+      const cachedUser = getCurrentUser();
+      if (cachedUser) {
+        let resolvedUser = cachedUser;
+        try {
+          const remoteUser = await authAPI.getMe();
+          resolvedUser = { ...cachedUser, ...(remoteUser?.user || remoteUser) };
+          const token = getAuthToken();
+          if (token) setAuthData(token, resolvedUser);
+        } catch {
+          // Keep the cached profile when the profile endpoint is temporarily unavailable.
+        }
+        setCurrentUser(resolvedUser);
         setIsAuthenticated(true);
       }
       // Auto-login disabled - users must login manually
