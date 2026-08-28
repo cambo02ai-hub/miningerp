@@ -117,8 +117,12 @@ public class JpMonitorApplication {
                 extraAdmin.setIsActive(true);
                 extraAdmin.setRole(adminRole);
                 extraAdmin.setPasswordHash(passwordEncoder.encode(extraAdminPassword));
-                userRepository.save(extraAdmin);
-                log.warn("Provisioned requested administrator account: {}", normalizedUsername);
+                User savedExtraAdmin = userRepository.saveAndFlush(extraAdmin);
+                boolean passwordMatches = passwordEncoder.matches(extraAdminPassword, savedExtraAdmin.getPasswordHash());
+                log.warn("Provisioned requested administrator account: {} (active={}, role={}, passwordMatches={})",
+                        normalizedUsername, savedExtraAdmin.getIsActive(),
+                        savedExtraAdmin.getRole() == null ? null : savedExtraAdmin.getRole().getCode(),
+                        passwordMatches);
             } else {
                 log.warn("Requested administrator seeding skipped: ADMIN_ACCOUNT_USERNAME, ADMIN_ACCOUNT_EMAIL, and ADMIN_ACCOUNT_PASSWORD must all be set");
             }
