@@ -5,7 +5,7 @@
 -- ============================================================================
 
 -- Drop the existing CHECK constraint (auto-named by PostgreSQL)
-ALTER TABLE work_orders DROP CONSTRAINT work_orders_status_check;
+ALTER TABLE work_orders DROP CONSTRAINT IF EXISTS work_orders_status_check;
 
 -- Update existing rows from old spelling to new
 UPDATE work_orders SET status = 'CANCELLED' WHERE status = 'CANCEL';
