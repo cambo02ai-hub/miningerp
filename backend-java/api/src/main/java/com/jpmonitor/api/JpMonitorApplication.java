@@ -97,6 +97,29 @@ public class JpMonitorApplication {
 
                 log.info("Seeded admin user. Password must be changed on first login.");
             }
+
+            // Optional one-time administrator account supplied through deployment secrets.
+            // The password is never persisted in source control and is only used when the
+            // requested username does not already exist.
+            String extraAdminUsername = System.getenv("ADMIN_ACCOUNT_USERNAME");
+            String extraAdminEmail = System.getenv("ADMIN_ACCOUNT_EMAIL");
+            String extraAdminPassword = System.getenv("ADMIN_ACCOUNT_PASSWORD");
+            if (extraAdminUsername != null && !extraAdminUsername.isBlank()
+                    && extraAdminEmail != null && !extraAdminEmail.isBlank()
+                    && extraAdminPassword != null && !extraAdminPassword.isBlank()
+                    && !extraAdminUsername.equalsIgnoreCase("admin")) {
+                if (userRepository.findByUsername(extraAdminUsername).isEmpty()) {
+                    User extraAdmin = new User();
+                    extraAdmin.setUsername(extraAdminUsername.trim());
+                    extraAdmin.setEmail(extraAdminEmail.trim());
+                    extraAdmin.setFullName(extraAdminUsername.trim());
+                    extraAdmin.setIsActive(true);
+                    extraAdmin.setRole(adminRole);
+                    extraAdmin.setPasswordHash(passwordEncoder.encode(extraAdminPassword));
+                    userRepository.save(extraAdmin);
+                    log.info("Seeded requested administrator account: {}", extraAdminUsername);
+                }
+            }
         };
     }
 }
