@@ -1,3 +1,4 @@
+import { formatDateTime } from '../utils/locale';
 
 import React, { useState, useEffect } from 'react';
 import { auditAPI } from '../services/api';
@@ -27,7 +28,7 @@ const AuditLogView: React.FC = () => {
     };
 
     if (loading && logs.length === 0) {
-        return <div className="p-8 text-center text-slate-500">Loading audit logs...</div>;
+        return <div className="p-8 text-center text-slate-500">စစ်ဆေးမှတ်တမ်းများ တင်နေပါသည်...</div>;
     }
 
     return (
@@ -38,14 +39,14 @@ const AuditLogView: React.FC = () => {
                         <ShieldCheck size={24} />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800">System Audit Trail</h2>
-                        <p className="text-slate-500 text-sm">Immutable record of all database transactions for compliance.</p>
+                        <h2 className="text-2xl font-bold text-slate-800">စနစ်စစ်ဆေးမှတ်တမ်း</h2>
+                        <p className="text-slate-500 text-sm">စည်းမျဉ်းလိုက်နာမှုအတွက် ဒေတာဘေ့စ်လုပ်ဆောင်ချက်အားလုံး၏ ပြောင်းလဲ၍မရသော မှတ်တမ်း။</p>
                     </div>
                 </div>
                 <button
                     onClick={loadLogs}
                     className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Refresh Logs"
+                    title="မှတ်တမ်းများ ပြန်တင်ရန်"
                 >
                     <RefreshCw size={18} />
                 </button>
@@ -54,7 +55,7 @@ const AuditLogView: React.FC = () => {
             {error && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 flex justify-between items-center">
                     <span>{error}</span>
-                    <button onClick={loadLogs} className="text-sm font-bold underline">Retry</button>
+                    <button onClick={loadLogs} className="text-sm font-bold underline">ထပ်မံကြိုးစားရန်</button>
                 </div>
             )}
 
@@ -63,19 +64,19 @@ const AuditLogView: React.FC = () => {
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-4 w-40">Timestamp</th>
-                                <th className="px-6 py-4 w-48">User</th>
-                                <th className="px-6 py-4 w-32">Module</th>
-                                <th className="px-6 py-4 w-24">Action</th>
-                                <th className="px-6 py-4">Description</th>
-                                <th className="px-6 py-4 w-1/3">Data Delta</th>
+                                <th className="px-6 py-4 w-40">အချိန်မှတ်တမ်း</th>
+                                <th className="px-6 py-4 w-48">အသုံးပြုသူ</th>
+                                <th className="px-6 py-4 w-32">မော်ဂျူး</th>
+                                <th className="px-6 py-4 w-24">လုပ်ဆောင်ချက်</th>
+                                <th className="px-6 py-4">ဖော်ပြချက်</th>
+                                <th className="px-6 py-4 w-1/3">ဒေတာပြောင်းလဲမှု</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {logs.map((log) => (
                                 <tr key={log.id} className="hover:bg-slate-50 transition-colors group">
                                     <td className="px-6 py-4 text-slate-500 text-xs align-top whitespace-nowrap">
-                                        {new Date(log.timestamp).toLocaleString()}
+                                        {formatDateTime(log.timestamp)}
                                         <div className="font-mono text-[10px] text-slate-300 mt-1 flex items-center gap-1">
                                             <History size={10} />
                                             {log.id}
@@ -99,15 +100,15 @@ const AuditLogView: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 text-slate-700 align-top text-xs">
                                         {log.description}
-                                        <div className="text-[10px] text-slate-400 mt-1 font-mono">Entity ID: {log.entity_id || log.entityId}</div>
+                                        <div className="text-[10px] text-slate-400 mt-1 font-mono">အရာဝတ္ထု ID: {log.entity_id || log.entityId}</div>
                                     </td>
                                     <td className="px-6 py-4 bg-slate-50/50 align-top border-l border-slate-100">
                                         <div className="space-y-1">
                                             {log.changes && (typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes).before ? (
                                                 // Handle {before, after} format if that's what backend returns
                                                 <div className="text-xs font-mono">
-                                                    <div className="mb-1"><span className="font-bold">Before:</span> {JSON.stringify((typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes).before).substring(0, 50)}...</div>
-                                                    <div><span className="font-bold">After:</span> {JSON.stringify((typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes).after).substring(0, 50)}...</div>
+                                                    <div className="mb-1"><span className="font-bold">မပြင်မီ:</span> {JSON.stringify((typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes).before).substring(0, 50)}...</div>
+                                                    <div><span className="font-bold">ပြင်ပြီးနောက်:</span> {JSON.stringify((typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes).after).substring(0, 50)}...</div>
                                                 </div>
                                             ) : (
                                                 // Handle array of changes format if that's what backend returns (as in original code)
@@ -124,7 +125,7 @@ const AuditLogView: React.FC = () => {
                                                             {JSON.stringify(change.newValue)}
                                                         </span>
                                                     </div>
-                                                )) : <span className="text-xs text-slate-400 italic">No specific field changes</span>
+                                                )) : <span className="text-xs text-slate-400 italic">သီးခြား field ပြောင်းလဲမှု မရှိပါ။</span>
                                             )}
                                         </div>
                                     </td>

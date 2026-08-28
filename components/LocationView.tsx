@@ -67,34 +67,34 @@ const LocationView: React.FC = () => {
     );
 
     const typeOptions = [
-        { value: 'Mine Site', label: 'Mine Site' },
-        { value: 'Head Office', label: 'Head Office' },
-        { value: 'Port', label: 'Port Facility' },
-        { value: 'Workshop', label: 'Workshop / Plant' },
-        { value: 'Camp', label: 'Camp / Mess' },
-        { value: 'WAREHOUSE', label: 'Warehouse' },
-        { value: 'EXTERNAL', label: 'External / Vendor' }
+        { value: 'Mine Site', label: 'သတ္တုတွင်းနေရာ' },
+        { value: 'Head Office', label: 'ရုံးချုပ်' },
+        { value: 'Port', label: 'ဆိပ်ကမ်း' },
+        { value: 'Workshop', label: 'အလုပ်ရုံ / စက်ရုံ' },
+        { value: 'Camp', label: 'စခန်း / စားရိပ်သာ' },
+        { value: 'WAREHOUSE', label: 'ဂိုဒေါင်' },
+        { value: 'EXTERNAL', label: 'ပြင်ပ / ရောင်းချသူ' }
     ];
 
     if (loading && locations.length === 0) {
-        return <div className="p-8 text-center text-slate-500">Loading locations...</div>;
+        return <div className="p-8 text-center text-slate-500">တည်နေရာများ တင်နေပါသည်...</div>;
     }
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Project Locations</h2>
-                    <p className="text-slate-500 text-sm">Master Data: Sites, Ports, and Offices</p>
+                    <h2 className="text-2xl font-bold text-slate-800">လုပ်ငန်းခွင် တည်နေရာများ</h2>
+                    <p className="text-slate-500 text-sm">အခြေခံဒေတာ - လုပ်ငန်းခွင်၊ ဆိပ်ကမ်းနှင့် ရုံးများ</p>
                 </div>
                 <div className="flex gap-3">
                     <div className="relative">
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <label htmlFor="location-search-input" className="sr-only">Search locations...</label>
+                        <label htmlFor="location-search-input" className="sr-only">တည်နေရာများ ရှာရန်...</label>
                         <input
                             id="location-search-input"
                             type="text"
-                            placeholder="Search locations..."
+                            placeholder="တည်နေရာများ ရှာရန်..."
                             className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -113,7 +113,7 @@ const LocationView: React.FC = () => {
             {error && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 flex justify-between items-center">
                     <span>{error}</span>
-                    <button onClick={loadLocations} className="text-sm font-bold underline">Retry</button>
+                    <button onClick={loadLocations} className="text-sm font-bold underline">ထပ်မံကြိုးစားရန်</button>
                 </div>
             )}
 
@@ -129,7 +129,7 @@ const LocationView: React.FC = () => {
                                 handleDelete(loc.id, loc.name);
                             }}
                             className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-sm border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all z-50 cursor-pointer"
-                            title="Delete Location"
+                            title="တည်နေရာဖျက်ရန်"
                         >
                             <Trash2 size={18} />
                         </button>
@@ -171,8 +171,8 @@ const LocationView: React.FC = () => {
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-fade-in">
                         <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Add New Location</h3>
-                                <p className="text-xs text-slate-500 mt-1">Register a new operational site</p>
+                                <h3 className="text-xl font-bold text-slate-900">တည်နေရာအသစ် ထည့်ရန်</h3>
+                                <p className="text-xs text-slate-500 mt-1">လုပ်ငန်းခွင်တည်နေရာအသစ် မှတ်ပုံတင်ရန်</p>
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
                         </div>
@@ -180,35 +180,35 @@ const LocationView: React.FC = () => {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="location-code" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Location Code</label>
+                                    <label htmlFor="location-code" className="block text-xs font-bold text-slate-500 mb-1 uppercase">တည်နေရာကုဒ်</label>
                                     <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                                        value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="e.g. KJS" id="location-code" />
+                                        value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="ဥပမာ - KJS" id="location-code" />
                                 </div>
                                 <div>
-                                    <SearchableSelect label="Type" options={typeOptions} value={formData.type} onChange={v => setFormData({ ...formData, type: v })} id="location-type" />
+                                    <SearchableSelect label="အမျိုးအစား" options={typeOptions} value={formData.type} onChange={v => setFormData({ ...formData, type: v })} id="location-type" />
                                 </div>
                             </div>
 
                             <div>
-                                <label htmlFor="location-name" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Location Name</label>
+                                <label htmlFor="location-name" className="block text-xs font-bold text-slate-500 mb-1 uppercase">တည်နေရာအမည်</label>
                                 <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Site Satui Mine" id="location-name" />
+                                    value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="ဥပမာ - Satui သတ္တုတွင်းလုပ်ငန်းခွင်" id="location-name" />
                             </div>
 
                             <div>
-                                <label htmlFor="location-city" className="block text-xs font-bold text-slate-500 mb-1 uppercase">City / Area</label>
+                                <label htmlFor="location-city" className="block text-xs font-bold text-slate-500 mb-1 uppercase">မြို့ / ဧရိယာ</label>
                                 <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                     value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} id="location-city" />
                             </div>
 
                             <div>
-                                <label htmlFor="location-address" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Full Address</label>
+                                <label htmlFor="location-address" className="block text-xs font-bold text-slate-500 mb-1 uppercase">လိပ်စာအပြည့်အစုံ</label>
                                 <textarea rows={2} required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                     value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} id="location-address" />
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">Cancel</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">ပယ်ဖျက်ရန်</button>
                                 <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 flex items-center gap-2">
                                     <Plus size={16} /> Save Location
                                 </button>

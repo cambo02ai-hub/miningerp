@@ -1,3 +1,4 @@
+import { translateValue } from '../utils/locale';
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun } from 'lucide-react';
@@ -27,18 +28,18 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
   }, [darkMode]);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'fleet', label: 'Fleet Management', icon: Truck },
-    { id: 'mutation', label: 'Unit Mutation', icon: ArrowRightLeft },
-    { id: 'inventory', label: 'Inventory', icon: PackageSearch },
-    { id: 'production', label: 'Production', icon: Hammer },
-    { id: 'timesheet', label: 'Timesheets', icon: Clock },
-    { id: 'employee', label: 'Employee & HR', icon: Users },
-    { id: 'supplier', label: 'Suppliers', icon: ShoppingBag },
-    { id: 'debt', label: 'Finance', icon: Landmark },
-    { id: 'location', label: 'Locations', icon: MapPin },
-    { id: 'hse', label: 'HSE & Safety', icon: Activity },
-    { id: 'audit', label: 'Audit Trails', icon: FileText },
+    { id: 'dashboard', label: 'ဒက်ရှ်ဘုတ်', icon: LayoutDashboard },
+    { id: 'fleet', label: 'ယာဉ်/စက် စီမံခန့်ခွဲမှု', icon: Truck },
+    { id: 'mutation', label: 'ယူနစ် ပြောင်းရွှေ့မှု', icon: ArrowRightLeft },
+    { id: 'inventory', label: 'စတော့', icon: PackageSearch },
+    { id: 'production', label: 'ထုတ်လုပ်ရေး', icon: Hammer },
+    { id: 'timesheet', label: 'အလုပ်ချိန်မှတ်တမ်းများ', icon: Clock },
+    { id: 'employee', label: 'ဝန်ထမ်းနှင့် HR', icon: Users },
+    { id: 'supplier', label: 'ပစ္စည်းရောင်းချသူများ', icon: ShoppingBag },
+    { id: 'debt', label: 'ဘဏ္ဍာရေး', icon: Landmark },
+    { id: 'location', label: 'တည်နေရာများ', icon: MapPin },
+    { id: 'hse', label: 'HSE နှင့် ဘေးကင်းရေး', icon: Activity },
+    { id: 'audit', label: 'စစ်ဆေးမှတ်တမ်းများ', icon: FileText },
   ];
 
   return (
@@ -53,10 +54,10 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
             </div>
             <div>
               <h1 className="text-xs font-semibold text-text-primary leading-tight">jpmonitor</h1>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider">Mining Operations</p>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider">သတ္တုတွင်းလုပ်ငန်း</p>
             </div>
           </div>
-          <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded-jpmonitor border border-border hover:bg-bg-elevated transition-colors text-text-muted" aria-label="Toggle dark mode">
+          <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded-jpmonitor border border-border hover:bg-bg-elevated transition-colors text-text-muted" aria-label="အမှောင်ပုံစံ ပြောင်းရန်">
             {darkMode ? <Sun size={14} /> : <Moon size={14} />}
           </button>
         </div>
@@ -79,13 +80,13 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
         {currentUser && (
           <div className="mb-3 px-2">
             <p className="text-xs text-text-muted uppercase font-medium tracking-wider">{currentUser.fullName || 'Admin'}</p>
-            <p className="text-xs text-text-muted mt-0.5">{currentUser.role || 'Super Admin'}</p>
+            <p className="text-xs text-text-muted mt-0.5">{translateValue(currentUser.role || 'Super Admin')}</p>
           </div>
         )}
         {onLogout && (
           <button onClick={onLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor-md transition-colors">
             <LogOut size={16} />
-            <span>Sign Out</span>
+            <span>ထွက်ရန်</span>
           </button>
         )}
       </div>

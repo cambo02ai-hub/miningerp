@@ -1,3 +1,4 @@
+import { formatCurrency } from '../utils/locale';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { suppliersAPI, inventoryAPI } from '../services/api';
 import { Landmark, AlertTriangle, Banknote, CalendarClock, CheckCircle, Filter, Search, DollarSign } from 'lucide-react';
@@ -109,15 +110,15 @@ const DebtView: React.FC = () => {
     const today = new Date().toISOString().split('T')[0];
 
     if (loading) {
-        return <div className="flex items-center justify-center h-64"><div className="text-slate-500">Loading...</div></div>;
+        return <div className="flex items-center justify-center h-64"><div className="text-slate-500">တင်နေပါသည်...</div></div>;
     }
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Accounts Payable (Hutang)</h2>
-                    <p className="text-slate-500 text-sm">Monitor and settle outstanding supplier invoices</p>
+                    <h2 className="text-2xl font-bold text-slate-800">ပေးရန်ရှိသော အကြွေးစာရင်း</h2>
+                    <p className="text-slate-500 text-sm">ပေးချေရန်ကျန်ရှိသော ပစ္စည်းရောင်းချသူ ငွေတောင်းခံလွှာများကို စောင့်ကြည့်ပြီး ရှင်းလင်းပါ။</p>
                 </div>
             </div>
 
@@ -128,8 +129,8 @@ const DebtView: React.FC = () => {
                         <Landmark size={24} />
                     </div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-900">Rp {analytics.totalDebt.toLocaleString()}</div>
-                        <div className="text-sm text-slate-500">Total Outstanding Debt</div>
+                        <div className="text-2xl font-bold text-slate-900">{formatCurrency(analytics.totalDebt)}</div>
+                        <div className="text-sm text-slate-500">စုစုပေါင်း ပေးရန်ရှိအကြွေး</div>
                     </div>
                 </div>
                 <div className={`bg-white p-5 rounded-xl shadow-sm border ${analytics.totalOverdue > 0 ? 'border-red-200 bg-red-50' : 'border-slate-200'} flex items-center gap-4`}>
@@ -137,8 +138,8 @@ const DebtView: React.FC = () => {
                         <AlertTriangle size={24} />
                     </div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-900">Rp {analytics.totalOverdue.toLocaleString()}</div>
-                        <div className="text-sm text-slate-500">Overdue Amount</div>
+                        <div className="text-2xl font-bold text-slate-900">{formatCurrency(analytics.totalOverdue)}</div>
+                        <div className="text-sm text-slate-500">သတ်မှတ်ရက်ကျော် ပမာဏ</div>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
@@ -147,7 +148,7 @@ const DebtView: React.FC = () => {
                     </div>
                     <div>
                         <div className="text-2xl font-bold text-slate-900">{analytics.count}</div>
-                        <div className="text-sm text-slate-500">Unpaid Invoices</div>
+                        <div className="text-sm text-slate-500">မပေးချေရသေးသော ငွေတောင်းခံလွှာများ</div>
                     </div>
                 </div>
             </div>
@@ -161,11 +162,11 @@ const DebtView: React.FC = () => {
                         </h3>
                         <div className="relative">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <label htmlFor="debt-filter-input" className="sr-only">Search Supplier / PO...</label>
+                            <label htmlFor="debt-filter-input" className="sr-only">ရောင်းချသူ / PO ရှာရန်...</label>
                             <input
                                 id="debt-filter-input"
                                 type="text"
-                                placeholder="Search Supplier / PO..."
+                                placeholder="ရောင်းချသူ / PO ရှာရန်..."
                                 className="pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                 value={filterText}
                                 onChange={(e) => setFilterText(e.target.value)}
@@ -176,11 +177,11 @@ const DebtView: React.FC = () => {
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 sticky top-0">
                                 <tr>
-                                    <th className="px-6 py-3">Due Date</th>
-                                    <th className="px-6 py-3">Supplier</th>
-                                    <th className="px-6 py-3">PO Ref</th>
-                                    <th className="px-6 py-3 text-right">Amount</th>
-                                    <th className="px-6 py-3 text-center">Action</th>
+                                    <th className="px-6 py-3">ပေးချေရမည့်ရက်</th>
+                                    <th className="px-6 py-3">ပစ္စည်းရောင်းချသူ</th>
+                                    <th className="px-6 py-3">PO ကိုးကားချက်</th>
+                                    <th className="px-6 py-3 text-right">ပမာဏ</th>
+                                    <th className="px-6 py-3 text-center">လုပ်ဆောင်ချက်</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -195,11 +196,11 @@ const DebtView: React.FC = () => {
                                                     <CalendarClock size={14} />
                                                     {inv.dueDate}
                                                 </div>
-                                                {isOverdue && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 rounded font-bold ml-6">OVERDUE</span>}
+                                                {isOverdue && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 rounded font-bold ml-6">ရက်ကျော်နေသည်</span>}
                                             </td>
                                             <td className="px-6 py-3 font-medium text-slate-800">{supplierName}</td>
                                             <td className="px-6 py-3 font-mono text-xs text-slate-500">{inv.referenceId}</td>
-                                            <td className="px-6 py-3 text-right font-bold text-slate-800">Rp {amount.toLocaleString()}</td>
+                                            <td className="px-6 py-3 text-right font-bold text-slate-800">{formatCurrency(amount)}</td>
                                             <td className="px-6 py-3 text-center">
                                                 <button
                                                     onClick={() => handlePayClick(inv)}
@@ -212,7 +213,7 @@ const DebtView: React.FC = () => {
                                     );
                                 })}
                                 {filteredInvoices.length === 0 && (
-                                    <tr><td colSpan={5} className="p-8 text-center text-slate-400">No outstanding invoices found.</td></tr>
+                                    <tr><td colSpan={5} className="p-8 text-center text-slate-400">ပေးရန်ကျန် ငွေတောင်းခံလွှာ မတွေ့ပါ။</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -222,17 +223,17 @@ const DebtView: React.FC = () => {
                 {/* Supplier Summary */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
                     <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                        <h3 className="font-bold text-slate-800">Debt by Supplier</h3>
+                        <h3 className="font-bold text-slate-800">ရောင်းချသူအလိုက် အကြွေး</h3>
                     </div>
                     <div className="divide-y divide-slate-100">
                         {analytics.debtBySupplier.map((s, idx) => (
                             <div key={idx} className="px-6 py-4 flex justify-between items-center hover:bg-slate-50">
                                 <span className="font-medium text-slate-700">{s.name}</span>
-                                <span className="font-bold text-slate-900">Rp {s.amount.toLocaleString()}</span>
+                                <span className="font-bold text-slate-900">{formatCurrency(s.amount)}</span>
                             </div>
                         ))}
                         {analytics.debtBySupplier.length === 0 && (
-                            <div className="p-6 text-center text-slate-400 italic">No debt records.</div>
+                            <div className="p-6 text-center text-slate-400 italic">အကြွေးမှတ်တမ်း မရှိပါ။</div>
                         )}
                     </div>
                 </div>
@@ -242,7 +243,7 @@ const DebtView: React.FC = () => {
             {paymentModalOpen && selectedInvoice && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-fade-in">
-                        <h3 className="text-lg font-bold text-slate-900 mb-1">Confirm Payment</h3>
+                        <h3 className="text-lg font-bold text-slate-900 mb-1">ငွေပေးချေမှု အတည်ပြုရန်</h3>
                         <p className="text-sm text-slate-500 mb-4">Mark Invoice {selectedInvoice.referenceId} as PAID</p>
 
                         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4 space-y-2 text-sm">
@@ -252,7 +253,7 @@ const DebtView: React.FC = () => {
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-slate-500">Amount:</span>
-                                <span className="font-bold">Rp {(selectedInvoice.quantity * (selectedInvoice.pricePerUnit || 0)).toLocaleString()}</span>
+                                <span className="font-bold">{formatCurrency(selectedInvoice.quantity * (selectedInvoice.pricePerUnit || 0))}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-slate-500">Due Date:</span>
@@ -261,7 +262,7 @@ const DebtView: React.FC = () => {
                         </div>
 
                         <div className="mb-6">
-                            <label htmlFor="payment-date-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Payment Date</label>
+                            <label htmlFor="payment-date-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ငွေပေးချေသည့်ရက်</label>
                             <input
                                 type="date"
                                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500"
@@ -272,7 +273,7 @@ const DebtView: React.FC = () => {
                         </div>
 
                         <div className="flex justify-end gap-3">
-                            <button onClick={() => setPaymentModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">Cancel</button>
+                            <button onClick={() => setPaymentModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">ပယ်ဖျက်ရန်</button>
                             <button onClick={confirmPayment} className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-lg shadow-green-600/20">
                                 <DollarSign size={16} /> Confirm Payment
                             </button>

@@ -1,3 +1,4 @@
+import { formatCurrency, formatDate, translateValue, translateStatus } from '../utils/locale';
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { employeesAPI, suppliersAPI, maintenanceAPI, equipmentAPI, inventoryAPI, mutationsAPI } from '../services/api';
@@ -402,7 +403,7 @@ const FleetView: React.FC = () => {
             status: log.status,
             notes: log.notes || '',
             endDate: log.endDate || new Date().toISOString().split('T')[0],
-            endTime: log.endTime || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+            endTime: log.endTime || new Date().toLocaleTimeString('my-MM', { hour: '2-digit', minute: '2-digit' }),
             hmAtStart: log.hmAtStart,
             mechanicStoringCost: log.mechanicStoringCost || 0,
             mechanicMealCost: log.mechanicMealCost || 0,
@@ -512,7 +513,7 @@ const FleetView: React.FC = () => {
         if (printRef.current) {
             const printWindow = window.open('', '', 'height=800,width=1000');
             if (printWindow) {
-                printWindow.document.write('<html><head><title>JPM - Asset Performance Report</title>');
+                printWindow.document.write('<html><head><title>JPM - ပိုင်ဆိုင်မှုစွမ်းဆောင်ရည် အစီရင်ခံစာ</title>');
                 printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
                 printWindow.document.write('<style>@media print { body { -webkit-print-color-adjust: exact; } .page-break { page-break-before: always; } }</style>');
                 printWindow.document.write('</head><body class="bg-white">');
@@ -570,7 +571,7 @@ const FleetView: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-slate-800">Fleet & Plant Management</h2>
+                <h2 className="text-2xl font-bold text-slate-800">ယာဉ်/စက်နှင့် စက်ရုံ စီမံခန့်ခွဲမှု</h2>
                 <div className="flex bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
                     <button
                         onClick={() => setViewMode('dashboard')}
@@ -588,7 +589,7 @@ const FleetView: React.FC = () => {
             </div>
 
             {loading && !equipment.length ? (
-                <div className="flex items-center justify-center h-64"><div className="text-slate-500">Loading...</div></div>
+                <div className="flex items-center justify-center h-64"><div className="text-slate-500">တင်နေပါသည်...</div></div>
             ) : (
                 viewMode === 'dashboard' ? (
                     <FleetDashboard />
@@ -669,7 +670,7 @@ const FleetView: React.FC = () => {
                                 // FINANCIAL TAB
                                 <div className="p-6 overflow-y-auto w-full bg-white">
                                     <div className="flex justify-between mb-6">
-                                        <h4 className="font-bold text-lg text-slate-800">Cost Analysis</h4>
+                                        <h4 className="font-bold text-lg text-slate-800">ကုန်ကျစရိတ် ခွဲခြမ်းစိတ်ဖြာမှု</h4>
                                         <div className="flex gap-2">
                                             <input type="date" className="border border-slate-300 rounded p-1 text-sm bg-white text-slate-900" value={costStartDate} onChange={e => setCostStartDate(e.target.value)} />
                                             <input type="date" className="border border-slate-300 rounded p-1 text-sm bg-white text-slate-900" value={costEndDate} onChange={e => setCostEndDate(e.target.value)} />
@@ -681,46 +682,46 @@ const FleetView: React.FC = () => {
                                         <div className="space-y-6">
                                             <div className="grid grid-cols-4 gap-4">
                                                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                                    <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Cash Spent (Real)</span>
-                                                    <p className="text-2xl font-bold text-slate-900 mt-1">Rp {financialData.totalCashCost.toLocaleString()}</p>
-                                                    <span className="text-xs text-green-600 bg-green-50 px-1 rounded">Direct Opex</span>
+                                                    <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">အမှန်တကယ် ငွေသားအသုံးစရိတ် စုစုပေါင်း</span>
+                                                    <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(financialData.totalCashCost)}</p>
+                                                    <span className="text-xs text-green-600 bg-green-50 px-1 rounded">တိုက်ရိုက် လုပ်ငန်းလည်ပတ်စရိတ်</span>
                                                 </div>
                                                 <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                                    <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider">Parts (Inventory)</span>
-                                                    <p className="text-lg font-bold text-slate-800 mt-1">Rp {financialData.partsCost.toLocaleString()}</p>
+                                                    <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider">ပစ္စည်း (စတော့)</span>
+                                                    <p className="text-lg font-bold text-slate-800 mt-1">{formatCurrency(financialData.partsCost)}</p>
                                                 </div>
                                                 <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
-                                                    <span className="text-[10px] uppercase font-bold text-amber-600 tracking-wider">Operational OH</span>
-                                                    <p className="text-lg font-bold text-slate-800 mt-1">Rp {financialData.storingCost.toLocaleString()}</p>
-                                                    <span className="text-[10px] text-slate-500">Fuel & Meals</span>
+                                                    <span className="text-[10px] uppercase font-bold text-amber-600 tracking-wider">လုပ်ငန်းလည်ပတ် အထွေထွေစရိတ်</span>
+                                                    <p className="text-lg font-bold text-slate-800 mt-1">{formatCurrency(financialData.storingCost)}</p>
+                                                    <span className="text-[10px] text-slate-500">လောင်စာဆီနှင့် အစားအသောက်</span>
                                                 </div>
                                                 <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                                                    <span className="text-[10px] uppercase font-bold text-purple-600 tracking-wider">Ext. Vendor</span>
-                                                    <p className="text-lg font-bold text-slate-800 mt-1">Rp {financialData.externalServiceCost.toLocaleString()}</p>
+                                                    <span className="text-[10px] uppercase font-bold text-purple-600 tracking-wider">ပြင်ပရောင်းချသူ</span>
+                                                    <p className="text-lg font-bold text-slate-800 mt-1">{formatCurrency(financialData.externalServiceCost)}</p>
                                                 </div>
                                             </div>
 
                                             {/* Inferential Stats */}
                                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex gap-8 items-center">
                                                 <div>
-                                                    <span className="text-xs text-slate-500 font-bold block">Internal Labor Estimate</span>
-                                                    <span className="text-sm font-mono text-slate-700">Rp {financialData.estimatedManpowerCost.toLocaleString()} (Non-Cash)</span>
+                                                    <span className="text-xs text-slate-500 font-bold block">အတွင်းပိုင်း လုပ်သားခ ခန့်မှန်းချက်</span>
+                                                    <span className="text-sm font-mono text-slate-700">{formatCurrency(financialData.estimatedManpowerCost)} (Non-Cash)</span>
                                                 </div>
                                                 <div className="h-8 w-px bg-slate-300"></div>
                                                 <div>
-                                                    <span className="text-xs text-slate-500 font-bold block">Cost Per Hour (CPH)</span>
-                                                    <span className="text-sm font-mono text-slate-700">Rp {Math.round(financialData.totalCashCost / (selectedEquipment.hourMeter > 0 ? 100 : 1)).toLocaleString()}/hr</span>
+                                                    <span className="text-xs text-slate-500 font-bold block">တစ်နာရီကုန်ကျစရိတ် (CPH)</span>
+                                                    <span className="text-sm font-mono text-slate-700">{formatCurrency(Math.round(financialData.totalCashCost / (selectedEquipment.hourMeter > 0 ? 100 : 1)))}/hr</span>
                                                 </div>
                                             </div>
 
                                             <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
                                                 <thead className="bg-slate-100 border-b border-slate-200">
                                                     <tr>
-                                                        <th className="p-3 text-left text-slate-600 font-bold">Date</th>
-                                                        <th className="p-3 text-left text-slate-600 font-bold">Ref</th>
-                                                        <th className="p-3 text-left text-slate-600 font-bold">Category</th>
-                                                        <th className="p-3 text-left text-slate-600 font-bold">Description</th>
-                                                        <th className="p-3 text-right text-slate-600 font-bold">Amount (IDR)</th>
+                                                        <th className="p-3 text-left text-slate-600 font-bold">ရက်စွဲ</th>
+                                                        <th className="p-3 text-left text-slate-600 font-bold">ကိုးကားချက်</th>
+                                                        <th className="p-3 text-left text-slate-600 font-bold">အမျိုးအစား</th>
+                                                        <th className="p-3 text-left text-slate-600 font-bold">ဖော်ပြချက်</th>
+                                                        <th className="p-3 text-right text-slate-600 font-bold">ပမာဏ (ကျပ်)</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
@@ -734,19 +735,19 @@ const FleetView: React.FC = () => {
                                                                         d.type === 'Vendor Invoice' ? 'bg-purple-100 text-purple-700' :
                                                                             'bg-slate-200 text-slate-600'
                                                                     } `}>
-                                                                    {d.type}
+                                                                    {translateValue(d.type)}
                                                                 </span>
                                                             </td>
                                                             <td className="p-3 text-slate-800">{d.description}</td>
-                                                            <td className="p-3 text-right font-mono text-slate-800 font-medium">Rp {d.cost.toLocaleString()}</td>
+                                                            <td className="p-3 text-right font-mono text-slate-800 font-medium">{formatCurrency(d.cost)}</td>
                                                         </tr>
                                                     ))}
-                                                    {financialData.details.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-slate-400">No records in selected period.</td></tr>}
+                                                    {financialData.details.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-slate-400">ရွေးချယ်ထားသောကာလအတွင်း မှတ်တမ်း မရှိပါ။</td></tr>}
                                                 </tbody>
                                                 <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
                                                     <tr>
-                                                        <td colSpan={4} className="p-3 text-right text-slate-800">TOTAL CASH EXPENDITURE</td>
-                                                        <td className="p-3 text-right text-slate-900 border-t-2 border-slate-300">Rp {financialData.totalCashCost.toLocaleString()}</td>
+                                                        <td colSpan={4} className="p-3 text-right text-slate-800">ငွေသားအသုံးစရိတ် စုစုပေါင်း</td>
+                                                        <td className="p-3 text-right text-slate-900 border-t-2 border-slate-300">{formatCurrency(financialData.totalCashCost)}</td>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -773,19 +774,19 @@ const FleetView: React.FC = () => {
 
                                                             <div className="flex flex-col justify-center h-full pt-1">
                                                                 <h1 className="text-2xl font-extrabold text-red-600 tracking-tight leading-none">PT JAVA PERSADA MANDIRI</h1>
-                                                                <p className="text-xs font-bold text-blue-900 tracking-[0.35em] mt-1">GENERAL CONTRACTOR</p>
+                                                                <p className="text-xs font-bold text-blue-900 tracking-[0.35em] mt-1">အထွေထွေကန်ထရိုက်တာ</p>
                                                             </div>
                                                         </div>
 
                                                         <div className="text-right text-[9px] text-slate-700 leading-tight font-medium">
-                                                            <p className="font-bold text-slate-900 mb-1">HEAD OFFICE</p>
+                                                            <p className="font-bold text-slate-900 mb-1">ရုံးချုပ်</p>
                                                             <p>Jl.Trikora RT.11 RW.02 No.57</p>
                                                             <p>Kel.Gt Manggis, Banjarbaru</p>
                                                             <p>Kalimantan Selatan 70721</p>
                                                             <div className="mt-1">
-                                                                <p>Telp : 0511-4770113 / 0511-7553662</p>
-                                                                <p>Fax : 0511-4770112</p>
-                                                                <p>Email : contact@example.com</p>
+                                                                <p>ဖုန်း: 0511-4770113 / 0511-7553662</p>
+                                                                <p>ဖက်စ်: 0511-4770112</p>
+                                                                <p>အီးမေးလ်: contact@example.com</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -795,8 +796,8 @@ const FleetView: React.FC = () => {
 
                                                     <div className="mb-6 flex justify-between items-end">
                                                         <div>
-                                                            <h2 className="text-xl font-bold uppercase text-slate-900">Asset Reliability & Cost Report</h2>
-                                                            <p className="text-xs font-bold text-slate-500 uppercase">Generated: {new Date().toLocaleDateString()}</p>
+                                                            <h2 className="text-xl font-bold uppercase text-slate-900">ပိုင်ဆိုင်မှု ယုံကြည်စိတ်ချရမှုနှင့် ကုန်ကျစရိတ် အစီရင်ခံစာ</h2>
+                                                            <p className="text-xs font-bold text-slate-500 uppercase">ဖန်တီးသည့်ရက်: {formatDate(new Date())}</p>
                                                         </div>
                                                         <div className="text-right">
                                                             <div className="text-4xl font-black text-slate-900">{selectedEquipment.code}</div>
@@ -807,40 +808,40 @@ const FleetView: React.FC = () => {
                                                     {reliabilityData && (
                                                         <div className="grid grid-cols-4 gap-4 mb-6">
                                                             <div className={`border p-4 rounded ${reliabilityData.pa >= 85 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} `}>
-                                                                <span className="text-[10px] font-bold uppercase block mb-1">Physical Availability (PA)</span>
+                                                                <span className="text-[10px] font-bold uppercase block mb-1">လက်တွေ့အသုံးပြုနိုင်မှု (PA)</span>
                                                                 <div className="text-2xl font-black">{reliabilityData.pa}%</div>
-                                                                <span className="text-[10px] font-medium">{reliabilityData.pa >= 85 ? 'Target Met (>85%)' : 'Below Target'}</span>
+                                                                <span className="text-[10px] font-medium">{reliabilityData.pa >= 85 ? 'ရည်မှန်းချက် ပြည့်မီသည် (>၈၅%)' : 'ရည်မှန်းချက်အောက်'}</span>
                                                             </div>
                                                             <div className="border border-slate-200 p-4 rounded bg-slate-50">
-                                                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">MTBF (Mean Time Between Failures)</span>
-                                                                <div className="text-2xl font-black text-slate-900">{reliabilityData.mtbf} <span className="text-sm font-normal text-slate-500">hrs</span></div>
+                                                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">MTBF (ပျက်စီးမှုများကြား ပျမ်းမျှအချိန်)</span>
+                                                                <div className="text-2xl font-black text-slate-900">{reliabilityData.mtbf} <span className="text-sm font-normal text-slate-500">နာရီ</span></div>
                                                             </div>
                                                             <div className="border border-slate-200 p-4 rounded bg-slate-50">
-                                                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">MTTR (Mean Time To Repair)</span>
-                                                                <div className="text-2xl font-black text-slate-900">{reliabilityData.mttr} <span className="text-sm font-normal text-slate-500">hrs</span></div>
+                                                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">MTTR (ပြုပြင်ရန် ပျမ်းမျှအချိန်)</span>
+                                                                <div className="text-2xl font-black text-slate-900">{reliabilityData.mttr} <span className="text-sm font-normal text-slate-500">နာရီ</span></div>
                                                             </div>
                                                             <div className="border border-slate-200 p-4 rounded bg-slate-50">
-                                                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Total Downtime</span>
-                                                                <div className="text-2xl font-black text-slate-900">{reliabilityData.totalDowntimeHours} <span className="text-sm font-normal text-slate-500">hrs</span></div>
+                                                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">ရပ်နားချိန် စုစုပေါင်း</span>
+                                                                <div className="text-2xl font-black text-slate-900">{reliabilityData.totalDowntimeHours} <span className="text-sm font-normal text-slate-500">နာရီ</span></div>
                                                             </div>
                                                         </div>
                                                     )}
 
                                                     <div className="grid grid-cols-4 gap-4 mb-8">
                                                         <div className="border border-slate-200 p-4 rounded bg-slate-50">
-                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Total Period Cost</span>
-                                                            <span className="text-xl font-bold text-slate-900">Rp {(financialData?.totalCashCost || 0).toLocaleString()}</span>
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">ကာလအတွင်း ကုန်ကျစရိတ် စုစုပေါင်း</span>
+                                                            <span className="text-xl font-bold text-slate-900">{formatCurrency(financialData?.totalCashCost || 0)}</span>
                                                         </div>
                                                         <div className="border border-slate-200 p-4 rounded bg-slate-50">
-                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Cost Per Hour (CPH)</span>
-                                                            <span className="text-xl font-bold text-slate-900">Rp {Math.round((financialData?.totalCashCost || 0) / (selectedEquipment.hourMeter > 0 ? 100 : 1)).toLocaleString()}</span>
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">တစ်နာရီကုန်ကျစရိတ် (CPH)</span>
+                                                            <span className="text-xl font-bold text-slate-900">{formatCurrency(Math.round((financialData?.totalCashCost || 0) / (selectedEquipment.hourMeter > 0 ? 100 : 1)))}</span>
                                                         </div>
                                                         <div className="border border-slate-200 p-4 rounded bg-slate-50">
-                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Current HM</span>
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">လက်ရှိ HM</span>
                                                             <span className="text-xl font-bold text-slate-900">{selectedEquipment.hourMeter.toLocaleString()}</span>
                                                         </div>
                                                         <div className="border border-slate-200 p-4 rounded bg-slate-50">
-                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Primary Cost Driver</span>
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">အဓိကကုန်ကျစရိတ်ဖြစ်စေသောအချက်</span>
                                                             <span className="text-sm font-bold text-red-600">{ratios.primaryDriver}</span>
                                                         </div>
                                                     </div>
@@ -868,22 +869,22 @@ const FleetView: React.FC = () => {
                                                             )}
                                                         </div>
                                                         <div className="flex justify-between text-[10px] text-slate-500 font-bold uppercase">
-                                                            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-600 rounded-full"></div>Spare Parts</div>
-                                                            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-amber-500 rounded-full"></div>Op. Overhead</div>
-                                                            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-purple-600 rounded-full"></div>External Svc</div>
+                                                            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-600 rounded-full"></div>အပိုပစ္စည်းများ</div>
+                                                            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-amber-500 rounded-full"></div>လုပ်ငန်းလည်ပတ် အထွေထွေစရိတ်</div>
+                                                            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-purple-600 rounded-full"></div>ပြင်ပဝန်ဆောင်မှု</div>
                                                         </div>
                                                     </div>
 
                                                     <div className="mb-8 break-inside-avoid">
-                                                        <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">Maintenance Activity Log</h3>
+                                                        <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">ပြုပြင်ထိန်းသိမ်းမှု လုပ်ဆောင်ချက်မှတ်တမ်း</h3>
                                                         <table className="w-full text-[10px] border-collapse border border-slate-200">
                                                             <thead>
                                                                 <tr className="bg-slate-100">
-                                                                    <th className="p-2 border border-slate-200 text-left w-24">Date / WO</th>
-                                                                    <th className="p-2 border border-slate-200 text-left w-24">Type</th>
-                                                                    <th className="p-2 border border-slate-200 text-left">Problem Description</th>
-                                                                    <th className="p-2 border border-slate-200 text-left">Action Taken / Parts</th>
-                                                                    <th className="p-2 border border-slate-200 text-left w-20">Executor</th>
+                                                                    <th className="p-2 border border-slate-200 text-left w-24">ရက်စွဲ / WO</th>
+                                                                    <th className="p-2 border border-slate-200 text-left w-24">အမျိုးအစား</th>
+                                                                    <th className="p-2 border border-slate-200 text-left">ပြဿနာဖော်ပြချက်</th>
+                                                                    <th className="p-2 border border-slate-200 text-left">ဆောင်ရွက်ချက် / အသုံးပြုပစ္စည်း</th>
+                                                                    <th className="p-2 border border-slate-200 text-left w-20">ဆောင်ရွက်သူ</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -894,7 +895,7 @@ const FleetView: React.FC = () => {
                                                                                 <div className="font-bold">{log.startDate}</div>
                                                                                 <div className="font-mono text-slate-500">{log.woNumber}</div>
                                                                                 <div className={`mt - 1 font - bold ${log.status === 'CLOSED' ? 'text-green-600' : 'text-red-600'} `}>
-                                                                                    {log.status}
+                                                                                    {translateStatus(log.status)}
                                                                                 </div>
                                                                             </td>
                                                                             <td className="p-2 border border-slate-200 align-top">
@@ -915,9 +916,9 @@ const FleetView: React.FC = () => {
                                                                             </td>
                                                                             <td className="p-2 border border-slate-200 align-top">
                                                                                 {log.serviceProvider === 'INTERNAL' ? (
-                                                                                    <div className="text-blue-700 font-bold">Internal Team</div>
+                                                                                    <div className="text-blue-700 font-bold">အတွင်းပိုင်းအဖွဲ့</div>
                                                                                 ) : (
-                                                                                    <div className="text-purple-700 font-bold">External Vendor</div>
+                                                                                    <div className="text-purple-700 font-bold">ပြင်ပရောင်းချသူ</div>
                                                                                 )}
                                                                                 <div className="text-[9px] text-slate-500 mt-1">
                                                                                     {log.technicians && log.technicians.length > 0 ? log.technicians.join(', ') : (suppliers.find((s: any) => s.id === log.supplierId)?.name || '-')}
@@ -927,7 +928,7 @@ const FleetView: React.FC = () => {
                                                                     ))
                                                                 ) : (
                                                                     <tr>
-                                                                        <td colSpan={5} className="p-4 text-center text-slate-400 italic">No maintenance activities recorded in this period.</td>
+                                                                        <td colSpan={5} className="p-4 text-center text-slate-400 italic">ဤကာလအတွင်း ပြုပြင်ထိန်းသိမ်းမှု မှတ်တမ်း မရှိပါ။</td>
                                                                     </tr>
                                                                 )}
                                                             </tbody>
@@ -936,30 +937,30 @@ const FleetView: React.FC = () => {
 
                                                     {financialData && (
                                                         <div className="break-inside-avoid">
-                                                            <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">Detailed Expenditure Ledger</h3>
+                                                            <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">အသုံးစရိတ် အသေးစိတ်စာရင်း</h3>
                                                             <table className="w-full text-xs border-collapse mb-8">
                                                                 <thead>
                                                                     <tr className="bg-slate-100 border-y border-slate-300">
-                                                                        <th className="p-2 text-left font-bold uppercase text-slate-700 w-20">Date</th>
-                                                                        <th className="p-2 text-left font-bold uppercase text-slate-700 w-24">Category</th>
-                                                                        <th className="p-2 text-left font-bold uppercase text-slate-700">Description</th>
-                                                                        <th className="p-2 text-right font-bold uppercase text-slate-700 w-20">Down (Hrs)</th>
-                                                                        <th className="p-2 text-right font-bold uppercase text-slate-700 w-28">Cost (IDR)</th>
+                                                                        <th className="p-2 text-left font-bold uppercase text-slate-700 w-20">ရက်စွဲ</th>
+                                                                        <th className="p-2 text-left font-bold uppercase text-slate-700 w-24">အမျိုးအစား</th>
+                                                                        <th className="p-2 text-left font-bold uppercase text-slate-700">ဖော်ပြချက်</th>
+                                                                        <th className="p-2 text-right font-bold uppercase text-slate-700 w-20">ရပ်နားချိန် (နာရီ)</th>
+                                                                        <th className="p-2 text-right font-bold uppercase text-slate-700 w-28">ကုန်ကျစရိတ် (ကျပ်)</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
                                                                     {financialData.details.filter((d: any) => d.isCash).map((d: any, i: number) => (
                                                                         <tr key={i} className="border-b border-slate-200">
                                                                             <td className="p-2 text-slate-600 font-mono">{d.date}</td>
-                                                                            <td className="p-2 font-bold text-slate-700">{d.type}</td>
+                                                                            <td className="p-2 font-bold text-slate-700">{translateValue(d.type)}</td>
                                                                             <td className="p-2 text-slate-600">{d.description}</td>
                                                                             <td className={`p - 2 text - right font - mono font - bold ${d.downtime > 0 ? 'text-red-600' : 'text-slate-300'} `}>{d.downtime > 0 ? d.downtime : '-'}</td>
                                                                             <td className="p-2 text-right font-mono font-medium text-slate-800">{d.cost.toLocaleString()}</td>
                                                                         </tr>
                                                                     ))}
                                                                     <tr className="bg-slate-50 font-bold border-t-2 border-slate-800 text-sm">
-                                                                        <td colSpan={4} className="p-3 text-right">TOTAL DIRECT COST</td>
-                                                                        <td className="p-3 text-right">Rp {financialData.totalCashCost.toLocaleString()}</td>
+                                                                        <td colSpan={4} className="p-3 text-right">တိုက်ရိုက်ကုန်ကျစရိတ် စုစုပေါင်း</td>
+                                                                        <td className="p-3 text-right">{formatCurrency(financialData.totalCashCost)}</td>
                                                                     </tr>
                                                                 </tbody>
                                                             </table>
@@ -971,20 +972,20 @@ const FleetView: React.FC = () => {
                                                     <div className="grid grid-cols-3 gap-8 text-center">
                                                         <div>
                                                             <div className="h-16 border-b border-slate-400 mb-2"></div>
-                                                            <span className="text-xs font-bold uppercase text-slate-500">Prepared By</span>
+                                                            <span className="text-xs font-bold uppercase text-slate-500">ပြင်ဆင်သူ</span>
                                                         </div>
                                                         <div>
                                                             <div className="h-16 border-b border-slate-400 mb-2"></div>
-                                                            <span className="text-xs font-bold uppercase text-slate-500">Head of Plant</span>
+                                                            <span className="text-xs font-bold uppercase text-slate-500">စက်ရုံအကြီးအကဲ</span>
                                                         </div>
                                                         <div>
                                                             <div className="h-16 border-b border-slate-400 mb-2"></div>
-                                                            <span className="text-xs font-bold uppercase text-slate-500">Cost Control</span>
+                                                            <span className="text-xs font-bold uppercase text-slate-500">ကုန်ကျစရိတ် ထိန်းချုပ်ရေး</span>
                                                         </div>
                                                     </div>
 
                                                     <div className="text-[10px] text-slate-400 mt-8 text-center border-t border-slate-100 pt-2">
-                                                        Generated by jpmonitor on {new Date().toLocaleDateString()} • {costStartDate} to {costEndDate}
+                                                        jpmonitor မှ ဖန်တီးသည့်ရက်: {formatDate(new Date())} • {costStartDate} to {costEndDate}
                                                     </div>
                                                 </div>
                                             </div>

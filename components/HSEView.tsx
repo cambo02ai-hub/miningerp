@@ -1,3 +1,4 @@
+import { formatDate } from '../utils/locale';
 import React, { useState, useEffect, useCallback } from 'react';
 import { hseAPI, locationsAPI } from '../services/api';
 import { ShieldAlert, Activity, Plus, MapPin, AlertTriangle } from 'lucide-react'; // Removed RefreshCw
@@ -70,10 +71,10 @@ const HSEView: React.FC = () => {
   };
 
   const typeOptions = [
-    { value: 'Near Miss', label: 'Near Miss' },
-    { value: 'Property Damage', label: 'Property Damage' },
-    { value: 'Injury', label: 'Injury' },
-    { value: 'Environmental', label: 'Environmental' }
+    { value: 'Near Miss', label: 'အနီးကပ်ဘေးအန္တရာယ်' },
+    { value: 'Property Damage', label: 'ပိုင်ဆိုင်မှုပျက်စီးမှု' },
+    { value: 'Injury', label: 'ထိခိုက်ဒဏ်ရာ' },
+    { value: 'Environmental', label: 'ပတ်ဝန်းကျင်' }
   ];
 
   const locationOptions = locations.map(l => ({
@@ -83,15 +84,15 @@ const HSEView: React.FC = () => {
   }));
 
   if (loading && incidents.length === 0) {
-    return <div className="p-8 text-center text-slate-500">Loading HSE data...</div>;
+    return <div className="p-8 text-center text-slate-500">HSE ဒေတာ တင်နေပါသည်...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">HSE Management</h2>
-          <p className="text-slate-500 text-sm">Health, Safety, and Environment Incident Tracking</p>
+          <h2 className="text-2xl font-bold text-slate-800">HSE စီမံခန့်ခွဲမှု</h2>
+          <p className="text-slate-500 text-sm">ကျန်းမာရေး၊ ဘေးကင်းရေးနှင့် ပတ်ဝန်းကျင်ဖြစ်ရပ်များ မှတ်တမ်းတင်ခြင်း</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -105,7 +106,7 @@ const HSEView: React.FC = () => {
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={loadData} className="text-sm font-bold underline">Retry</button>
+          <button onClick={loadData} className="text-sm font-bold underline">ထပ်မံကြိုးစားရန်</button>
         </div>
       )}
 
@@ -116,7 +117,7 @@ const HSEView: React.FC = () => {
           </div>
           <div>
             <div className="text-2xl font-bold text-slate-900">{incidents.length}</div>
-            <div className="text-sm text-slate-500">Total Incidents (YTD)</div>
+            <div className="text-sm text-slate-500">ယခုနှစ် ဖြစ်ရပ်စုစုပေါင်း</div>
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
@@ -127,7 +128,7 @@ const HSEView: React.FC = () => {
             <div className="text-2xl font-bold text-slate-900">
               {incidents.filter(i => i.status !== 'Closed').length}
             </div>
-            <div className="text-sm text-slate-500">Active Investigations</div>
+            <div className="text-sm text-slate-500">စုံစမ်းစစ်ဆေးဆဲ ဖြစ်ရပ်များ</div>
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
@@ -135,8 +136,8 @@ const HSEView: React.FC = () => {
             <Activity size={24} />
           </div>
           <div>
-            <div className="text-2xl font-bold text-slate-900">145 Days</div>
-            <div className="text-sm text-slate-500">LTI Free (Lost Time Injury)</div>
+            <div className="text-2xl font-bold text-slate-900">၁၄၅ ရက်</div>
+            <div className="text-sm text-slate-500">အလုပ်ပျက်ရက်ဖြစ်စေသော ထိခိုက်မှုမရှိသည့်ရက်</div>
           </div>
         </div>
       </div>
@@ -145,17 +146,17 @@ const HSEView: React.FC = () => {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
             <tr>
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4">Type</th>
-              <th className="px-6 py-4">Location</th>
-              <th className="px-6 py-4">Description</th>
-              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">ရက်စွဲ</th>
+              <th className="px-6 py-4">အမျိုးအစား</th>
+              <th className="px-6 py-4">တည်နေရာ</th>
+              <th className="px-6 py-4">ဖော်ပြချက်</th>
+              <th className="px-6 py-4">အခြေအနေ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {incidents.map((inc) => (
               <tr key={inc.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4 text-slate-800 font-medium">{new Date(inc.date).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-slate-800 font-medium">{formatDate(inc.date)}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold ${inc.type === 'Near Miss' ? 'bg-blue-100 text-blue-700' :
                       inc.type === 'Injury' ? 'bg-red-100 text-red-700' :
@@ -193,11 +194,11 @@ const HSEView: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-visible">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-fade-in overflow-visible">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Report HSE Incident</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-4">HSE ဖြစ်ရပ် တင်ပြရန်</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="hse-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Date</label>
+                  <label htmlFor="hse-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ရက်စွဲ</label>
                   <input
                     type="date"
                     required
@@ -209,7 +210,7 @@ const HSEView: React.FC = () => {
                 </div>
                 <div>
                   <SearchableSelect
-                    label="Incident Type"
+                    label="ဖြစ်ရပ်အမျိုးအစား"
                     options={typeOptions}
                     value={formData.type}
                     onChange={(val) => setFormData({ ...formData, type: val })}
@@ -220,7 +221,7 @@ const HSEView: React.FC = () => {
 
               <div>
                 <SearchableSelect
-                  label="Project Location"
+                  label="လုပ်ငန်းခွင်တည်နေရာ"
                   options={locationOptions}
                   value={formData.locationId}
                   onChange={(val) => setFormData({ ...formData, locationId: val })}
@@ -230,11 +231,11 @@ const HSEView: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="hse-location-detail" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Specific Area Detail</label>
+                <label htmlFor="hse-location-detail" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ဖြစ်ရပ်နေရာ အသေးစိတ်</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Pit A Ramp 4"
+                  placeholder="ဥပမာ - Pit A Ramp 4"
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
                   value={formData.locationDetail}
                   onChange={e => setFormData({ ...formData, locationDetail: e.target.value })}
@@ -243,7 +244,7 @@ const HSEView: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="hse-description" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Description</label>
+                <label htmlFor="hse-description" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ဖော်ပြချက်</label>
                 <textarea
                   required
                   rows={3}

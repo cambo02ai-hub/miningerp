@@ -24,7 +24,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = "Select option...",
+  placeholder = "ရွေးချယ်ရန်...",
   label,
   required = false,
   disabled = false,
@@ -137,7 +137,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 <input
                     type="text"
                     className="w-full bg-slate-50 border border-slate-200 rounded-md pl-9 pr-3 py-1.5 text-sm outline-none focus:border-blue-500"
-                    placeholder="Type to search..."
+                    placeholder="ရှာဖွေရန် စာရိုက်ပါ..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onClick={(e) => e.stopPropagation()} // Prevent closing when clicking input

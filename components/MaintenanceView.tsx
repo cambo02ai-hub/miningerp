@@ -1,3 +1,4 @@
+import { translateStatus } from '../utils/locale';
 import React from 'react';
 import { Edit, Plus, Clock, Users, UserPlus, Fuel, Utensils, Car, ShoppingBag, Trash2 } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
@@ -65,11 +66,11 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
             {/* Left: List */}
             <div className="w-3/5 border-r border-slate-200 overflow-y-auto bg-slate-50">
                 <div className="bg-white p-3 border-b flex gap-2 sticky top-0 z-10 shadow-sm">
-                    <label htmlFor="wo-filter-status" className="sr-only">Filter Work Order Status</label>
+                    <label htmlFor="wo-filter-status" className="sr-only">Work Order အခြေအနေ စစ်ထုတ်ရန်</label>
                     <select id="wo-filter-status" className="text-xs border rounded bg-white text-slate-800 p-1" value={woFilterStatus} onChange={e => setWoFilterStatus(e.target.value)}>
-                        <option value="ALL">All Status</option>
-                        <option value="OPEN">Open</option>
-                        <option value="CLOSED">Closed</option>
+                        <option value="ALL">အခြေအနေအားလုံး</option>
+                        <option value="OPEN">ဖွင့်ထားသည်</option>
+                        <option value="CLOSED">ပိတ်ပြီး</option>
                     </select>
                 </div>
                 {filteredLogs.map((log: any) => {
@@ -87,7 +88,7 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                             <div className="flex justify-between items-start mb-1">
                                 <span className="font-mono font-bold text-xs text-slate-700">{log.woNumber}</span>
                                 <span className={`text-[10px] px-2 py-0.5 rounded border font-bold ${getStatusColor(log.status)}`}>
-                                    {log.status.replace('_', ' ')}
+                                    {translateStatus(log.status)}
                                 </span>
                             </div>
                             <p className="text-sm font-medium text-slate-900 mt-1 line-clamp-2">{log.description}</p>
@@ -114,45 +115,45 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                         </div>
 
                         <div>
-                            <label htmlFor="edit-status" className="block text-xs font-bold text-slate-600 mb-1 uppercase">Status</label>
+                            <label htmlFor="edit-status" className="block text-xs font-bold text-slate-600 mb-1 uppercase">အခြေအနေ</label>
                             <select
                                 id="edit-status"
                                 className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                                 value={editForm.status}
                                 onChange={e => setEditForm({ ...editForm, status: e.target.value })}
                             >
-                                <option value="OPEN">OPEN</option>
-                                <option value="IN_PROGRESS">IN PROGRESS</option>
-                                <option value="WAITING_PART">WAITING PART</option>
-                                <option value="CLOSED">CLOSED</option>
-                                <option value="CANCELLED">CANCELLED</option>
+                                <option value="OPEN">ဖွင့်ထားသည်</option>
+                                <option value="IN_PROGRESS">လုပ်ဆောင်နေသည်</option>
+                                <option value="WAITING_PART">ပစ္စည်းစောင့်ဆိုင်းနေသည်</option>
+                                <option value="CLOSED">ပိတ်ပြီး</option>
+                                <option value="CANCELLED">ပယ်ဖျက်ပြီး</option>
                             </select>
                         </div>
 
                         <div>
-                            <span className="block text-xs font-bold text-slate-600 mb-1 uppercase">Finish Time</span>
+                            <span className="block text-xs font-bold text-slate-600 mb-1 uppercase">ပြီးဆုံးချိန်</span>
                             <div className="grid grid-cols-2 gap-2">
-                                <label htmlFor="edit-end-date" className="sr-only">End Date</label>
+                                <label htmlFor="edit-end-date" className="sr-only">ပြီးဆုံးရက်</label>
                                 <input id="edit-end-date" type="date" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={editForm.endDate} onChange={e => setEditForm({ ...editForm, endDate: e.target.value })} />
-                                <label htmlFor="edit-end-time" className="sr-only">End Time</label>
+                                <label htmlFor="edit-end-time" className="sr-only">ပြီးဆုံးချိန်</label>
                                 <input id="edit-end-time" type="time" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={editForm.endTime} onChange={e => setEditForm({ ...editForm, endTime: e.target.value })} />
                             </div>
                         </div>
 
                         <div>
-                            <label htmlFor="edit-hm-start" className="block text-xs font-bold text-slate-600 mb-1 uppercase">HM Correction (Start)</label>
+                            <label htmlFor="edit-hm-start" className="block text-xs font-bold text-slate-600 mb-1 uppercase">HM ပြင်ဆင်ချက် (အစ)</label>
                             <input id="edit-hm-start" type="number" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={editForm.hmAtStart} onChange={e => setEditForm({ ...editForm, hmAtStart: Number(e.target.value) })} />
                         </div>
 
                         <div>
-                            <label htmlFor="edit-notes" className="block text-xs font-bold text-slate-600 mb-1 uppercase">Notes / Report</label>
+                            <label htmlFor="edit-notes" className="block text-xs font-bold text-slate-600 mb-1 uppercase">မှတ်ချက်များ / အစီရင်ခံစာ</label>
                             <textarea id="edit-notes" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" rows={3} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
                         </div>
 
                         {/* Internal Specifics Update */}
                         {editingLog.serviceProvider === 'INTERNAL' && (
                             <div className="space-y-3 border-t border-slate-200 pt-3">
-                                <span className="text-xs font-bold text-slate-600 uppercase">Mechanic Storing Cost</span>
+                                <span className="text-xs font-bold text-slate-600 uppercase">စက်ပြင်ဆရာ သယ်ယူစရိတ်</span>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label htmlFor="edit-fuel-cost" className="text-[10px] text-slate-500 font-bold block mb-1"><Fuel size={10} /> Minyak Sarana (Fuel)</label>
@@ -180,7 +181,7 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                                     </div>
                                     {editForm.useDriver && (
                                         <div>
-                                            <label htmlFor="edit-driver-cost" className="text-[10px] text-slate-500 font-bold block mb-1">Driver Meal/Allowance</label>
+                                            <label htmlFor="edit-driver-cost" className="text-[10px] text-slate-500 font-bold block mb-1">ယာဉ်မောင်း အစားအသောက် / ထောက်ပံ့ကြေး</label>
                                             <input id="edit-driver-cost" type="number" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900"
                                                 value={editForm.driverStoringCost} onChange={e => setEditForm({ ...editForm, driverStoringCost: Number(e.target.value) })} placeholder="0" />
                                         </div>
@@ -192,21 +193,21 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                         {/* External Specifics Update */}
                         {editingLog.serviceProvider === 'EXTERNAL' && (
                             <div className="space-y-3 border-t border-slate-200 pt-3">
-                                <span className="text-xs font-bold text-slate-600 uppercase">Vendor Invoice</span>
-                                <label htmlFor="edit-ext-invoice" className="sr-only">Invoice Number</label>
-                                <input id="edit-ext-invoice" type="text" placeholder="Invoice Number" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={editForm.externalInvoiceNumber} onChange={e => setEditForm({ ...editForm, externalInvoiceNumber: e.target.value })} />
-                                <label htmlFor="edit-ext-cost" className="sr-only">Total Cost</label>
-                                <input id="edit-ext-cost" type="number" placeholder="Total Cost (IDR)" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={editForm.externalCost} onChange={e => setEditForm({ ...editForm, externalCost: Number(e.target.value) })} />
+                                <span className="text-xs font-bold text-slate-600 uppercase">ရောင်းချသူ ငွေတောင်းခံလွှာ</span>
+                                <label htmlFor="edit-ext-invoice" className="sr-only">ငွေတောင်းခံလွှာနံပါတ်</label>
+                                <input id="edit-ext-invoice" type="text" placeholder="ငွေတောင်းခံလွှာနံပါတ်" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={editForm.externalInvoiceNumber} onChange={e => setEditForm({ ...editForm, externalInvoiceNumber: e.target.value })} />
+                                <label htmlFor="edit-ext-cost" className="sr-only">စုစုပေါင်းကုန်ကျစရိတ်</label>
+                                <input id="edit-ext-cost" type="number" placeholder="စုစုပေါင်းကုန်ကျစရိတ် (ကျပ်)" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={editForm.externalCost} onChange={e => setEditForm({ ...editForm, externalCost: Number(e.target.value) })} />
                             </div>
                         )}
 
                         {/* Parts Usage */}
                         {editingLog.serviceProvider === 'INTERNAL' && (
                             <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                                <label htmlFor="edit-part-select" className="text-xs font-bold text-slate-600 uppercase mb-2 block">Use Parts from Inventory</label>
+                                <label htmlFor="edit-part-select" className="text-xs font-bold text-slate-600 uppercase mb-2 block">စတော့မှ ပစ္စည်းအသုံးပြုရန်</label>
                                 <div className="flex gap-2 mb-2">
                                     <div className="flex-1"><SearchableSelect options={partOptions} value={selectedPartId} onChange={setSelectedPartId} id="edit-part-select" className="bg-white" /></div>
-                                    <label htmlFor="edit-part-qty" className="sr-only">Quantity</label>
+                                    <label htmlFor="edit-part-qty" className="sr-only">အရေအတွက်</label>
                                     <input id="edit-part-qty" type="number" className="w-16 border border-slate-300 rounded p-1 text-center bg-white text-slate-900" value={selectedPartQty} onChange={e => setSelectedPartQty(Number(e.target.value))} />
                                     <button type="button" onClick={handleAddPartToLog} className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"><Plus size={16} /></button>
                                 </div>
@@ -219,9 +220,9 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                         )}
 
                         <div className="flex gap-2 pt-4">
-                            <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded shadow font-medium hover:bg-blue-700">Save Update</button>
+                            <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded shadow font-medium hover:bg-blue-700">ပြင်ဆင်ချက် သိမ်းရန်</button>
                             <button type="button" onClick={handleDeleteLog} className="text-red-500 border border-red-200 px-3 rounded hover:bg-red-50"><Trash2 size={16} /></button>
-                            <button type="button" onClick={() => setEditingLog(null)} className="text-slate-500 px-3 hover:text-slate-700">Cancel</button>
+                            <button type="button" onClick={() => setEditingLog(null)} className="text-slate-500 px-3 hover:text-slate-700">ပယ်ဖျက်ရန်</button>
                         </div>
                     </form>
                 ) : (
@@ -243,18 +244,18 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
 
                         <div className="grid grid-cols-2 gap-2">
                             <div>
-                                <label htmlFor="create-type" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Type</label>
+                                <label htmlFor="create-type" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">အမျိုးအစား</label>
                                 <select id="create-type" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" value={logForm.type} onChange={e => setLogForm({ ...logForm, type: e.target.value })}>
-                                    <option value="Corrective">Corrective</option>
-                                    <option value="Preventive">Preventive</option>
+                                    <option value="Corrective">ပြုပြင်ရန်</option>
+                                    <option value="Preventive">ကြိုတင်ကာကွယ်ပြုပြင်ရန်</option>
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="create-priority" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Priority</label>
+                                <label htmlFor="create-priority" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ဦးစားပေးမှု</label>
                                 <select id="create-priority" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" value={logForm.priority} onChange={e => setLogForm({ ...logForm, priority: e.target.value })}>
-                                    <option value="HIGH">High</option>
-                                    <option value="MEDIUM">Medium</option>
-                                    <option value="CRITICAL">Critical</option>
+                                    <option value="HIGH">မြင့်</option>
+                                    <option value="MEDIUM">အလယ်အလတ်</option>
+                                    <option value="CRITICAL">အရေးပေါ်</option>
                                 </select>
                             </div>
                         </div>
@@ -263,15 +264,15 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                             <div className={`p-3 rounded border text-xs flex items-center gap-2 ${prediction.isMajor ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
                                 <Clock size={16} />
                                 <div>
-                                    <span className="font-bold block">Recommended: {prediction.type}</span>
-                                    <span>Target HM: {prediction.nextHM}</span>
+                                    <span className="font-bold block">အကြံပြုချက်: {prediction.type}</span>
+                                    <span>ရည်မှန်း HM: {prediction.nextHM}</span>
                                 </div>
                             </div>
                         )}
 
                         <div>
-                            <label htmlFor="create-description" className="block text-xs font-bold text-slate-600 mb-1 uppercase">Description</label>
-                            <textarea id="create-description" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" value={logForm.description} onChange={e => setLogForm({ ...logForm, description: e.target.value })} required placeholder="Describe the issue..." />
+                            <label htmlFor="create-description" className="block text-xs font-bold text-slate-600 mb-1 uppercase">ဖော်ပြချက်</label>
+                            <textarea id="create-description" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" value={logForm.description} onChange={e => setLogForm({ ...logForm, description: e.target.value })} required placeholder="ပြဿနာကို ဖော်ပြပါ..." />
                         </div>
 
                         {/* Dynamic Fields based on Provider */}
@@ -279,14 +280,14 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                             <div className="space-y-3 bg-slate-50 p-3 rounded border border-slate-200">
                                 <label htmlFor="create-technician-select" className="text-xs font-bold text-slate-600 uppercase flex items-center gap-1"><Users size={12} /> Crew Assignment</label>
                                 <div className="flex gap-2">
-                                    <div className="flex-1"><SearchableSelect placeholder="Select Mechanic" options={technicianOptions} value={selectedTechToAdd} onChange={setSelectedTechToAdd} className="bg-white" id="create-technician-select" /></div>
+                                    <div className="flex-1"><SearchableSelect placeholder="စက်ပြင်ဆရာ ရွေးရန်" options={technicianOptions} value={selectedTechToAdd} onChange={setSelectedTechToAdd} className="bg-white" id="create-technician-select" /></div>
                                     <button type="button" onClick={() => { if (selectedTechToAdd) { setLogForm({ ...logForm, technicians: [...logForm.technicians, selectedTechToAdd] }); setSelectedTechToAdd('') } }} className="bg-white border border-slate-300 p-2 rounded hover:bg-slate-100"><UserPlus size={16} className="text-slate-600" /></button>
                                 </div>
                                 <div className="flex flex-wrap gap-1">
                                     {logForm.technicians.map((t: string) => (
                                         <span key={t} className="text-xs bg-white border border-slate-300 px-2 py-1 rounded text-slate-700 font-medium shadow-sm">{t}</span>
                                     ))}
-                                    {logForm.technicians.length === 0 && <span className="text-xs text-slate-400 italic">No crew assigned</span>}
+                                    {logForm.technicians.length === 0 && <span className="text-xs text-slate-400 italic">အဖွဲ့ဝင် မသတ်မှတ်ရသေးပါ</span>}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-200">
@@ -316,7 +317,7 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                                     </div>
                                     {logForm.useDriver && (
                                         <div>
-                                            <label htmlFor="create-driver-cost" className="text-[10px] text-slate-500 font-bold block mb-1">Biaya Driver (Meals/Allowances)</label>
+                                            <label htmlFor="create-driver-cost" className="text-[10px] text-slate-500 font-bold block mb-1">ယာဉ်မောင်းစရိတ် (အစားအသောက် / ထောက်ပံ့ကြေး)</label>
                                             <input id="create-driver-cost" type="number" className="w-full border border-slate-300 rounded p-2 text-sm bg-slate-50 text-slate-900"
                                                 value={logForm.driverStoringCost} onChange={e => setLogForm({ ...logForm, driverStoringCost: Number(e.target.value) })} placeholder="0" />
                                         </div>
@@ -326,17 +327,17 @@ const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                         ) : (
                             <div className="space-y-3 bg-purple-50 p-3 rounded border border-purple-200">
                                 <label htmlFor="create-supplier-select" className="text-xs font-bold text-purple-700 uppercase flex items-center gap-1"><ShoppingBag size={12} /> Vendor Details</label>
-                                <SearchableSelect label="Select Supplier" options={supplierOptions} value={logForm.supplierId} onChange={v => setLogForm({ ...logForm, supplierId: v })} required className="bg-white" id="create-supplier-select" />
+                                <SearchableSelect label="ရောင်းချသူ ရွေးရန်" options={supplierOptions} value={logForm.supplierId} onChange={v => setLogForm({ ...logForm, supplierId: v })} required className="bg-white" id="create-supplier-select" />
                                 <div className="grid grid-cols-2 gap-2">
-                                    <label htmlFor="create-invoice" className="sr-only">Invoice Number</label>
-                                    <input id="create-invoice" type="text" placeholder="Invoice #" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={logForm.externalInvoiceNumber} onChange={e => setLogForm({ ...logForm, externalInvoiceNumber: e.target.value })} />
-                                    <label htmlFor="create-ext-cost" className="sr-only">Estimated Cost</label>
-                                    <input id="create-ext-cost" type="number" placeholder="Est. Cost" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={logForm.externalCost} onChange={e => setLogForm({ ...logForm, externalCost: Number(e.target.value) })} />
+                                    <label htmlFor="create-invoice" className="sr-only">ငွေတောင်းခံလွှာနံပါတ်</label>
+                                    <input id="create-invoice" type="text" placeholder="ငွေတောင်းခံလွှာနံပါတ်" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={logForm.externalInvoiceNumber} onChange={e => setLogForm({ ...logForm, externalInvoiceNumber: e.target.value })} />
+                                    <label htmlFor="create-ext-cost" className="sr-only">ခန့်မှန်းကုန်ကျစရိတ်</label>
+                                    <input id="create-ext-cost" type="number" placeholder="ခန့်မှန်းကုန်ကျစရိတ်" className="w-full border border-slate-300 rounded p-2 text-sm bg-white text-slate-900" value={logForm.externalCost} onChange={e => setLogForm({ ...logForm, externalCost: Number(e.target.value) })} />
                                 </div>
                             </div>
                         )}
 
-                        <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-lg shadow-md hover:bg-slate-800 font-bold transition-colors">Create Order</button>
+                        <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-lg shadow-md hover:bg-slate-800 font-bold transition-colors">အမိန့် ဖန်တီးရန်</button>
                     </form>
                 )}
             </div>

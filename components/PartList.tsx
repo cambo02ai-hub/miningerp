@@ -1,3 +1,4 @@
+import { formatNumber, translateValue } from '../utils/locale';
 import { SparePart } from '../types';
 import { Search, Filter, Trash2 } from 'lucide-react';
 
@@ -27,11 +28,11 @@ const PartList: React.FC<PartListProps> = ({
                 </h3>
                 <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <label htmlFor="part-list-search-input" className="sr-only">Search part no, name, loc...</label>
+                    <label htmlFor="part-list-search-input" className="sr-only">ပစ္စည်းနံပါတ်၊ အမည်၊ တည်နေရာ ရှာရန်...</label>
                     <input
                         id="part-list-search-input"
                         type="text"
-                        placeholder="Search part no, name, loc..."
+                        placeholder="ပစ္စည်းနံပါတ်၊ အမည်၊ တည်နေရာ ရှာရန်..."
                         className="text-sm border border-slate-300 rounded-lg pl-9 pr-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 w-64"
                         value={masterSearchTerm}
                         onChange={(e) => onMasterSearchTermChange(e.target.value)}
@@ -42,12 +43,12 @@ const PartList: React.FC<PartListProps> = ({
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 sticky top-0">
                         <tr>
-                            <th className="px-6 py-4">Part Number</th>
-                            <th className="px-6 py-4">Description</th>
-                            <th className="px-6 py-4">Category</th>
-                            <th className="px-6 py-4 text-right">Stock</th>
-                            <th className="px-6 py-4">Location</th>
-                            <th className="px-6 py-4 text-center">Action</th>
+                            <th className="px-6 py-4">ပစ္စည်းနံပါတ်</th>
+                            <th className="px-6 py-4">ဖော်ပြချက်</th>
+                            <th className="px-6 py-4">အမျိုးအစား</th>
+                            <th className="px-6 py-4 text-right">စတော့</th>
+                            <th className="px-6 py-4">တည်နေရာ</th>
+                            <th className="px-6 py-4 text-center">လုပ်ဆောင်ချက်</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -60,16 +61,16 @@ const PartList: React.FC<PartListProps> = ({
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="inline-flex px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600">
-                                        {part.category}
+                                        {translateValue(part.category)}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className={`font-bold text-lg ${part.currentStock <= part.minStockLevel ? 'text-red-600' : 'text-slate-800'}`}>
-                                        {part.currentStock.toLocaleString()}
+                                        {formatNumber(part.currentStock)}
                                         <span className="text-xs font-normal text-slate-500 ml-1">{part.unit}</span>
                                     </div>
                                     {part.currentStock <= part.minStockLevel && (
-                                        <span className="text-[10px] text-red-500 font-bold uppercase animate-pulse">Reorder Needed</span>
+                                        <span className="text-[10px] text-red-500 font-bold uppercase animate-pulse">ပြန်မှာယူရန် လိုအပ်သည်</span>
                                     )}
                                 </td>
                                 <td className="px-6 py-4 text-slate-500">
@@ -92,7 +93,7 @@ const PartList: React.FC<PartListProps> = ({
                                                 onDelete(part.id, part.partNumber);
                                             }}
                                             className="text-red-500 bg-red-50 border border-red-100 hover:bg-red-100 hover:text-red-700 p-1.5 rounded transition-all cursor-pointer"
-                                            title="Delete Item"
+                                            title="ပစ္စည်းဖျက်ရန်"
                                         >
                                             <Trash2 size={16} />
                                         </button>
@@ -101,7 +102,7 @@ const PartList: React.FC<PartListProps> = ({
                             </tr>
                         ))}
                         {filteredParts.length === 0 && (
-                            <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400">No items match your search.</td></tr>
+                            <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400">သင့်ရှာဖွေမှုနှင့် ကိုက်ညီသော ပစ္စည်း မတွေ့ပါ။</td></tr>
                         )}
                     </tbody>
                 </table>

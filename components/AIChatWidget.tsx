@@ -67,7 +67,7 @@ const AIChatWidget: React.FC = () => {
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 p-4 bg-jpmonitor-red text-white rounded-pill shadow-elevated hover:bg-jpmonitor-red-hover transition-colors z-50 flex items-center gap-2"
-        aria-label="Open AI Assistant"
+        aria-label="AI လက်ထောက် ဖွင့်ရန်"
       >
         <MessageSquare size={20} />
         <span className="text-sm font-medium">Atia AI</span>
@@ -84,11 +84,11 @@ const AIChatWidget: React.FC = () => {
             <Bot size={18} className="text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Atia AI Assistant</h3>
+            <h3 className="text-sm font-semibold text-white">Atia AI လက်ထောက်</h3>
             <p className="text-xs text-white/70">jpmonitor</p>
           </div>
         </div>
-        <button onClick={() => setIsOpen(false)} className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-jpmonitor transition-colors" aria-label="Close chat">
+        <button onClick={() => setIsOpen(false)} className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-jpmonitor transition-colors" aria-label="စကားပြောခန်း ပိတ်ရန်">
           <X size={16} />
         </button>
       </div>
@@ -105,7 +105,7 @@ const AIChatWidget: React.FC = () => {
               {msg.loading ? (
                 <div className="flex items-center gap-2 text-text-muted">
                   <Loader2 size={14} className="animate-spin" />
-                  <span className="text-xs">Atia berpikir</span>
+                  <span className="text-xs">Atia စဉ်းစားနေသည်</span>
                 </div>
               ) : (
                 <div className="markdown-content">
@@ -142,7 +142,7 @@ const AIChatWidget: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ketik pesan..."
+            placeholder="စာရိုက်ပါ..."
             className="flex-1 px-3 py-2 text-sm bg-bg-page border border-border rounded-jpmonitor-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-jpmonitor-red focus:ring-1 focus:ring-jpmonitor-red/20 transition-colors disabled:opacity-50"
             disabled={loading}
           />
@@ -150,7 +150,7 @@ const AIChatWidget: React.FC = () => {
             onClick={sendMessage}
             disabled={loading || !input.trim()}
             className="p-2 bg-jpmonitor-red text-white rounded-jpmonitor-md hover:bg-jpmonitor-red-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Send message"
+            aria-label="စာပို့ရန်"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
           </button>

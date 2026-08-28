@@ -1,3 +1,4 @@
+import { formatNumber } from '../utils/locale';
 import { Filter, Search, ClipboardList, Gauge } from 'lucide-react';
 import { Equipment } from '../types';
 
@@ -30,25 +31,25 @@ const EquipmentList: React.FC<EquipmentListProps> = ({
             <div className="bg-white p-4 rounded-lg border border-slate-200 flex gap-4 items-center shadow-sm justify-between">
                 <div className="flex gap-4 items-center">
                     <Filter size={16} className="text-slate-500" />
-                    <label htmlFor="fleet-filter-type" className="sr-only">Filter Type</label>
+                    <label htmlFor="fleet-filter-type" className="sr-only">အမျိုးအစား စစ်ထုတ်ရန်</label>
                     <select id="fleet-filter-type" className="border rounded px-2 py-1 text-sm bg-white text-slate-800 outline-none" value={filterType} onChange={e => setFilterType(e.target.value)}>
-                        <option value="All">All Types</option>
+                        <option value="All">အမျိုးအစားအားလုံး</option>
                         {['Excavator', 'Dump Truck', 'Dozer', 'Grader', 'LV', 'Water Truck', 'Tower Lamp', 'Pump'].map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <label htmlFor="fleet-filter-status" className="sr-only">Filter Status</label>
+                    <label htmlFor="fleet-filter-status" className="sr-only">အခြေအနေ စစ်ထုတ်ရန်</label>
                     <select id="fleet-filter-status" className="border rounded px-2 py-1 text-sm bg-white text-slate-800 outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                        <option value="All">Active Status</option>
+                        <option value="All">လက်ရှိအခြေအနေ</option>
                         {['Operational', 'Breakdown', 'Maintenance', 'Sold', 'Scrapped'].map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>
                 {/* Search */}
                 <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <label htmlFor="fleet-search-input" className="sr-only">Search Unit</label>
+                    <label htmlFor="fleet-search-input" className="sr-only">ယူနစ်ရှာရန်</label>
                     <input
                         id="fleet-search-input"
                         type="text"
-                        placeholder="Search Unit, Owner, Serial..."
+                        placeholder="ယူနစ်၊ ပိုင်ရှင်၊ Serial ရှာရန်..."
                         className="text-sm border border-slate-300 rounded-lg pl-9 pr-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 w-64"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -76,24 +77,24 @@ const EquipmentList: React.FC<EquipmentListProps> = ({
 
                         <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 mb-4 border-t border-b border-slate-50 py-2">
                             <div>
-                                <span className="block text-[10px] text-slate-400 uppercase">Owner</span>
+                                <span className="block text-[10px] text-slate-400 uppercase">ပိုင်ရှင်</span>
                                 <span className="font-bold">{eq.owner || '-'}</span>
                             </div>
                             <div>
-                                <span className="block text-[10px] text-slate-400 uppercase">Chassis No.</span>
+                                <span className="block text-[10px] text-slate-400 uppercase">ကိုယ်ထည်နံပါတ်</span>
                                 <span className="font-mono">{eq.chassisNumber || '-'}</span>
                             </div>
                             <div>
-                                <span className="block text-[10px] text-slate-400 uppercase">Serial No.</span>
+                                <span className="block text-[10px] text-slate-400 uppercase">Serial နံပါတ်</span>
                                 <span className="font-mono">{eq.serialNumber || '-'}</span>
                             </div>
                             <div>
-                                <span className="block text-[10px] text-slate-400 uppercase">Engine No.</span>
+                                <span className="block text-[10px] text-slate-400 uppercase">အင်ဂျင်နံပါတ်</span>
                                 <span className="font-mono">{eq.engineNumber || '-'}</span>
                             </div>
                             {(eq.type === 'LV' || eq.type === 'Dump Truck' || eq.type === 'Water Truck') && (
                                 <div className="col-span-2">
-                                    <span className="block text-[10px] text-slate-400 uppercase">Plate No.</span>
+                                    <span className="block text-[10px] text-slate-400 uppercase">ယာဉ်နံပါတ်ပြား</span>
                                     <span className="bg-slate-100 px-1 rounded font-mono font-bold">{eq.plateNumber || '-'}</span>
                                 </div>
                             )}
@@ -102,7 +103,7 @@ const EquipmentList: React.FC<EquipmentListProps> = ({
                         <div className="flex justify-between items-center text-sm text-slate-600 mb-4">
                             <span className="flex items-center font-bold text-slate-800">
                                 <Gauge size={16} className="inline mr-1 text-blue-500" />
-                                {eq.hourMeter > 0 ? `${eq.hourMeter.toLocaleString()} HM` : `${(eq.kilometer || 0).toLocaleString()} KM`}
+                                {eq.hourMeter > 0 ? `${formatNumber(eq.hourMeter)} HM` : `${formatNumber(eq.kilometer || 0)} KM`}
                             </span>
                             <span className="text-xs bg-slate-50 px-2 py-1 rounded">{eq.location}</span>
                         </div>

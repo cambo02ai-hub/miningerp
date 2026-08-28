@@ -61,7 +61,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </p>
           <div className="mt-12 flex items-center justify-center gap-3 text-white/50 text-sm">
             <Shield size={16} />
-            <span>Secured with enterprise-grade encryption</span>
+            <span>လုပ်ငန်းသုံးအဆင့် လုံခြုံရေးဖြင့် ကာကွယ်ထားသည်</span>
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <button
             onClick={() => setDarkMode(!darkMode)}
             className="p-2 rounded-md border border-border hover:bg-bg-surface transition-colors"
-            aria-label="Toggle dark mode"
+            aria-label="အမှောင်ပုံစံ ပြောင်းရန်"
           >
             {darkMode ? <Sun size={18} className="text-text-secondary" /> : <Moon size={18} className="text-text-secondary" />}
           </button>
@@ -115,7 +115,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-3 border border-border rounded-jpmonitor bg-bg-surface text-text-primary transition-all duration-200 focus:border-jpmonitor-red focus:ring-2 focus:ring-jpmonitor-red/20 focus:outline-none placeholder:text-text-muted"
-                  placeholder="Enter your username"
+                  placeholder="အသုံးပြုသူအမည် ရိုက်ထည့်ပါ"
                   required
                   disabled={loading}
                   autoComplete="username"
@@ -132,7 +132,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 border border-border rounded-jpmonitor bg-bg-surface text-text-primary transition-all duration-200 focus:border-jpmonitor-red focus:ring-2 focus:ring-jpmonitor-red/20 focus:outline-none placeholder:text-text-muted"
-                  placeholder="Enter your password"
+                  placeholder="စကားဝှက် ရိုက်ထည့်ပါ"
                   required
                   disabled={loading}
                   autoComplete="current-password"

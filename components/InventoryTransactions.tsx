@@ -1,3 +1,4 @@
+import { translateValue } from '../utils/locale';
 import { InventoryTransaction, SparePart } from '../types';
 import { InventoryTxType } from '../types';
 import { Search, History } from 'lucide-react';
@@ -31,30 +32,30 @@ const InventoryTransactions: React.FC<InventoryTransactionsProps> = ({
                 <div className="flex gap-2 items-center">
                     <div className="relative">
                         <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <label htmlFor="tx-search-input" className="sr-only">Search transactions...</label>
+                        <label htmlFor="tx-search-input" className="sr-only">လှုပ်ရှားမှုများ ရှာရန်...</label>
                         <input
                             id="tx-search-input"
                             type="text"
-                            placeholder="Search transactions..."
+                            placeholder="လှုပ်ရှားမှုများ ရှာရန်..."
                             className="text-xs border border-slate-300 rounded-lg pl-7 pr-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 w-48"
                             value={filterText}
                             onChange={(e) => onFilterTextChange(e.target.value)}
                         />
                     </div>
-                    <label htmlFor="tx-type-filter" className="sr-only">Filter Transaction Type</label>
+                    <label htmlFor="tx-type-filter" className="sr-only">လှုပ်ရှားမှုအမျိုးအစား စစ်ထုတ်ရန်</label>
                     <select
                         id="tx-type-filter"
                         className="text-xs border border-slate-300 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                         value={filterType}
                         onChange={(e) => onFilterTypeChange(e.target.value)}
                     >
-                        <option value="ALL">All Types</option>
-                        <option value={InventoryTxType.USAGE}>Usage</option>
-                        <option value={InventoryTxType.PURCHASE}>Purchase</option>
-                        <option value={InventoryTxType.CANNIBAL_HARVEST}>Cannibalize</option>
-                        <option value={InventoryTxType.RETURN_VENDOR}>Return</option>
-                        <option value={InventoryTxType.RESTOCK_UNUSED}>Restock</option>
-                        <option value={InventoryTxType.TRANSFER_OUT}>Transfer Out</option>
+                        <option value="ALL">အမျိုးအစားအားလုံး</option>
+                        <option value={InventoryTxType.USAGE}>သုံးစွဲခြင်း</option>
+                        <option value={InventoryTxType.PURCHASE}>ဝယ်ယူခြင်း</option>
+                        <option value={InventoryTxType.CANNIBAL_HARVEST}>အစိတ်အပိုင်းခွဲယူခြင်း</option>
+                        <option value={InventoryTxType.RETURN_VENDOR}>ပြန်အပ်ခြင်း</option>
+                        <option value={InventoryTxType.RESTOCK_UNUSED}>စတော့ပြန်ဖြည့်ခြင်း</option>
+                        <option value={InventoryTxType.TRANSFER_OUT}>ပြောင်းရွှေ့ထုတ်ခြင်း</option>
                     </select>
                 </div>
             </div>
@@ -62,13 +63,13 @@ const InventoryTransactions: React.FC<InventoryTransactionsProps> = ({
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 sticky top-0">
                         <tr>
-                            <th className="px-6 py-3">Date</th>
-                            <th className="px-6 py-3">Part</th>
-                            <th className="px-6 py-3">Type</th>
-                            <th className="px-6 py-3 text-right">Qty</th>
-                            <th className="px-6 py-3">Ref. / Equipment</th>
-                            <th className="px-6 py-3">Notes</th>
-                            <th className="px-6 py-3">By</th>
+                            <th className="px-6 py-3">ရက်စွဲ</th>
+                            <th className="px-6 py-3">ပစ္စည်း</th>
+                            <th className="px-6 py-3">အမျိုးအစား</th>
+                            <th className="px-6 py-3 text-right">အရေအတွက်</th>
+                            <th className="px-6 py-3">ကိုးကား / စက်ယာဉ်</th>
+                            <th className="px-6 py-3">မှတ်ချက်များ</th>
+                            <th className="px-6 py-3">ဆောင်ရွက်သူ</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -123,7 +124,7 @@ const InventoryTransactions: React.FC<InventoryTransactionsProps> = ({
                                     </td>
                                     <td className="px-6 py-3">
                                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${typeBadgeClass}`}>
-                                            <span>{icon}</span> {tx.type}
+                                            <span>{icon}</span> {translateValue(tx.type)}
                                         </span>
                                     </td>
                                     <td className={`px-6 py-3 text-right font-bold ${qtyClass}`}>
@@ -131,7 +132,7 @@ const InventoryTransactions: React.FC<InventoryTransactionsProps> = ({
                                     </td>
                                     <td className="px-6 py-3">
                                         <div className="text-slate-700 font-mono text-xs">{tx.referenceId || '-'}</div>
-                                        {equipmentCode && <div className="text-xs text-slate-500">Unit: {String(equipmentCode)}</div>}
+                                        {equipmentCode && <div className="text-xs text-slate-500">ယူနစ်: {String(equipmentCode)}</div>}
                                     </td>
                                     <td className="px-6 py-3 text-slate-600 text-xs max-w-xs truncate">{tx.notes || '-'}</td>
                                     <td className="px-6 py-3 text-slate-500 text-xs">{tx.performedBy}</td>
@@ -139,7 +140,7 @@ const InventoryTransactions: React.FC<InventoryTransactionsProps> = ({
                             );
                         })}
                         {filteredTransactions.length === 0 && (
-                            <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-400">No transactions match your filters.</td></tr>
+                            <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-400">သင့်စစ်ထုတ်မှုနှင့် ကိုက်ညီသော လှုပ်ရှားမှု မတွေ့ပါ။</td></tr>
                         )}
                     </tbody>
                 </table>

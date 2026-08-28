@@ -1,3 +1,4 @@
+import { formatCurrency } from '../utils/locale';
 import { PackageSearch, AlertTriangle, Archive } from 'lucide-react';
 
 interface InventoryDashboardProps {
@@ -15,7 +16,7 @@ const InventoryDashboard = ({ totalItems, lowStockItems, totalValue }: Inventory
                 </div>
                 <div>
                     <div className="text-2xl font-bold text-slate-900">{totalItems}</div>
-                    <div className="text-sm text-slate-500">Unique SKU Items</div>
+                    <div className="text-sm text-slate-500">မတူညီသော SKU ပစ္စည်းများ</div>
                 </div>
             </div>
             <div className={`bg-white p-5 rounded-xl shadow-sm border ${lowStockItems > 0 ? 'border-red-200 bg-red-50' : 'border-slate-200'} flex items-center gap-4`}>
@@ -24,7 +25,7 @@ const InventoryDashboard = ({ totalItems, lowStockItems, totalValue }: Inventory
                 </div>
                 <div>
                     <div className="text-2xl font-bold text-slate-900">{lowStockItems}</div>
-                    <div className="text-sm text-slate-500">Low Stock Alerts</div>
+                    <div className="text-sm text-slate-500">စတော့နည်းပါးမှု သတိပေးချက်များ</div>
                 </div>
             </div>
             <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
@@ -33,9 +34,9 @@ const InventoryDashboard = ({ totalItems, lowStockItems, totalValue }: Inventory
                 </div>
                 <div>
                     <div className="text-2xl font-bold text-slate-900">
-                        Rp {(totalValue / 1000000).toLocaleString()} M
+                        {formatCurrency(totalValue)}
                     </div>
-                    <div className="text-sm text-slate-500">Total Inventory Value</div>
+                    <div className="text-sm text-slate-500">စတော့တန်ဖိုး စုစုပေါင်း</div>
                 </div>
             </div>
         </div>

@@ -1,3 +1,4 @@
+import { formatNumber, translateValue } from '../utils/locale';
 import { ArrowRightLeft, X, CheckCircle, Truck } from 'lucide-react';
 
 interface DailyLogsProps {
@@ -14,18 +15,18 @@ const DailyLogs = ({ mutationHistory }: DailyLogsProps) => {
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-slate-600 font-bold border-b">
                         <tr>
-                            <th className="px-4 py-3">Date</th>
-                            <th className="px-4 py-3">Type</th>
-                            <th className="px-4 py-3">Route</th>
-                            <th className="px-4 py-3">Reference</th>
+                            <th className="px-4 py-3">ရက်စွဲ</th>
+                            <th className="px-4 py-3">အမျိုးအစား</th>
+                            <th className="px-4 py-3">လမ်းကြောင်း</th>
+                            <th className="px-4 py-3">ကိုးကားနံပါတ်</th>
                             <th className="px-4 py-3">HM</th>
-                            <th className="px-4 py-3">Status</th>
+                            <th className="px-4 py-3">အခြေအနေ</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {mutationHistory.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">No mutation history found.</td>
+                                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">ယူနစ်ပြောင်းရွှေ့မှတ်တမ်း မတွေ့ပါ။</td>
                             </tr>
                         ) : (
                             mutationHistory.map((mut: any) => (
@@ -35,7 +36,7 @@ const DailyLogs = ({ mutationHistory }: DailyLogsProps) => {
                                         <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${mut.type === 'ACQUISITION' ? 'bg-green-100 text-green-700' :
                                             mut.type === 'TRANSFER' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
                                             }`}>
-                                            {mut.type}
+                                            {translateValue(mut.type)}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
@@ -46,7 +47,7 @@ const DailyLogs = ({ mutationHistory }: DailyLogsProps) => {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 text-slate-600">{mut.referenceDocument}</td>
-                                    <td className="px-4 py-3 font-mono">{mut.mutationHM?.toLocaleString()}</td>
+                                    <td className="px-4 py-3 font-mono">{formatNumber(mut.mutationHM)}</td>
                                     <td className="px-4 py-3">
                                         {mut.status === 'CANCELLED' ? (
                                             <span className="flex items-center gap-1 text-red-600 text-xs font-bold">

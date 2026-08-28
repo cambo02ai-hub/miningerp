@@ -14,6 +14,6 @@ describe('ErrorBoundary', () => {
         <Buggy />
       </ErrorBoundary>
     )
-    expect(screen.getByText('Terjadi kesalahan')).toBeTruthy()
+    expect(screen.getByText('အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်')).toBeTruthy()
   })
 })

@@ -1,3 +1,4 @@
+import { formatNumber } from '../utils/locale';
 
 import React, { useState, useEffect } from 'react';
 import { dashboardAPI } from '../services/api';
@@ -32,14 +33,14 @@ const FleetDashboard: React.FC = () => {
     };
 
     if (loading && !data) {
-        return <div className="p-8 text-center text-slate-500">Loading fleet dashboard...</div>;
+        return <div className="p-8 text-center text-slate-500">ယာဉ်/စက် ဒက်ရှ်ဘုတ် တင်နေပါသည်...</div>;
     }
 
     if (error) {
         return (
             <div className="p-8 text-center">
                 <div className="text-red-500 mb-2">{error}</div>
-                <button onClick={loadData} className="text-blue-600 underline">Retry</button>
+                <button onClick={loadData} className="text-blue-600 underline">ထပ်မံကြိုးစားရန်</button>
             </div>
         );
     }
@@ -51,11 +52,11 @@ const FleetDashboard: React.FC = () => {
     return (
         <div className="space-y-6 animate-fade-in">
             <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-slate-800">Fleet Overview</h2>
+                <h2 className="text-xl font-bold text-slate-800">ယာဉ်/စက် အနှစ်ချုပ်</h2>
                 <button
                     onClick={loadData}
                     className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Refresh Data"
+                    title="ဒေတာ ပြန်တင်ရန်"
                 >
                     <RefreshCw size={18} />
                 </button>
@@ -69,7 +70,7 @@ const FleetDashboard: React.FC = () => {
                     </div>
                     <div>
                         <div className="text-2xl font-bold text-slate-900">{analytics.totalUnits}</div>
-                        <div className="text-sm text-slate-500">Total Fleet Size</div>
+                        <div className="text-sm text-slate-500">ယာဉ်/စက် စုစုပေါင်း</div>
                     </div>
                 </div>
                 <div className={`bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4 ${analytics.pa < 85 ? 'border-red-200 bg-red-50' : ''}`}>
@@ -78,7 +79,7 @@ const FleetDashboard: React.FC = () => {
                     </div>
                     <div>
                         <div className="text-2xl font-bold text-slate-900">{analytics.pa}%</div>
-                        <div className="text-sm text-slate-500">Physical Availability</div>
+                        <div className="text-sm text-slate-500">လက်တွေ့အသုံးပြုနိုင်မှု</div>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
@@ -87,7 +88,7 @@ const FleetDashboard: React.FC = () => {
                     </div>
                     <div>
                         <div className="text-2xl font-bold text-slate-900">{analytics.breakdownUnits}</div>
-                        <div className="text-sm text-slate-500">Units in Breakdown</div>
+                        <div className="text-sm text-slate-500">ပျက်စီးနေသော ယူနစ်များ</div>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
@@ -98,7 +99,7 @@ const FleetDashboard: React.FC = () => {
                         <div className="text-2xl font-bold text-slate-900">
                             {predictiveMaint.filter((p: any) => p.urgency === 'Critical' || p.urgency === 'Overdue').length}
                         </div>
-                        <div className="text-sm text-slate-500">Due for Service</div>
+                        <div className="text-sm text-slate-500">ပြုပြင်ထိန်းသိမ်းရန် ရောက်ရှိနေသော ယူနစ်များ</div>
                     </div>
                 </div>
             </div>
@@ -138,7 +139,7 @@ const FleetDashboard: React.FC = () => {
                         <h3 className="font-bold text-slate-800 flex items-center gap-2">
                             <Clock size={18} className="text-blue-500" /> Upcoming Service Monitor
                         </h3>
-                        <div className="text-xs font-mono text-slate-400">Based on 250hr Intervals</div>
+                        <div className="text-xs font-mono text-slate-400">နာရီ ၂၅၀ ကြားကာလအပေါ် အခြေခံထားသည်</div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-2 space-y-3">
@@ -159,8 +160,8 @@ const FleetDashboard: React.FC = () => {
                                 </div>
 
                                 <div className="flex justify-between text-xs text-slate-600 mb-1">
-                                    <span>Next: <strong>{unit.serviceType}</strong></span>
-                                    <span>Due at: {unit.nextServiceHM.toLocaleString()} HM</span>
+                                    <span>နောက်တစ်ကြိမ်: <strong>{unit.serviceType}</strong></span>
+                                    <span>ပြုပြင်ရမည့် HM: {formatNumber(unit.nextServiceHM)} HM</span>
                                 </div>
 
                                 {/* Progress Bar */}

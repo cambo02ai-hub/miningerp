@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, formatCurrency } from '../utils/locale';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { inventoryAPI, equipmentAPI, suppliersAPI, employeesAPI, shipmentsAPI, locationsAPI } from '../services/api';
 import { useQueryClient } from '@tanstack/react-query';
@@ -330,7 +331,7 @@ const InventoryView: React.FC = () => {
             if (doPrintRef.current) {
                 const printWindow = window.open('', '', 'height=800,width=1000');
                 if (printWindow) {
-                    printWindow.document.write('<html><head><title>Print DO</title>');
+                    printWindow.document.write('<html><head><title>DO ပုံနှိပ်ရန်</title>');
                     printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
                     printWindow.document.write('<style>@media print { body { -webkit-print-color-adjust: exact; } table { border-collapse: collapse; } .main-table td, .main-table th { border: 1px solid black; } }</style>');
                     printWindow.document.write('</head><body class="bg-white">');
@@ -357,10 +358,10 @@ const InventoryView: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
-            'PENDING': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
-            'IN_TRANSIT': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'In Transit' },
-            'DELIVERED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Delivered' },
-            'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelled' }
+            'PENDING': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'ဆိုင်းငံ့ထားသည်' },
+            'IN_TRANSIT': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'ပို့ဆောင်နေသည်' },
+            'DELIVERED': { bg: 'bg-green-100', text: 'text-green-800', label: 'ပို့ဆောင်ပြီး' },
+            'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'ပယ်ဖျက်ပြီး' }
         };
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['PENDING'];
         return (
@@ -436,7 +437,7 @@ const InventoryView: React.FC = () => {
     const categoryOptions = [
         { value: 'Engine', label: 'Engine' },
         { value: 'Hydraulic', label: 'Hydraulic' },
-        { value: 'Undercarriage', label: 'Undercarriage' },
+        { value: 'Undercarriage', label: 'အောက်ပိုင်းစနစ်' },
         { value: 'Consumable', label: 'Consumable' },
         { value: 'Electrical', label: 'Electrical' }
     ];
@@ -466,11 +467,11 @@ const InventoryView: React.FC = () => {
         }));
 
     const txTypeOptions = [
-        { value: InventoryTxType.USAGE, label: 'Pemakaian (Usage)' },
-        { value: InventoryTxType.PURCHASE, label: 'Pembelian (Purchase)' },
-        { value: InventoryTxType.CANNIBAL_HARVEST, label: 'Kanibalisasi (Cannibalize)' },
-        { value: InventoryTxType.RETURN_VENDOR, label: 'Retur (Return to Vendor)' },
-        { value: InventoryTxType.RESTOCK_UNUSED, label: 'Tidak Jadi Pakai (Restock)' }
+        { value: InventoryTxType.USAGE, label: 'သုံးစွဲခြင်း' },
+        { value: InventoryTxType.PURCHASE, label: 'ဝယ်ယူခြင်း' },
+        { value: InventoryTxType.CANNIBAL_HARVEST, label: 'အစိတ်အပိုင်းခွဲယူခြင်း' },
+        { value: InventoryTxType.RETURN_VENDOR, label: 'ရောင်းချသူထံ ပြန်အပ်ခြင်း' },
+        { value: InventoryTxType.RESTOCK_UNUSED, label: 'မသုံးဖြစ်သေး၍ စတော့ပြန်ဖြည့်ခြင်း' }
     ];
 
     const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -479,8 +480,8 @@ const InventoryView: React.FC = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Inventory & Spare Parts</h2>
-                    <p className="text-slate-500 text-sm">Procurement, Usage, and Asset Allocation</p>
+                    <h2 className="text-2xl font-bold text-slate-800">စတော့နှင့် အပိုပစ္စည်းများ</h2>
+                    <p className="text-slate-500 text-sm">ဝယ်ယူခြင်း၊ သုံးစွဲခြင်းနှင့် ပိုင်ဆိုင်မှုခွဲဝေခြင်း</p>
                 </div>
                 <div className="flex gap-2">
                     <div className="bg-white border rounded-lg p-1 flex mr-2">
@@ -525,7 +526,7 @@ const InventoryView: React.FC = () => {
                 <div className="flex justify-center items-center py-12">
                     <div className="text-slate-600 flex items-center gap-3">
                         <RefreshCw size={24} className="animate-spin" />
-                        <span>Loading inventory data...</span>
+                        <span>စတော့ဒေတာ တင်နေပါသည်...</span>
                     </div>
                 </div>
             )}
@@ -535,7 +536,7 @@ const InventoryView: React.FC = () => {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
                     <AlertTriangle className="text-red-600 flex-shrink-0" size={20} />
                     <div>
-                        <div className="font-semibold text-red-800">Failed to load data</div>
+                        <div className="font-semibold text-red-800">ဒေတာတင်ရာတွင် မအောင်မြင်ပါ</div>
                         <div className="text-red-600 text-sm">{error}</div>
                         <button
                             onClick={() => refreshData()}
@@ -631,7 +632,7 @@ const InventoryView: React.FC = () => {
                                                 <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                                             ))}
                                         </Pie>
-                                        <Tooltip formatter={(val: number) => `Rp ${val.toLocaleString()}`} />
+                                        <Tooltip formatter={(val: number) => formatCurrency(val)} />
                                         <Legend layout="vertical" verticalAlign="middle" align="right" />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -646,7 +647,7 @@ const InventoryView: React.FC = () => {
                     <div className="flex justify-between items-center bg-purple-50 p-4 rounded-xl border border-purple-100">
                         <div>
                             <h3 className="text-lg font-bold text-purple-900 flex items-center gap-2"><Truck size={20} /> Goods Shipment Control</h3>
-                            <p className="text-xs text-purple-600">Manage Delivery Orders (Surat Jalan) for Spare Parts & Materials.</p>
+                            <p className="text-xs text-purple-600">အပိုပစ္စည်းနှင့် ပစ္စည်းများအတွက် ပို့ဆောင်လွှာများကို စီမံပါ။</p>
                         </div>
                         <button onClick={() => setIsShipmentModalOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
                             <Plus size={16} /> Create New Shipment
@@ -658,13 +659,13 @@ const InventoryView: React.FC = () => {
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 sticky top-0">
                                 <tr>
-                                    <th className="px-6 py-3">Date</th>
-                                    <th className="px-6 py-3">DO Number</th>
-                                    <th className="px-6 py-3">Destination</th>
-                                    <th className="px-6 py-3">Driver / Vehicle</th>
-                                    <th className="px-6 py-3">Items</th>
-                                    <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3 text-right">Action</th>
+                                    <th className="px-6 py-3">ရက်စွဲ</th>
+                                    <th className="px-6 py-3">DO နံပါတ်</th>
+                                    <th className="px-6 py-3">ပို့ဆောင်မည့်နေရာ</th>
+                                    <th className="px-6 py-3">ယာဉ်မောင်း / ယာဉ်</th>
+                                    <th className="px-6 py-3">ပစ္စည်းများ</th>
+                                    <th className="px-6 py-3">အခြေအနေ</th>
+                                    <th className="px-6 py-3 text-right">လုပ်ဆောင်ချက်</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -692,10 +693,10 @@ const InventoryView: React.FC = () => {
                                                         value={s.status}
                                                         onChange={(e) => handleStatusUpdate(s.id, e.target.value)}
                                                     >
-                                                        <option value="PENDING">Pending</option>
-                                                        <option value="IN_TRANSIT">In Transit</option>
-                                                        <option value="DELIVERED">Delivered</option>
-                                                        <option value="CANCELLED">Cancel</option>
+                                                        <option value="PENDING">ဆိုင်းငံ့ထားသည်</option>
+                                                        <option value="IN_TRANSIT">ပို့ဆောင်နေသည်</option>
+                                                        <option value="DELIVERED">ပို့ဆောင်ပြီး</option>
+                                                        <option value="CANCELLED">ပယ်ဖျက်ရန်</option>
                                                     </select>
                                                 )}
                                             </div>
@@ -725,8 +726,8 @@ const InventoryView: React.FC = () => {
                         {/* Header - Fixed */}
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-start flex-shrink-0">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Stock Transaction</h3>
-                                <p className="text-xs text-slate-500 mt-1">Record Movement: In / Out</p>
+                                <h3 className="text-xl font-bold text-slate-900">စတော့ လှုပ်ရှားမှု</h3>
+                                <p className="text-xs text-slate-500 mt-1">အဝင် / အထွက် လှုပ်ရှားမှု မှတ်တမ်းတင်ရန်</p>
                             </div>
                             <button onClick={() => setIsTxModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
                         </div>
@@ -737,7 +738,7 @@ const InventoryView: React.FC = () => {
                             <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
                                 <div>
                                     <SearchableSelect
-                                        label="Select Item"
+                                        label="ပစ္စည်းရွေးရန်"
                                         options={partOptions}
                                         value={selectedPart?.id || ''}
                                         onChange={(val) => {
@@ -753,7 +754,7 @@ const InventoryView: React.FC = () => {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label htmlFor="tx-date-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Date</label>
+                                        <label htmlFor="tx-date-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ရက်စွဲ</label>
                                         <input
                                             type="date" required
                                             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -763,13 +764,13 @@ const InventoryView: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <SearchableSelect label="Transaction Type" options={txTypeOptions} value={txForm.type} onChange={v => setTxForm({ ...txForm, type: v })} id="tx-type-select" />
+                                        <SearchableSelect label="လှုပ်ရှားမှုအမျိုးအစား" options={txTypeOptions} value={txForm.type} onChange={v => setTxForm({ ...txForm, type: v })} id="tx-type-select" />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
                                     <div>
-                                        <label htmlFor="tx-quantity-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Quantity</label>
+                                        <label htmlFor="tx-quantity-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">အရေအတွက်</label>
                                         <input
                                             type="number" required min="1"
                                             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
@@ -787,7 +788,7 @@ const InventoryView: React.FC = () => {
                                 {(txForm.type === InventoryTxType.USAGE || txForm.type === InventoryTxType.CANNIBAL_HARVEST) && (
                                     <div>
                                         <SearchableSelect
-                                            label="Related Equipment (Asset)"
+                                            label="သက်ဆိုင်ရာ စက်/ယာဉ် (ပိုင်ဆိုင်မှု)"
                                             options={equipmentOptions}
                                             value={txForm.equipmentId}
                                             onChange={(val) => setTxForm({ ...txForm, equipmentId: val })}
@@ -800,7 +801,7 @@ const InventoryView: React.FC = () => {
                                     <div className="space-y-4 bg-green-50 p-3 rounded border border-green-100">
                                         <div>
                                             <SearchableSelect
-                                                label="Supplier / Vendor"
+                                                label="ပစ္စည်းရောင်းချသူ / ဝန်ဆောင်မှုပေးသူ"
                                                 options={supplierOptions}
                                                 value={txForm.supplierId}
                                                 onChange={(val) => setTxForm({ ...txForm, supplierId: val })}
@@ -809,13 +810,13 @@ const InventoryView: React.FC = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label htmlFor="tx-unit-price-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Unit Price (IDR)</label>
+                                            <label htmlFor="tx-unit-price-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">တစ်ယူနစ်စျေးနှုန်း (ကျပ်)</label>
                                             <input
                                                 type="number" min="0"
                                                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                                 value={txForm.pricePerUnit}
                                                 onChange={e => setTxForm({ ...txForm, pricePerUnit: Number(e.target.value) })}
-                                                placeholder="Price per item"
+                                                placeholder="တစ်ခုချင်းစျေးနှုန်း"
                                                 id="tx-unit-price-input" // Added ID for accessibility
                                             />
                                         </div>
@@ -823,7 +824,7 @@ const InventoryView: React.FC = () => {
                                         {/* PAYMENT TERMS - ONLY FOR PURCHASE */}
                                         {txForm.type === InventoryTxType.PURCHASE && (
                                             <div className="pt-2 border-t border-green-200">
-                                                <span className="block text-xs font-bold text-slate-500 mb-1 uppercase">Payment Method</span>
+                                                <span className="block text-xs font-bold text-slate-500 mb-1 uppercase">ငွေပေးချေမှုနည်းလမ်း</span>
                                                 <div className="flex gap-2 mb-3">
                                                     <button
                                                         type="button"
@@ -845,7 +846,7 @@ const InventoryView: React.FC = () => {
 
                                                 {txForm.paymentType === 'CREDIT' && (
                                                     <div>
-                                                        <label htmlFor="tx-due-date-input" className="block text-xs font-bold text-amber-800 mb-1 uppercase">Due Date (Jatuh Tempo)</label>
+                                                        <label htmlFor="tx-due-date-input" className="block text-xs font-bold text-amber-800 mb-1 uppercase">ပေးချေရမည့်ရက်</label>
                                                         <input
                                                             type="date" required
                                                             className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50"
@@ -857,7 +858,7 @@ const InventoryView: React.FC = () => {
                                                 )}
                                             </div>
                                         )}
-                                        <label htmlFor="tx-reference-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Reference No. (PO/WO/DO)</label>
+                                        <label htmlFor="tx-reference-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ကိုးကားနံပါတ် (PO/WO/DO)</label>
                                     </div>
                                 )}
 
@@ -873,7 +874,7 @@ const InventoryView: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="tx-notes-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Notes</label>
+                                    <label htmlFor="tx-notes-input" className="block text-xs font-bold text-slate-500 mb-1 uppercase">မှတ်ချက်များ</label>
                                     <input
                                         type="text"
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -913,8 +914,8 @@ const InventoryView: React.FC = () => {
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Register New Spare Part</h3>
-                                <p className="text-xs text-slate-500 mt-1">Master Data Management (MDM)</p>
+                                <h3 className="text-xl font-bold text-slate-900">အပိုပစ္စည်းအသစ် မှတ်ပုံတင်ရန်</h3>
+                                <p className="text-xs text-slate-500 mt-1">အခြေခံဒေတာ စီမံခန့်ခွဲမှု (MDM)</p>
                             </div>
                             <button onClick={() => setIsMasterModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
                         </div>
@@ -922,7 +923,7 @@ const InventoryView: React.FC = () => {
                         <form onSubmit={handleNewItemSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="new-item-part-number" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Part Number *</label>
+                                    <label htmlFor="new-item-part-number" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ပစ္စည်းနံပါတ် *</label>
                                     <input
                                         type="text" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -933,7 +934,7 @@ const InventoryView: React.FC = () => {
                                     <p className="text-[10px] text-slate-400 mt-1">Unique alphanumeric code from OEM catalog.</p>
                                 </div>
                                 <div>
-                                    <label htmlFor="new-item-name" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Item Name *</label>
+                                    <label htmlFor="new-item-name" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ပစ္စည်းအမည် *</label>
                                     <input
                                         type="text" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -941,13 +942,13 @@ const InventoryView: React.FC = () => {
                                         onChange={e => setNewItemForm({ ...newItemForm, name: e.target.value })}
                                         id="new-item-name" // Added ID for accessibility
                                     />
-                                    <p className="text-[10px] text-slate-400 mt-1">Clear, descriptive name (e.g. Fuel Filter D375).</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">ရှင်းလင်းသော ပစ္စည်းအမည် (ဥပမာ - Fuel Filter D375)။</p>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <label htmlFor="new-item-brand" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Brand / Manufacturer</label>
+                                    <label htmlFor="new-item-brand" className="block text-xs font-bold text-slate-500 mb-1 uppercase">အမှတ်တံဆိပ် / ထုတ်လုပ်သူ</label>
                                     <input
                                         type="text" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -959,7 +960,7 @@ const InventoryView: React.FC = () => {
                                 </div>
                                 <div className="col-span-1">
                                     <SearchableSelect
-                                        label="Category"
+                                        label="အမျိုးအစား"
                                         options={categoryOptions}
                                         value={newItemForm.category}
                                         onChange={(val) => setNewItemForm({ ...newItemForm, category: val })}
@@ -967,7 +968,7 @@ const InventoryView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="new-item-unit" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Unit</label>
+                                    <label htmlFor="new-item-unit" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ယူနစ်</label>
                                     <input
                                         type="text" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -981,7 +982,7 @@ const InventoryView: React.FC = () => {
 
                             <div className="grid grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
                                 <div>
-                                    <label htmlFor="new-item-opening-stock" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Opening Stock</label>
+                                    <label htmlFor="new-item-opening-stock" className="block text-xs font-bold text-slate-500 mb-1 uppercase">အစပိုင်း စတော့</label>
                                     <input
                                         type="number" min="0" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -991,7 +992,7 @@ const InventoryView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="new-item-min-stock" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Min Stock Level</label>
+                                    <label htmlFor="new-item-min-stock" className="block text-xs font-bold text-slate-500 mb-1 uppercase">အနည်းဆုံး စတော့အဆင့်</label>
                                     <input
                                         type="number" min="0" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -999,10 +1000,10 @@ const InventoryView: React.FC = () => {
                                         onChange={e => setNewItemForm({ ...newItemForm, minStockLevel: Number(e.target.value) })}
                                         id="new-item-min-stock" // Added ID for accessibility
                                     />
-                                    <p className="text-[10px] text-slate-400 mt-1">Triggers dashboard alert.</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">ဒက်ရှ်ဘုတ်သတိပေးချက်ကို ဖွင့်ပေးသည်။</p>
                                 </div>
                                 <div>
-                                    <label htmlFor="new-item-est-price" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Est. Price (IDR)</label>
+                                    <label htmlFor="new-item-est-price" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ခန့်မှန်းစျေးနှုန်း (ကျပ်)</label>
                                     <input
                                         type="number" min="0" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -1013,7 +1014,7 @@ const InventoryView: React.FC = () => {
                                 </div>
                                 <div>
                                     <SearchableSelect
-                                        label="Site / Location"
+                                        label="လုပ်ငန်းခွင် / တည်နေရာ"
                                         options={locationOptions}
                                         value={newItemForm.locationId}
                                         onChange={(val) => setNewItemForm({ ...newItemForm, locationId: val })}
@@ -1022,7 +1023,7 @@ const InventoryView: React.FC = () => {
                                     />
                                 </div>
                                 <div className="col-span-2">
-                                    <label htmlFor="new-item-rack-code" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Rack / Bin Code</label>
+                                    <label htmlFor="new-item-rack-code" className="block text-xs font-bold text-slate-500 mb-1 uppercase">စင် / ဘင်ကုဒ်</label>
                                     <input
                                         type="text" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -1031,20 +1032,20 @@ const InventoryView: React.FC = () => {
                                         placeholder="A-01-01"
                                         id="new-item-rack-code" // Added ID for accessibility
                                     />
-                                    <p className="text-[10px] text-slate-400 mt-1">Specific physical warehouse bin.</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">ဂိုဒေါင်အတွင်းရှိ သီးခြားဘင်နေရာ။</p>
                                 </div>
                             </div>
 
                             <div>
                                 <SearchableSelect
-                                    label="Preferred Supplier"
-                                    placeholder="Select Vendor..."
+                                    label="ဦးစားပေး ရောင်းချသူ"
+                                    placeholder="ရောင်းချသူ ရွေးရန်..."
                                     options={supplierOptions}
                                     value={newItemForm.preferredSupplierId}
                                     onChange={(val) => setNewItemForm({ ...newItemForm, preferredSupplierId: val })}
                                     id="new-item-preferred-supplier" // Added ID for accessibility
                                 />
-                                <p className="text-[10px] text-slate-400 mt-1">Default vendor for Purchase Requests.</p>
+                                <p className="text-[10px] text-slate-400 mt-1">ဝယ်ယူရန်တောင်းဆိုမှုများအတွက် မူလရောင်းချသူ။</p>
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
@@ -1077,7 +1078,7 @@ const InventoryView: React.FC = () => {
                                     <Truck className="text-purple-600" />
                                     Create Goods Shipment (DO)
                                 </h2>
-                                <p className="text-sm text-slate-500">Generate Surat Jalan for material transfer.</p>
+                                <p className="text-sm text-slate-500">ပစ္စည်းပြောင်းရွှေ့ရန် ပို့ဆောင်လွှာ ဖန်တီးပါ။</p>
                             </div>
                             <button onClick={() => setIsShipmentModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                                 <Plus className="rotate-45" size={24} />
@@ -1088,7 +1089,7 @@ const InventoryView: React.FC = () => {
                             {/* Header Info */}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-purple-50 p-4 rounded-xl border border-purple-100">
                                 <div>
-                                    <label htmlFor="shipment-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Date</label>
+                                    <label htmlFor="shipment-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ရက်စွဲ</label>
                                     <input
                                         type="date" required
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
@@ -1098,19 +1099,19 @@ const InventoryView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="shipment-do-number" className="block text-xs font-bold text-slate-500 mb-1 uppercase">DO Number (Optional)</label>
+                                    <label htmlFor="shipment-do-number" className="block text-xs font-bold text-slate-500 mb-1 uppercase">DO နံပါတ် (မဖြစ်မနေမဟုတ်)</label>
                                     <input
                                         type="text"
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                                         value={shipmentForm.doNumber}
                                         onChange={e => setShipmentForm({ ...shipmentForm, doNumber: e.target.value })}
-                                        placeholder="Auto-generate if empty"
+                                        placeholder="ဗလာဖြစ်ပါက အလိုအလျောက်ဖန်တီးမည်"
                                         id="shipment-do-number" // Added ID for accessibility
                                     />
                                 </div>
                                 <div>
                                     <SearchableSelect
-                                        label="Source Location"
+                                        label="မူလတည်နေရာ"
                                         options={locationOptions}
                                         value={shipmentForm.sourceLocationId}
                                         onChange={(val) => setShipmentForm({ ...shipmentForm, sourceLocationId: val })}
@@ -1119,15 +1120,15 @@ const InventoryView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="shipment-destination-type" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Destination Type</label>
+                                    <label htmlFor="shipment-destination-type" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ပို့ဆောင်မည့်နေရာ အမျိုးအစား</label>
                                     <select
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                                         value={shipmentForm.targetType}
                                         onChange={e => setShipmentForm({ ...shipmentForm, targetType: e.target.value as 'LOCATION' | 'VENDOR' })}
                                         id="shipment-destination-type" // Added ID for accessibility
                                     >
-                                        <option value="LOCATION">Inter-Site Transfer</option>
-                                        <option value="VENDOR">Return to Vendor</option>
+                                        <option value="LOCATION">လုပ်ငန်းခွင်အချင်းချင်း ပြောင်းရွှေ့ခြင်း</option>
+                                        <option value="VENDOR">ရောင်းချသူထံ ပြန်အပ်ခြင်း</option>
                                     </select>
                                 </div>
                             </div>
@@ -1147,7 +1148,7 @@ const InventoryView: React.FC = () => {
 
                                 {/* Transport Provider Selection */}
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                    <span className="block text-xs font-bold text-slate-500 mb-3 uppercase">Transport Provider</span>
+                                    <span className="block text-xs font-bold text-slate-500 mb-3 uppercase">သယ်ယူပို့ဆောင်သူ</span>
                                     <div className="flex gap-4 mb-4" role="radiogroup" aria-labelledby="transport-provider-label">
                                         <label htmlFor="internal-fleet-radio" className="flex items-center gap-2 cursor-pointer">
                                             <input
@@ -1158,7 +1159,7 @@ const InventoryView: React.FC = () => {
                                                 className="w-4 h-4 text-purple-600"
                                                 id="internal-fleet-radio" // Added ID for accessibility
                                             />
-                                            <span className="text-sm font-medium text-slate-700">Internal Fleet</span>
+                                            <span className="text-sm font-medium text-slate-700">အတွင်းပိုင်း ယာဉ်အုပ်စု</span>
                                         </label>
                                         <label htmlFor="external-provider-radio" className="flex items-center gap-2 cursor-pointer">
                                             <input
@@ -1169,7 +1170,7 @@ const InventoryView: React.FC = () => {
                                                 className="w-4 h-4 text-purple-600"
                                                 id="external-provider-radio" // Added ID for accessibility
                                             />
-                                            <span className="text-sm font-medium text-slate-700">Third Party / External</span>
+                                            <span className="text-sm font-medium text-slate-700">ပြင်ပအဖွဲ့ / ပြင်ပဝန်ဆောင်မှု</span>
                                         </label>
                                     </div>
 
@@ -1178,7 +1179,7 @@ const InventoryView: React.FC = () => {
                                             <>
                                                 <div>
                                                     <SearchableSelect
-                                                        label="Driver (Internal)"
+                                                        label="ယာဉ်မောင်း (အတွင်းပိုင်း)"
                                                         options={driverOptions}
                                                         value={shipmentForm.driverId}
                                                         onChange={(val) => setShipmentForm({ ...shipmentForm, driverId: val })}
@@ -1187,7 +1188,7 @@ const InventoryView: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <SearchableSelect
-                                                        label="Vehicle / Unit (Internal)"
+                                                        label="အတွင်းပိုင်း ယာဉ် / ယူနစ်"
                                                         options={vehicleOptions}
                                                         value={shipmentForm.vehicleId}
                                                         onChange={(val) => setShipmentForm({ ...shipmentForm, vehicleId: val })}
@@ -1198,31 +1199,31 @@ const InventoryView: React.FC = () => {
                                         ) : (
                                             <>
                                                 <div>
-                                                    <label htmlFor="shipment-driver-name" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Driver Name</label>
+                                                    <label htmlFor="shipment-driver-name" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ယာဉ်မောင်းအမည်</label>
                                                     <input
                                                         type="text"
                                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                                                         value={shipmentForm.driverName}
                                                         onChange={e => setShipmentForm({ ...shipmentForm, driverName: e.target.value })}
-                                                        placeholder="External Driver Name"
+                                                        placeholder="ပြင်ပယာဉ်မောင်းအမည်"
                                                         id="shipment-driver-name" // Added ID for accessibility
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="shipment-transport-unit" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Transport Unit / Vendor</label>
+                                                    <label htmlFor="shipment-transport-unit" className="block text-xs font-bold text-slate-500 mb-1 uppercase">သယ်ယူယာဉ် / ရောင်းချသူ</label>
                                                     <input
                                                         type="text"
                                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                                                         value={shipmentForm.transportUnit}
                                                         onChange={e => setShipmentForm({ ...shipmentForm, transportUnit: e.target.value })}
-                                                        placeholder="Trailer, Cargo, etc."
+                                                        placeholder="Trailer၊ Cargo စသည်"
                                                         id="shipment-transport-unit" // Added ID for accessibility
                                                     />
                                                 </div>
                                             </>
                                         )}
                                         <div>
-                                            <label htmlFor="shipment-police-number" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Police No.</label>
+                                            <label htmlFor="shipment-police-number" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ယာဉ်မှတ်ပုံတင်နံပါတ်</label>
                                             <input
                                                 type="text"
                                                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
@@ -1235,12 +1236,12 @@ const InventoryView: React.FC = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="shipment-notes" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Notes (Optional)</label>
+                                    <label htmlFor="shipment-notes" className="block text-xs font-bold text-slate-500 mb-1 uppercase">မှတ်ချက်များ (မဖြစ်မနေမဟုတ်)</label>
                                     <textarea
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                                         value={shipmentForm.notes}
                                         onChange={e => setShipmentForm({ ...shipmentForm, notes: e.target.value })}
-                                        placeholder="Additional notes about this shipment..."
+                                        placeholder="ဤပို့ဆောင်မှုအတွက် ထပ်ဆောင်းမှတ်ချက်များ..."
                                         rows={2}
                                         id="shipment-notes" // Added ID for accessibility
                                     />
@@ -1250,7 +1251,7 @@ const InventoryView: React.FC = () => {
                             {/* Items Section */}
                             <div className="border rounded-xl overflow-hidden">
                                 <div className="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
-                                    <h4 className="font-bold text-slate-700 text-sm">Shipment Items</h4>
+                                    <h4 className="font-bold text-slate-700 text-sm">ပို့ဆောင်သည့် ပစ္စည်းများ</h4>
                                     <span className="text-xs text-slate-500">{shipmentItems.length} items added</span>
                                 </div>
 
@@ -1258,7 +1259,7 @@ const InventoryView: React.FC = () => {
                                 <div className="p-4 bg-slate-50/50 border-b border-slate-200 grid grid-cols-12 gap-2 items-end">
                                     <div className="col-span-4">
                                         <label className="block w-full">
-                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Select Part</span>
+                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">ပစ္စည်း ရွေးရန်</span>
                                             <select
                                                 className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                                                 value={tempShipmentItem.partId}
@@ -1270,7 +1271,7 @@ const InventoryView: React.FC = () => {
                                                 }}
                                                 id="temp-shipment-part-select"
                                             >
-                                                <option value="">Select Item...</option>
+                                                <option value="">ပစ္စည်းရွေးရန်...</option>
                                                 {parts.map(p => (
                                                     <option key={p.id} value={p.id}>{p.partNumber} - {p.name} (Stock: {p.currentStock})</option>
                                                 ))}
@@ -1279,7 +1280,7 @@ const InventoryView: React.FC = () => {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block w-full">
-                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Unit Code</span>
+                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">ယူနစ်ကုဒ်</span>
                                             <input
                                                 type="text"
                                                 className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
@@ -1292,7 +1293,7 @@ const InventoryView: React.FC = () => {
                                     </div>
                                     <div className="col-span-1">
                                         <label className="block w-full">
-                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Qty</span>
+                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">အရေအတွက်</span>
                                             <input
                                                 type="number" min="1"
                                                 className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
@@ -1304,13 +1305,13 @@ const InventoryView: React.FC = () => {
                                     </div>
                                     <div className="col-span-4">
                                         <label className="block w-full">
-                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">Notes</span>
+                                            <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase">မှတ်ချက်များ</span>
                                             <input
                                                 type="text"
                                                 className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                                                 value={tempShipmentItem.notes}
                                                 onChange={e => setTempShipmentItem({ ...tempShipmentItem, notes: e.target.value })}
-                                                placeholder="Item condition..."
+                                                placeholder="ပစ္စည်းအခြေအနေ..."
                                                 id="temp-shipment-notes"
                                             />
                                         </label>
@@ -1321,7 +1322,7 @@ const InventoryView: React.FC = () => {
                                             onClick={handleAddShipmentItem}
                                             disabled={!tempShipmentItem.partId}
                                             className="w-full bg-purple-600 text-white rounded-lg py-1.5 flex justify-center items-center hover:bg-purple-700 disabled:opacity-50"
-                                            aria-label="Add Item"
+                                            aria-label="ပစ္စည်းထည့်ရန်"
                                         >
                                             <Plus size={16} />
                                         </button>
@@ -1333,17 +1334,17 @@ const InventoryView: React.FC = () => {
                                     <table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 text-slate-500 font-semibold sticky top-0">
                                             <tr>
-                                                <th className="px-4 py-2">Part Number</th>
-                                                <th className="px-4 py-2">Item Name</th>
-                                                <th className="px-4 py-2">Unit Code</th>
-                                                <th className="px-4 py-2 text-center">Qty</th>
-                                                <th className="px-4 py-2">Notes</th>
+                                                <th className="px-4 py-2">ပစ္စည်းနံပါတ်</th>
+                                                <th className="px-4 py-2">ပစ္စည်းအမည်</th>
+                                                <th className="px-4 py-2">ယူနစ်ကုဒ်</th>
+                                                <th className="px-4 py-2 text-center">အရေအတွက်</th>
+                                                <th className="px-4 py-2">မှတ်ချက်များ</th>
                                                 <th className="px-4 py-2 w-10"></th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {shipmentItems.length === 0 ? (
-                                                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 italic">No items added yet.</td></tr>
+                                                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 italic">ပစ္စည်း မထည့်ရသေးပါ။</td></tr>
                                             ) : (
                                                 shipmentItems.map((item, idx) => (
                                                     <tr key={idx} className="hover:bg-slate-50">
@@ -1398,7 +1399,7 @@ const InventoryView: React.FC = () => {
                         {/* Header */}
                         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-start">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Shipment Details</h3>
+                                <h3 className="text-xl font-bold text-slate-900">ပို့ဆောင်မှု အသေးစိတ်</h3>
                                 <p className="text-sm text-slate-500 mt-1">DO: {viewingShipment.doNumber}</p>
                             </div>
                             <button onClick={() => setViewingShipment(null)} className="text-slate-400 hover:text-slate-600 text-2xl">✕</button>
@@ -1408,26 +1409,26 @@ const InventoryView: React.FC = () => {
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {/* Status Badge */}
                             <div className="flex items-center gap-4">
-                                <span className="text-sm font-bold text-slate-600">Status:</span>
+                                <span className="text-sm font-bold text-slate-600">အခြေအနေ:</span>
                                 {getStatusBadge(viewingShipment.status)}
                             </div>
 
                             {/* General Info */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 mb-1">Date</span>
+                                    <span className="block text-xs font-bold text-slate-500 mb-1">ရက်စွဲ</span>
                                     <p className="text-sm font-semibold">{viewingShipment.date}</p>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 mb-1">DO Number</span>
+                                    <span className="block text-xs font-bold text-slate-500 mb-1">DO နံပါတ်</span>
                                     <p className="text-sm font-mono font-bold text-blue-600">{viewingShipment.doNumber}</p>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 mb-1">From</span>
+                                    <span className="block text-xs font-bold text-slate-500 mb-1">မှ</span>
                                     <p className="text-sm font-semibold">{viewingShipment.sourceLocationName}</p>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 mb-1">To</span>
+                                    <span className="block text-xs font-bold text-slate-500 mb-1">သို့</span>
                                     <p className="text-sm font-semibold">{viewingShipment.targetName}</p>
                                     <p className="text-xs text-slate-500">{viewingShipment.targetType}</p>
                                 </div>
@@ -1435,38 +1436,38 @@ const InventoryView: React.FC = () => {
 
                             {/* Transport Info */}
                             <div className="border-t pt-4">
-                                <h4 className="font-bold text-slate-700 mb-3">Transport Information</h4>
+                                <h4 className="font-bold text-slate-700 mb-3">သယ်ယူပို့ဆောင်ရေး အချက်အလက်</h4>
                                 <div className="grid grid-cols-4 gap-4">
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">Carrier/Driver</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">သယ်ယူပို့ဆောင်သူ / ယာဉ်မောင်း</p>
                                         <p className="font-semibold text-sm">{viewingShipment.driverName}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">Vehicle Type</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">ယာဉ်အမျိုးအစား</p>
                                         <p className="font-semibold text-sm">{viewingShipment.transportUnit}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">License Plate</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">ယာဉ်နံပါတ်ပြား</p>
                                         <p className="font-mono font-bold text-sm">{viewingShipment.policeNumber}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">Shipment Date</p>
-                                        <p className="font-semibold text-sm">{new Date(viewingShipment.date).toLocaleDateString('en-GB')}</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">ပို့ဆောင်သည့်ရက်</p>
+                                        <p className="font-semibold text-sm">{formatDate(viewingShipment.date)}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Items Table */}
                             <div className="border-t pt-4">
-                                <h4 className="font-bold text-slate-700 mb-3">Items ({viewingShipment.items.length})</h4>
+                                <h4 className="font-bold text-slate-700 mb-3">ပစ္စည်းများ ({viewingShipment.items.length})</h4>
                                 <table className="w-full text-sm">
                                     <thead className="bg-slate-50 border-b">
                                         <tr>
-                                            <th className="px-3 py-2 text-left text-xs font-bold">Part Number</th>
-                                            <th className="px-3 py-2 text-left text-xs font-bold">Description</th>
-                                            <th className="px-3 py-2 text-center text-xs font-bold">Qty</th>
-                                            <th className="px-3 py-2 text-center text-xs font-bold">Unit Code</th>
-                                            <th className="px-3 py-2 text-left w-32 text-xs font-bold">Remarks</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold">ပစ္စည်းနံပါတ်</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold">ဖော်ပြချက်</th>
+                                            <th className="px-3 py-2 text-center text-xs font-bold">အရေအတွက်</th>
+                                            <th className="px-3 py-2 text-center text-xs font-bold">ယူနစ်ကုဒ်</th>
+                                            <th className="px-3 py-2 text-left w-32 text-xs font-bold">မှတ်ချက်များ</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
@@ -1486,7 +1487,7 @@ const InventoryView: React.FC = () => {
                             {/* Notes */}
                             {viewingShipment.notes && (
                                 <div className="border-t pt-4">
-                                    <span className="block text-xs font-bold text-slate-500 mb-2">Notes</span>
+                                    <span className="block text-xs font-bold text-slate-500 mb-2">မှတ်ချက်များ</span>
                                     <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded">{viewingShipment.notes}</p>
                                 </div>
                             )}
@@ -1523,24 +1524,24 @@ const InventoryView: React.FC = () => {
                                         </div>
                                         <div className="border-l-2 border-slate-300 pl-3">
                                             <h1 className="text-xl font-bold text-slate-900 leading-tight">PT. JAVA PERSADA MANDIRI</h1>
-                                            <p className="text-xs text-slate-600 uppercase tracking-wide">Mining Contractor & Heavy Equipment Rental</p>
+                                            <p className="text-xs text-slate-600 uppercase tracking-wide">သတ္တုတွင်းကန်ထရိုက်တာနှင့် အကြီးစားစက်ယာဉ် ငှားရမ်းမှု</p>
                                         </div>
                                     </div>
                                     <div className="text-xs text-slate-600 space-y-0.5 ml-1">
                                         <p>Jl. Ahmad Yani No. 123, Banjarmasin, Kalimantan Selatan 70249</p>
-                                        <p>Tel: +62 511 1234567 | Fax: +62 511 1234568</p>
+                                        <p>ဖုန်း: +62 511 1234567 | ဖက်စ်: +62 511 1234568</p>
                                         <p>Email: contact@example.com | www.example.com</p>
                                     </div>
                                 </div>
 
                                 {/* Document Title & Number */}
                                 <div className="text-right">
-                                    <h2 className="text-3xl font-bold text-slate-900 mb-2">DELIVERY ORDER</h2>
+                                    <h2 className="text-3xl font-bold text-slate-900 mb-2">ပို့ဆောင်လွှာ</h2>
                                     <div className="bg-slate-900 text-white px-4 py-2 rounded-lg inline-block">
-                                        <p className="text-xs font-semibold mb-0.5">DO NUMBER</p>
+                                        <p className="text-xs font-semibold mb-0.5">DO နံပါတ်</p>
                                         <p className="text-lg font-mono font-bold tracking-wider">{printingShipment.doNumber}</p>
                                     </div>
-                                    <p className="text-xs text-slate-600 mt-2">Date: {new Date(printingShipment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                    <p className="text-xs text-slate-600 mt-2">ရက်စွဲ: {formatDate(printingShipment.date)}</p>
                                 </div>
                             </div>
 
@@ -1550,10 +1551,10 @@ const InventoryView: React.FC = () => {
                                 <div className="border-2 border-slate-200 rounded-lg p-4 bg-slate-50">
                                     <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-300">
                                         <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-600">Ship From (Consignor)</h3>
+                                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-600">ပေးပို့ရာနေရာ (ပေးပို့သူ)</h3>
                                     </div>
                                     <p className="font-bold text-lg text-slate-900 mb-1">{printingShipment.sourceLocationName}</p>
-                                    <p className="text-sm text-slate-600">Site/Warehouse Location</p>
+                                    <p className="text-sm text-slate-600">လုပ်ငန်းခွင် / ဂိုဒေါင်တည်နေရာ</p>
                                     <p className="text-xs text-slate-500 mt-2">JpMonitor</p>
                                 </div>
 
@@ -1561,7 +1562,7 @@ const InventoryView: React.FC = () => {
                                 <div className="border-2 border-slate-200 rounded-lg p-4 bg-slate-50">
                                     <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-300">
                                         <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-600">Ship To (Consignee)</h3>
+                                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-600">လက်ခံရာနေရာ (လက်ခံသူ)</h3>
                                     </div>
                                     <p className="font-bold text-lg text-slate-900 mb-1">{printingShipment.targetName}</p>
                                     <p className="text-sm text-slate-600">{printingShipment.targetType === 'LOCATION' ? 'Site Location' : 'Vendor / Supplier'}</p>
@@ -1579,37 +1580,37 @@ const InventoryView: React.FC = () => {
                                 </h3>
                                 <div className="grid grid-cols-4 gap-4">
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">Carrier/Driver</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">သယ်ယူပို့ဆောင်သူ / ယာဉ်မောင်း</p>
                                         <p className="font-semibold text-sm">{printingShipment.driverName}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">Vehicle Type</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">ယာဉ်အမျိုးအစား</p>
                                         <p className="font-semibold text-sm">{printingShipment.transportUnit}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">License Plate</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">ယာဉ်နံပါတ်ပြား</p>
                                         <p className="font-mono font-bold text-sm">{printingShipment.policeNumber}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1 uppercase">Shipment Date</p>
-                                        <p className="font-semibold text-sm">{new Date(printingShipment.date).toLocaleDateString('en-GB')}</p>
+                                        <p className="text-xs text-slate-500 mb-1 uppercase">ပို့ဆောင်သည့်ရက်</p>
+                                        <p className="font-semibold text-sm">{formatDate(printingShipment.date)}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Items Table */}
                             <div className="mb-6">
-                                <h3 className="text-sm font-bold uppercase mb-3 text-slate-700">Items Shipped</h3>
+                                <h3 className="text-sm font-bold uppercase mb-3 text-slate-700">ပို့ဆောင်သည့် ပစ္စည်းများ</h3>
                                 <table className="w-full border-collapse border-2 border-slate-300">
                                     <thead>
                                         <tr className="bg-slate-800 text-white text-xs uppercase">
-                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-12">No.</th>
-                                            <th className="border border-slate-600 px-3 py-2.5 text-left">Part Number</th>
-                                            <th className="border border-slate-600 px-3 py-2.5 text-left">Description</th>
-                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-20">Qty</th>
-                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-16">Unit</th>
-                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-24">Unit Code</th>
-                                            <th className="border border-slate-600 px-3 py-2.5 text-left w-32">Remarks</th>
+                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-12">စဉ်</th>
+                                            <th className="border border-slate-600 px-3 py-2.5 text-left">ပစ္စည်းနံပါတ်</th>
+                                            <th className="border border-slate-600 px-3 py-2.5 text-left">ဖော်ပြချက်</th>
+                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-20">အရေအတွက်</th>
+                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-16">ယူနစ်</th>
+                                            <th className="border border-slate-600 px-3 py-2.5 text-center w-24">ယူနစ်ကုဒ်</th>
+                                            <th className="border border-slate-600 px-3 py-2.5 text-left w-32">မှတ်ချက်များ</th>
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm">
@@ -1642,17 +1643,17 @@ const InventoryView: React.FC = () => {
 
                             {/* Terms & Conditions */}
                             <div className="border-2 border-slate-300 rounded-lg p-4 bg-slate-50 mb-6">
-                                <h3 className="text-xs font-bold uppercase mb-2 text-slate-700">Terms & Conditions</h3>
+                                <h3 className="text-xs font-bold uppercase mb-2 text-slate-700">စည်းကမ်းချက်များ</h3>
                                 <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
                                     <li>This Delivery Order is an official proof of shipment from JpMonitor.</li>
-                                    <li>All items are delivered in good condition unless otherwise noted in the remarks.</li>
-                                    <li>The consignee must inspect and verify all items upon receipt.</li>
-                                    <li>This document is not a sales invoice and will be followed by an official invoice.</li>
-                                    <li>Claims for shortages or damages must be reported within 24 hours of receipt.</li>
+                                    <li>မှတ်ချက်တွင် အခြားဖော်ပြထားခြင်းမရှိပါက ပစ္စည်းအားလုံးကို ကောင်းမွန်သောအခြေအနေဖြင့် ပို့ဆောင်ထားပါသည်။</li>
+                                    <li>လက်ခံသူသည် ပစ္စည်းအားလုံးကို လက်ခံရရှိချိန်တွင် စစ်ဆေးအတည်ပြုရမည်။</li>
+                                    <li>ဤစာရွက်စာတမ်းသည် အရောင်းငွေတောင်းခံလွှာ မဟုတ်ဘဲ တရားဝင်ငွေတောင်းခံလွှာဖြင့် ဆက်လက်ပေးပို့မည်။</li>
+                                    <li>ပစ္စည်းလျော့နည်းမှု သို့မဟုတ် ပျက်စီးမှုများကို လက်ခံရရှိပြီး ၂၄ နာရီအတွင်း တင်ပြရမည်။</li>
                                 </ul>
                                 {printingShipment.notes && (
                                     <div className="mt-3 pt-3 border-t border-slate-300">
-                                        <p className="text-xs font-semibold text-slate-700">Special Notes:</p>
+                                        <p className="text-xs font-semibold text-slate-700">အထူးမှတ်ချက်များ:</p>
                                         <p className="text-xs text-slate-600 italic">{printingShipment.notes}</p>
                                     </div>
                                 )}
@@ -1661,32 +1662,32 @@ const InventoryView: React.FC = () => {
                             {/* Signatures */}
                             <div className="grid grid-cols-3 gap-6 pt-4">
                                 <div className="text-center">
-                                    <p className="text-xs font-bold mb-1 uppercase text-slate-700">Authorized By</p>
+                                    <p className="text-xs font-bold mb-1 uppercase text-slate-700">ခွင့်ပြုသူ</p>
                                     <p className="text-xs text-slate-500 mb-12">(Consignor)</p>
                                     <div className="border-t-2 border-slate-800 w-40 mx-auto mb-1"></div>
                                     <p className="text-xs font-semibold text-slate-900">{printingShipment.createdBy || 'Warehouse Manager'}</p>
-                                    <p className="text-xs text-slate-500">Date: _____________</p>
+                                    <p className="text-xs text-slate-500">ရက်စွဲ: _____________</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-xs font-bold mb-1 uppercase text-slate-700">Carrier / Driver</p>
+                                    <p className="text-xs font-bold mb-1 uppercase text-slate-700">သယ်ယူပို့ဆောင်သူ / ယာဉ်မောင်း</p>
                                     <p className="text-xs text-slate-500 mb-12">(Transport)</p>
                                     <div className="border-t-2 border-slate-800 w-40 mx-auto mb-1"></div>
                                     <p className="text-xs font-semibold text-slate-900">{printingShipment.driverName}</p>
-                                    <p className="text-xs text-slate-500">Date: _____________</p>
+                                    <p className="text-xs text-slate-500">ရက်စွဲ: _____________</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-xs font-bold mb-1 uppercase text-slate-700">Received By</p>
+                                    <p className="text-xs font-bold mb-1 uppercase text-slate-700">လက်ခံသူ</p>
                                     <p className="text-xs text-slate-500 mb-12">(Consignee)</p>
                                     <div className="border-t-2 border-slate-800 w-40 mx-auto mb-1"></div>
-                                    <p className="text-xs font-semibold text-slate-900">Name &quot; Company Stamp</p>
-                                    <p className="text-xs text-slate-500">Date: _____________</p>
+                                    <p className="text-xs font-semibold text-slate-900">အမည် / ကုမ္ပဏီတံဆိပ်</p>
+                                    <p className="text-xs text-slate-500">ရက်စွဲ: _____________</p>
                                 </div>
                             </div>
 
                             {/* Footer */}
                             <div className="border-t border-slate-300 pt-4 mt-6 text-center">
-                                <p className="text-xs text-slate-400">Generated by jpmonitor System on {new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                                <p className="text-xs text-slate-400 mt-1">This is a computer-generated document and is valid without a signature.</p>
+                                <p className="text-xs text-slate-400">Generated by jpmonitor System on {formatDateTime(new Date())}</p>
+                                <p className="text-xs text-slate-400 mt-1">ဤစာရွက်စာတမ်းကို ကွန်ပျူတာဖြင့် ဖန်တီးထားပြီး လက်မှတ်မပါဘဲ အကျုံးဝင်သည်။</p>
                             </div>
                         </div>
                     )}

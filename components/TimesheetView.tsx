@@ -1,3 +1,4 @@
+import { formatDate, formatNumber } from '../utils/locale';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { employeesAPI, equipmentAPI, locationsAPI, dailyLogsAPI } from '../services/api';
 import { Plus, Printer, Search, Calendar, Clock } from 'lucide-react'; // Removed User, Truck, MapPin
@@ -105,7 +106,7 @@ const TimesheetView: React.FC = () => {
         if (printRef.current) {
             const printWindow = window.open('', '', 'height=800,width=1000');
             if (printWindow) {
-                printWindow.document.write('<html><head><title>Daily Equipment Report</title>');
+                printWindow.document.write('<html><head><title>နေ့စဉ်စက်ယာဉ်အစီရင်ခံစာ</title>');
                 printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
                 printWindow.document.write('<style>@media print { body { -webkit-print-color-adjust: exact; } table { font-size: 10px; } .page-break { page-break-before: always; } }</style>');
                 printWindow.document.write('</head><body class="bg-white">');
@@ -148,15 +149,15 @@ const TimesheetView: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="flex items-center justify-center h-64"><div className="text-slate-500">Loading...</div></div>;
+        return <div className="flex items-center justify-center h-64"><div className="text-slate-500">တင်နေပါသည်...</div></div>;
     }
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Timesheets & HM Control</h2>
-                    <p className="text-slate-500 text-sm">Daily Equipment Hours & Operator Logging</p>
+                    <h2 className="text-2xl font-bold text-slate-800">အလုပ်ချိန်မှတ်တမ်းများနှင့် HM ထိန်းချုပ်ရေး</h2>
+                    <p className="text-slate-500 text-sm">နေ့စဉ်စက်ယာဉ်နာရီနှင့် စက်မောင်းသူ မှတ်တမ်းတင်ခြင်း</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -179,7 +180,7 @@ const TimesheetView: React.FC = () => {
             <div className="bg-white p-4 rounded-xl border border-slate-200 flex gap-4 items-center shadow-sm">
                 <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-slate-50">
                     <Calendar size={16} className="text-slate-400" />
-                    <label htmlFor="filter-date" className="sr-only">Filter by Date</label>
+                    <label htmlFor="filter-date" className="sr-only">ရက်စွဲဖြင့် စစ်ထုတ်ရန်</label>
                     <input
                         id="filter-date"
                         type="date"
@@ -190,17 +191,17 @@ const TimesheetView: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-slate-50 w-64">
                     <Search size={16} className="text-slate-400" />
-                    <label htmlFor="filter-unit" className="sr-only">Filter by Unit Code</label>
+                    <label htmlFor="filter-unit" className="sr-only">ယူနစ်ကုဒ်ဖြင့် စစ်ထုတ်ရန်</label>
                     <input
                         id="filter-unit"
                         type="text"
-                        placeholder="Search Unit Code..."
+                        placeholder="ယူနစ်ကုဒ် ရှာရန်..."
                         className="bg-transparent text-sm outline-none w-full text-slate-700"
                         value={filterUnit}
                         onChange={e => setFilterUnit(e.target.value)}
                     />
                 </div>
-                <button onClick={() => { setFilterDate(''); setFilterUnit(''); }} className="text-xs text-blue-600 font-bold hover:underline">Clear Filters</button>
+                <button onClick={() => { setFilterDate(''); setFilterUnit(''); }} className="text-xs text-blue-600 font-bold hover:underline">စစ်ထုတ်မှုများ ရှင်းရန်</button>
             </div>
 
             {/* Data Table */}
@@ -208,14 +209,14 @@ const TimesheetView: React.FC = () => {
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                         <tr>
-                            <th className="px-6 py-4">Date / Shift</th>
-                            <th className="px-6 py-4">Unit Code</th>
-                            <th className="px-6 py-4">Operator</th>
-                            <th className="px-6 py-4">Location</th>
-                            <th className="px-6 py-4 text-right">Start HM</th>
-                            <th className="px-6 py-4 text-right">End HM</th>
-                            <th className="px-6 py-4 text-right">Total Hours</th>
-                            <th className="px-6 py-4">Activity</th>
+                            <th className="px-6 py-4">ရက်စွဲ / အလုပ်ချိန်</th>
+                            <th className="px-6 py-4">ယူနစ်ကုဒ်</th>
+                            <th className="px-6 py-4">စက်မောင်းသူ</th>
+                            <th className="px-6 py-4">တည်နေရာ</th>
+                            <th className="px-6 py-4 text-right">စတင် HM</th>
+                            <th className="px-6 py-4 text-right">ပြီးဆုံး HM</th>
+                            <th className="px-6 py-4 text-right">စုစုပေါင်းနာရီ</th>
+                            <th className="px-6 py-4">လုပ်ဆောင်မှု</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -233,8 +234,8 @@ const TimesheetView: React.FC = () => {
                                     <td className="px-6 py-4 font-bold text-slate-900">{unitCode}</td>
                                     <td className="px-6 py-4 text-slate-600">{operatorName}</td>
                                     <td className="px-6 py-4 text-slate-500 text-xs">{locationName}</td>
-                                    <td className="px-6 py-4 text-right font-mono text-slate-500">{log.startHM.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-right font-mono text-slate-900 font-bold">{log.endHM.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-right font-mono text-slate-500">{formatNumber(log.startHM)}</td>
+                                    <td className="px-6 py-4 text-right font-mono text-slate-900 font-bold">{formatNumber(log.endHM)}</td>
                                     <td className="px-6 py-4 text-right">
                                         <span className="bg-green-100 text-green-800 font-bold px-2 py-1 rounded text-xs">
                                             {log.totalHours} hrs
@@ -248,7 +249,7 @@ const TimesheetView: React.FC = () => {
                             );
                         })}
                         {filteredLogs.length === 0 && (
-                            <tr><td colSpan={8} className="p-8 text-center text-slate-400 italic">No timesheet records found.</td></tr>
+                            <tr><td colSpan={8} className="p-8 text-center text-slate-400 italic">အလုပ်ချိန်မှတ်တမ်း မတွေ့ပါ။</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -268,11 +269,11 @@ const TimesheetView: React.FC = () => {
                             <div className="h-16 w-px bg-slate-300"></div>
                             <div className="flex flex-col justify-center h-full pt-1">
                                 <h1 className="text-2xl font-extrabold text-red-600 tracking-tight leading-none">PT JAVA PERSADA MANDIRI</h1>
-                                <p className="text-xs font-bold text-blue-900 tracking-[0.35em] mt-1">GENERAL CONTRACTOR</p>
+                                <p className="text-xs font-bold text-blue-900 tracking-[0.35em] mt-1">အထွေထွေကန်ထရိုက်တာ</p>
                             </div>
                         </div>
                         <div className="text-right text-[9px] text-slate-700 leading-tight font-medium">
-                            <p className="font-bold text-slate-900 mb-1">HEAD OFFICE</p>
+                            <p className="font-bold text-slate-900 mb-1">ရုံးချုပ်</p>
                             <p>Jl.Trikora RT.11 RW.02 No.57</p>
                             <p>Kel.Gt Manggis, Banjarbaru</p>
                             <p>Kalimantan Selatan 70721</p>
@@ -284,26 +285,26 @@ const TimesheetView: React.FC = () => {
                     {/* Report Title */}
                     <div className="flex justify-between items-end mb-6">
                         <div>
-                            <h2 className="text-xl font-bold uppercase text-slate-900">Equipment Daily Timesheet</h2>
+                            <h2 className="text-xl font-bold uppercase text-slate-900">နေ့စဉ်စက်ယာဉ် အလုပ်ချိန်မှတ်တမ်း</h2>
                             <p className="text-xs text-slate-500 uppercase font-bold">Report Period: {filterDate || 'All Time'}</p>
                         </div>
                         <div className="text-right text-xs">
-                            <p>Generated: {new Date().toLocaleDateString()}</p>
-                            <p>Unit Filter: {filterUnit || 'All Units'}</p>
+                            <p>ဖန်တီးသည့်ရက်: {formatDate(new Date())}</p>
+                            <p>ယူနစ် Filter: {filterUnit || 'All Units'}</p>
                         </div>
                     </div>
 
                     <table className="w-full text-xs border-collapse border border-slate-300 mb-6">
                         <thead className="bg-slate-100">
                             <tr>
-                                <th className="border border-slate-300 p-2 text-left">Date</th>
-                                <th className="border border-slate-300 p-2 text-left">Shift</th>
-                                <th className="border border-slate-300 p-2 text-left">Unit</th>
-                                <th className="border border-slate-300 p-2 text-left">Operator</th>
-                                <th className="border border-slate-300 p-2 text-right">Start HM</th>
-                                <th className="border border-slate-300 p-2 text-right">End HM</th>
-                                <th className="border border-slate-300 p-2 text-right">Hours</th>
-                                <th className="border border-slate-300 p-2 text-left">Activity/Remarks</th>
+                                <th className="border border-slate-300 p-2 text-left">ရက်စွဲ</th>
+                                <th className="border border-slate-300 p-2 text-left">အလုပ်ချိန်</th>
+                                <th className="border border-slate-300 p-2 text-left">ယူနစ်</th>
+                                <th className="border border-slate-300 p-2 text-left">စက်မောင်းသူ</th>
+                                <th className="border border-slate-300 p-2 text-right">စတင် HM</th>
+                                <th className="border border-slate-300 p-2 text-right">ပြီးဆုံး HM</th>
+                                <th className="border border-slate-300 p-2 text-right">နာရီ</th>
+                                <th className="border border-slate-300 p-2 text-left">လုပ်ဆောင်မှု / မှတ်ချက်</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -322,7 +323,7 @@ const TimesheetView: React.FC = () => {
                         </tbody>
                         <tfoot>
                             <tr className="bg-slate-50 font-bold">
-                                <td colSpan={6} className="border border-slate-300 p-2 text-right">TOTAL WORKING HOURS</td>
+                                <td colSpan={6} className="border border-slate-300 p-2 text-right">စုစုပေါင်း အလုပ်လုပ်ချိန်</td>
                                 <td className="border border-slate-300 p-2 text-right">
                                     {filteredLogs.reduce((acc, curr) => acc + curr.totalHours, 0).toFixed(1)}
                                 </td>
@@ -333,7 +334,7 @@ const TimesheetView: React.FC = () => {
 
                     {/* Summary by Unit */}
                     <div className="mb-8 break-inside-avoid">
-                        <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">Summary by Unit</h3>
+                        <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">ယူနစ်အလိုက် အနှစ်ချုပ်</h3>
                         <div className="grid grid-cols-4 gap-4">
                             {unitSummary.map(([code, hours]) => (
                                 <div key={code} className="border border-slate-200 p-2 flex justify-between items-center text-xs">
@@ -347,11 +348,11 @@ const TimesheetView: React.FC = () => {
                     <div className="mt-12 flex justify-between px-12 text-center text-xs break-inside-avoid">
                         <div>
                             <div className="h-16 border-b border-black w-32 mb-1"></div>
-                            <p>Supervisor</p>
+                            <p>ကြီးကြပ်သူ</p>
                         </div>
                         <div>
                             <div className="h-16 border-b border-black w-32 mb-1"></div>
-                            <p>Project Manager</p>
+                            <p>ပရောဂျက်မန်နေဂျာ</p>
                         </div>
                     </div>
                 </div>
@@ -363,8 +364,8 @@ const TimesheetView: React.FC = () => {
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-fade-in">
                         <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Input Daily HM</h3>
-                                <p className="text-xs text-slate-500 mt-1">Updates Asset Master Data automatically</p>
+                                <h3 className="text-xl font-bold text-slate-900">နေ့စဉ် HM ထည့်သွင်းရန်</h3>
+                                <p className="text-xs text-slate-500 mt-1">ပိုင်ဆိုင်မှုအခြေခံဒေတာကို အလိုအလျောက်အပ်ဒိတ်လုပ်သည်</p>
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
                         </div>
@@ -372,7 +373,7 @@ const TimesheetView: React.FC = () => {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="ts-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Date</label>
+                                    <label htmlFor="ts-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">ရက်စွဲ</label>
                                     <input
                                         id="ts-date"
                                         type="date" required
@@ -382,22 +383,22 @@ const TimesheetView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="ts-shift" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Shift</label>
+                                    <label htmlFor="ts-shift" className="block text-xs font-bold text-slate-500 mb-1 uppercase">အလုပ်ချိန်</label>
                                     <select
                                         id="ts-shift"
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                         value={formData.shift}
                                         onChange={e => setFormData({ ...formData, shift: e.target.value })}
                                     >
-                                        <option value="Day">Day</option>
-                                        <option value="Night">Night</option>
+                                        <option value="Day">နေ့ပိုင်း</option>
+                                        <option value="Night">ညပိုင်း</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div>
                                 <SearchableSelect
-                                    label="Select Equipment"
+                                    label="စက်ယာဉ် ရွေးရန်"
                                     options={equipmentOptions}
                                     value={formData.equipmentId}
                                     onChange={handleUnitSelect}
@@ -408,7 +409,7 @@ const TimesheetView: React.FC = () => {
 
                             <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
                                 <div>
-                                    <label htmlFor="ts-start-hm" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Start HM</label>
+                                    <label htmlFor="ts-start-hm" className="block text-xs font-bold text-slate-500 mb-1 uppercase">စတင် HM</label>
                                     <input
                                         id="ts-start-hm"
                                         type="number" required
@@ -418,7 +419,7 @@ const TimesheetView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="ts-end-hm" className="block text-xs font-bold text-green-700 mb-1 uppercase">End HM</label>
+                                    <label htmlFor="ts-end-hm" className="block text-xs font-bold text-green-700 mb-1 uppercase">ပြီးဆုံး HM</label>
                                     <input
                                         id="ts-end-hm"
                                         type="number" required min={formData.startHM}
@@ -430,32 +431,32 @@ const TimesheetView: React.FC = () => {
                             </div>
 
                             <div className="flex items-center justify-between p-3 bg-blue-50 rounded text-blue-800 font-bold text-sm">
-                                <span>Calculated Hours:</span>
+                                <span>တွက်ချက်ထားသော နာရီ:</span>
                                 <span className="text-xl">{calculatedHours} hrs</span>
                             </div>
 
                             <div>
-                                <SearchableSelect label="Operator" options={operatorOptions} value={formData.operatorId} onChange={v => setFormData({ ...formData, operatorId: v })} required id="ts-operator" />
+                                <SearchableSelect label="စက်မောင်းသူ" options={operatorOptions} value={formData.operatorId} onChange={v => setFormData({ ...formData, operatorId: v })} required id="ts-operator" />
                             </div>
 
                             <div>
-                                <SearchableSelect label="Location" options={locationOptions} value={formData.locationId} onChange={v => setFormData({ ...formData, locationId: v })} required id="ts-location" />
+                                <SearchableSelect label="တည်နေရာ" options={locationOptions} value={formData.locationId} onChange={v => setFormData({ ...formData, locationId: v })} required id="ts-location" />
                             </div>
 
                             <div>
-                                <label htmlFor="ts-activity" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Activity / Code</label>
+                                <label htmlFor="ts-activity" className="block text-xs font-bold text-slate-500 mb-1 uppercase">လုပ်ဆောင်မှု / ကုဒ်</label>
                                 <input
                                     id="ts-activity"
                                     type="text"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                     value={formData.activityCode}
                                     onChange={e => setFormData({ ...formData, activityCode: e.target.value })}
-                                    placeholder="e.g. OB Removal"
+                                    placeholder="ဥပမာ - မြေဖုံးလွှာ ဖယ်ရှားခြင်း"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="ts-remarks" className="block text-xs font-bold text-slate-500 mb-1 uppercase">Remarks</label>
+                                <label htmlFor="ts-remarks" className="block text-xs font-bold text-slate-500 mb-1 uppercase">မှတ်ချက်များ</label>
                                 <input
                                     id="ts-remarks"
                                     type="text"
@@ -466,7 +467,7 @@ const TimesheetView: React.FC = () => {
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">Cancel</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">ပယ်ဖျက်ရန်</button>
                                 <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 flex items-center gap-2">
                                     <Clock size={16} /> Save Timesheet
                                 </button>

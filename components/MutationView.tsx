@@ -1,3 +1,4 @@
+import { formatDate, formatNumber, translateValue } from '../utils/locale';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { equipmentAPI, locationsAPI, mutationsAPI } from '../services/api';
 import { MutationType } from '../types';
@@ -335,7 +336,7 @@ const MutationView: React.FC = () => {
     const openPrintWindow = (content: string) => {
         const printWindow = window.open('', '', 'height=800,width=1000');
         if (printWindow) {
-            printWindow.document.write('<html><head><title>Print</title>');
+            printWindow.document.write('<html><head><title>ပုံနှိပ်ရန်</title>');
             printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
             // STRICT CSS: Only apply borders to table cells INSIDE .main-table
             printWindow.document.write('<style>@media print { body { -webkit-print-color-adjust: exact; } table { border-collapse: collapse; } .main-table td, .main-table th { border: 1px solid black; } }</style>');
@@ -367,9 +368,9 @@ const MutationView: React.FC = () => {
         { value: 'Dozer', label: 'Dozer' },
         { value: 'Grader', label: 'Grader' },
         { value: 'LV', label: 'LV (Sarana)' },
-        { value: 'Water Truck', label: 'Water Truck' },
-        { value: 'Tower Lamp', label: 'Tower Lamp' },
-        { value: 'Pump', label: 'Pump' },
+        { value: 'Water Truck', label: 'ရေသယ်ယာဉ်' },
+        { value: 'Tower Lamp', label: 'မီးတိုင်' },
+        { value: 'Pump', label: 'ပန့်' },
     ];
 
     // Helper to find Full Equipment details for the print view
@@ -380,7 +381,7 @@ const MutationView: React.FC = () => {
     // Format Date to Indonesian
     const formatDateID = (dateStr: string) => {
         if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+        return formatDate(dateStr, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
     };
 
     const isSmallUnit = (type: string) => {
@@ -392,15 +393,15 @@ const MutationView: React.FC = () => {
     }
 
     if (loading) {
-        return <div className="flex items-center justify-center h-64"><div className="text-slate-500">Loading...</div></div>;
+        return <div className="flex items-center justify-center h-64"><div className="text-slate-500">တင်နေပါသည်...</div></div>;
     }
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Unit Mutation</h2>
-                    <p className="text-slate-500 text-sm">Logistics, Asset Movements & Lifecycle Control</p>
+                    <h2 className="text-2xl font-bold text-slate-800">ယူနစ် ပြောင်းရွှေ့မှု</h2>
+                    <p className="text-slate-500 text-sm">ပို့ဆောင်ရေး၊ ပိုင်ဆိုင်မှုရွှေ့ပြောင်းမှုနှင့် အသုံးပြုသက်တမ်း ထိန်းချုပ်ရေး</p>
                 </div>
                 <button onClick={handlePrintHistory} className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-700 transition-colors">
                     <Printer size={18} /> Print History Log
@@ -416,8 +417,8 @@ const MutationView: React.FC = () => {
                     <div className="p-3 bg-blue-100 text-blue-600 rounded-full mb-3 group-hover:scale-110 transition-transform">
                         <ArrowRightLeft size={32} />
                     </div>
-                    <h3 className="font-bold text-slate-800">Transfer Location</h3>
-                    <p className="text-xs text-slate-500 mt-1 text-center">Relocate unit between Pits, Workshop or Sites</p>
+                    <h3 className="font-bold text-slate-800">ပြောင်းရွှေ့မည့်တည်နေရာ</h3>
+                    <p className="text-xs text-slate-500 mt-1 text-center">Pit၊ အလုပ်ရုံ သို့မဟုတ် လုပ်ငန်းခွင်များအကြား ယူနစ်ပြောင်းရွှေ့ရန်</p>
                 </button>
 
                 <button
@@ -427,8 +428,8 @@ const MutationView: React.FC = () => {
                     <div className="p-3 bg-green-100 text-green-600 rounded-full mb-3 group-hover:scale-110 transition-transform">
                         <PlusCircle size={32} />
                     </div>
-                    <h3 className="font-bold text-slate-800">New Acquisition</h3>
-                    <p className="text-xs text-slate-500 mt-1 text-center">Register new Purchase or Rental unit</p>
+                    <h3 className="font-bold text-slate-800">အသစ်ဝယ်ယူခြင်း</h3>
+                    <p className="text-xs text-slate-500 mt-1 text-center">ဝယ်ယူထားသော သို့မဟုတ် ငှားရမ်းထားသော ယူနစ်အသစ် မှတ်ပုံတင်ရန်</p>
                 </button>
 
                 <button
@@ -438,8 +439,8 @@ const MutationView: React.FC = () => {
                     <div className="p-3 bg-red-100 text-red-600 rounded-full mb-3 group-hover:scale-110 transition-transform">
                         <BadgeDollarSign size={32} />
                     </div>
-                    <h3 className="font-bold text-slate-800">Disposal / Sale</h3>
-                    <p className="text-xs text-slate-500 mt-1 text-center">Asset write-off, sale or scrap</p>
+                    <h3 className="font-bold text-slate-800">ဖျက်သိမ်း / ရောင်းချခြင်း</h3>
+                    <p className="text-xs text-slate-500 mt-1 text-center">ပိုင်ဆိုင်မှုဖျက်သိမ်း၊ ရောင်းချ သို့မဟုတ် အစိတ်အပိုင်းဖျက်ရန်</p>
                 </button>
             </div>
 
@@ -453,12 +454,12 @@ const MutationView: React.FC = () => {
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                         <tr>
-                            <th className="px-6 py-3">Movement Dates</th>
-                            <th className="px-6 py-3">Type</th>
-                            <th className="px-6 py-3">Unit Info</th>
-                            <th className="px-6 py-3">Logistics Route</th>
-                            <th className="px-6 py-3">Status</th>
-                            <th className="px-6 py-3 text-right">Action</th>
+                            <th className="px-6 py-3">ရွှေ့ပြောင်းသည့်ရက်များ</th>
+                            <th className="px-6 py-3">အမျိုးအစား</th>
+                            <th className="px-6 py-3">ယူနစ်အချက်အလက်</th>
+                            <th className="px-6 py-3">ပို့ဆောင်ရေးလမ်းကြောင်း</th>
+                            <th className="px-6 py-3">အခြေအနေ</th>
+                            <th className="px-6 py-3 text-right">လုပ်ဆောင်ချက်</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -466,15 +467,15 @@ const MutationView: React.FC = () => {
                             <tr key={mut.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-6 py-4 text-slate-600">
                                     <div className="flex flex-col">
-                                        <span className="text-xs text-slate-400 uppercase">Depart:</span>
+                                        <span className="text-xs text-slate-400 uppercase">ထွက်ခွာရန်:</span>
                                         <span className="font-medium">{mut.departureDate}</span>
                                         {mut.arrivalDate ? (
                                             <>
-                                                <span className="text-xs text-slate-400 uppercase mt-1">Arrive:</span>
+                                                <span className="text-xs text-slate-400 uppercase mt-1">ရောက်ရှိရန်:</span>
                                                 <span className="font-medium text-green-600">{mut.arrivalDate}</span>
                                             </>
                                         ) : (
-                                            <span className="text-xs text-amber-500 font-bold mt-1">IN TRANSIT</span>
+                                            <span className="text-xs text-amber-500 font-bold mt-1">ပို့ဆောင်နေသည်</span>
                                         )}
                                     </div>
                                 </td>
@@ -482,7 +483,7 @@ const MutationView: React.FC = () => {
                                     <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${mut.type === MutationType.ACQUISITION ? 'bg-green-100 text-green-700' :
                                         mut.type === MutationType.TRANSFER ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
                                         } `}>
-                                        {mut.type}
+                                        {translateValue(mut.type)}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
@@ -542,7 +543,7 @@ const MutationView: React.FC = () => {
                         ))}
                         {mutations.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-6 py-8 text-center text-slate-400 italic">No mutation records found.</td>
+                                <td colSpan={6} className="px-6 py-8 text-center text-slate-400 italic">ယူနစ်ပြောင်းရွှေ့မှတ်တမ်း မတွေ့ပါ။</td>
                             </tr>
                         )}
                     </tbody>
@@ -566,7 +567,7 @@ const MutationView: React.FC = () => {
                                     {modalType === MutationType.DISPOSAL && <BadgeDollarSign size={20} />}
                                     {modalType === MutationType.ACQUISITION ? 'Acquire New Asset' : modalType === MutationType.TRANSFER ? 'Transfer Unit' : 'Asset Disposal'}
                                 </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Logistics & Asset Control Transaction</p>
+                                <p className="text-xs text-slate-500 mt-0.5">ပို့ဆောင်ရေးနှင့် ပိုင်ဆိုင်မှု ထိန်းချုပ်မှု လှုပ်ရှားမှု</p>
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 hover:bg-white/50 rounded-full p-1 transition-colors">✕</button>
                         </div>
@@ -578,7 +579,7 @@ const MutationView: React.FC = () => {
                                 {/* Section 1: Transaction Basics */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
-                                        <label htmlFor="mutation-do-number" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Reference / DO Number</label>
+                                        <label htmlFor="mutation-do-number" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">ကိုးကားနံပါတ် / DO နံပါတ်</label>
                                         <div className="relative">
                                             <FileText size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input
@@ -592,7 +593,7 @@ const MutationView: React.FC = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label htmlFor="mutation-date" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Transaction Date</label>
+                                        <label htmlFor="mutation-date" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">လှုပ်ရှားသည့်ရက်</label>
                                         <input
                                             id="mutation-date"
                                             type="date" required
@@ -612,8 +613,8 @@ const MutationView: React.FC = () => {
                                     {modalType !== MutationType.ACQUISITION ? (
                                         <div className="space-y-4">
                                             <SearchableSelect
-                                                label="Select Unit"
-                                                placeholder="Search Unit Code..."
+                                                label="ယူနစ် ရွေးရန်"
+                                                placeholder="ယူနစ်ကုဒ် ရှာရန်..."
                                                 options={equipmentOptions}
                                                 value={formData.equipmentId}
                                                 onChange={(val) => {
@@ -629,7 +630,7 @@ const MutationView: React.FC = () => {
                                             />
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label htmlFor="mutation-hm" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Current Meter (HM/KM)</label>
+                                                    <label htmlFor="mutation-hm" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">လက်ရှိမီတာ (HM/KM)</label>
                                                     <input
                                                         id="mutation-hm"
                                                         type="number" required min="0"
@@ -640,9 +641,9 @@ const MutationView: React.FC = () => {
                                                 </div>
                                                 {modalType === MutationType.DISPOSAL && (
                                                     <div>
-                                                        <label htmlFor="mutation-value" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Sale/Scrap Value (IDR)</label>
+                                                        <label htmlFor="mutation-value" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">ရောင်းချ / ဖျက်သိမ်းတန်ဖိုး (ကျပ်)</label>
                                                         <div className="relative">
-                                                            <span className="absolute left-3 top-2 text-slate-500 text-sm font-medium">Rp</span>
+                                                            <span className="absolute left-3 top-2 text-slate-500 text-sm font-medium">ကျပ်</span>
                                                             <input
                                                                 id="mutation-value"
                                                                 type="number" min="0"
@@ -660,53 +661,53 @@ const MutationView: React.FC = () => {
                                         <div className="space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label htmlFor="new-unit-code" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Unit Code</label>
+                                                    <label htmlFor="new-unit-code" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ယူနစ်ကုဒ်</label>
                                                     <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                                        value={formData.newCode} onChange={e => setFormData({ ...formData, newCode: e.target.value })} placeholder="e.g. EX-2005" id="new-unit-code" />
+                                                        value={formData.newCode} onChange={e => setFormData({ ...formData, newCode: e.target.value })} placeholder="ဥပမာ - EX-2005" id="new-unit-code" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="new-unit-owner" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Owner</label>
+                                                    <label htmlFor="new-unit-owner" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ပိုင်ရှင်</label>
                                                     <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                         value={formData.newOwner} onChange={e => setFormData({ ...formData, newOwner: e.target.value })} placeholder="PT JPM / Rental" id="new-unit-owner" />
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label htmlFor="new-unit-model" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Model</label>
+                                                    <label htmlFor="new-unit-model" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">မော်ဒယ်</label>
                                                     <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                                        value={formData.newModel} onChange={e => setFormData({ ...formData, newModel: e.target.value })} placeholder="e.g. PC2000" id="new-unit-model" />
+                                                        value={formData.newModel} onChange={e => setFormData({ ...formData, newModel: e.target.value })} placeholder="ဥပမာ - PC2000" id="new-unit-model" />
                                                 </div>
                                                 <div>
-                                                    <SearchableSelect label="Category" options={typeOptions} value={formData.newType} onChange={v => setFormData({ ...formData, newType: v })} id="new-unit-category" />
+                                                    <SearchableSelect label="အမျိုးအစား" options={typeOptions} value={formData.newType} onChange={v => setFormData({ ...formData, newType: v })} id="new-unit-category" />
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-3 gap-4">
                                                 <div>
-                                                    <label htmlFor="new-unit-year" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Year</label>
+                                                    <label htmlFor="new-unit-year" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">နှစ်</label>
                                                     <input type="number" min="1990" max="2030" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                                        value={formData.newManufactureYear} onChange={e => setFormData({ ...formData, newManufactureYear: Number(e.target.value) })} placeholder="YYYY" id="new-unit-year" />
+                                                        value={formData.newManufactureYear} onChange={e => setFormData({ ...formData, newManufactureYear: Number(e.target.value) })} placeholder="နှစ်" id="new-unit-year" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="new-unit-serial" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Serial No.</label>
+                                                    <label htmlFor="new-unit-serial" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Serial နံပါတ်</label>
                                                     <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                         value={formData.newSerialNumber} onChange={e => setFormData({ ...formData, newSerialNumber: e.target.value })} id="new-unit-serial" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="new-unit-engine" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Engine No.</label>
+                                                    <label htmlFor="new-unit-engine" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">အင်ဂျင်နံပါတ်</label>
                                                     <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                         value={formData.newEngineNumber} onChange={e => setFormData({ ...formData, newEngineNumber: e.target.value })} id="new-unit-engine" />
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label htmlFor="new-unit-chassis" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Chassis No.</label>
+                                                    <label htmlFor="new-unit-chassis" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ကိုယ်ထည်နံပါတ်</label>
                                                     <input type="text" required className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                         value={formData.newChassisNumber} onChange={e => setFormData({ ...formData, newChassisNumber: e.target.value })} id="new-unit-chassis" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="new-unit-price" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Purchase Price</label>
+                                                    <label htmlFor="new-unit-price" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ဝယ်ယူစျေးနှုန်း</label>
                                                     <div className="relative">
-                                                        <span className="absolute left-3 top-2 text-slate-500 text-sm">Rp</span>
+                                                        <span className="absolute left-3 top-2 text-slate-500 text-sm">ကျပ်</span>
                                                         <input type="number" min="0" className="w-full border border-slate-300 rounded-lg pl-8 pr-3 py-2 text-sm"
                                                             value={formData.value} onChange={e => setFormData({ ...formData, value: Number(e.target.value) })} id="new-unit-price" />
                                                     </div>
@@ -714,7 +715,7 @@ const MutationView: React.FC = () => {
                                             </div>
                                             {requiresPlate(formData.newType) && (
                                                 <div>
-                                                    <label htmlFor="new-unit-plate" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Plate Number</label>
+                                                    <label htmlFor="new-unit-plate" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ယာဉ်နံပါတ်ပြား</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                         value={formData.newPlateNumber} onChange={e => setFormData({ ...formData, newPlateNumber: e.target.value })} id="new-unit-plate" />
                                                 </div>
@@ -722,13 +723,13 @@ const MutationView: React.FC = () => {
                                             <div className="bg-white p-3 rounded border border-slate-200">
                                                 {isSmallUnit(formData.newType) ? (
                                                     <div>
-                                                        <label htmlFor="new-unit-km" className="block text-[10px] font-bold text-green-700 mb-1 uppercase">Initial Kilometer (KM)</label>
+                                                        <label htmlFor="new-unit-km" className="block text-[10px] font-bold text-green-700 mb-1 uppercase">အစပိုင်း ကီလိုမီတာ (KM)</label>
                                                         <input type="number" className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm font-bold"
                                                             value={formData.newKilometer} onChange={e => setFormData({ ...formData, newKilometer: Number(e.target.value) })} id="new-unit-km" />
                                                     </div>
                                                 ) : (
                                                     <div>
-                                                        <label htmlFor="new-unit-hm" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Initial Hour Meter (HM)</label>
+                                                        <label htmlFor="new-unit-hm" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">အစပိုင်း နာရီမီတာ (HM)</label>
                                                         <input type="number" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                             value={formData.newHourMeter} onChange={e => setFormData({ ...formData, newHourMeter: Number(e.target.value) })} id="new-unit-hm" />
                                                     </div>
@@ -742,7 +743,7 @@ const MutationView: React.FC = () => {
                                 {(modalType === MutationType.TRANSFER || modalType === MutationType.ACQUISITION) && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 opacity-70">
-                                            <span className="block text-xs font-bold text-slate-500 mb-2 uppercase">Source Location</span>
+                                            <span className="block text-xs font-bold text-slate-500 mb-2 uppercase">မူလတည်နေရာ</span>
                                             <div className="flex items-center gap-2 text-slate-700 font-medium p-2 bg-white rounded border border-slate-200">
                                                 <MapPin size={16} className="text-slate-400" />
                                                 {modalType === MutationType.ACQUISITION ? 'VENDOR / NEW' :
@@ -769,49 +770,49 @@ const MutationView: React.FC = () => {
                                             <h4 className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
                                                 <Truck size={14} /> Logistics Manifest (Surat Jalan)
                                             </h4>
-                                            <span className="text-[10px] text-slate-400">Required for transport</span>
+                                            <span className="text-[10px] text-slate-400">ပို့ဆောင်ရေးအတွက် မဖြစ်မနေလိုအပ်သည်</span>
                                         </div>
                                         <div className="p-4 space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label htmlFor="mutation-sender-company" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Sender (From)</label>
+                                                    <label htmlFor="mutation-sender-company" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ပေးပို့သူ (မှ)</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-2"
-                                                        placeholder="Company / Site" value={formData.senderCompany} onChange={e => setFormData({ ...formData, senderCompany: e.target.value })} id="mutation-sender-company" />
-                                                    <label htmlFor="mutation-sender-name" className="sr-only">Sender Name</label>
+                                                        placeholder="ကုမ္ပဏီ / လုပ်ငန်းခွင်" value={formData.senderCompany} onChange={e => setFormData({ ...formData, senderCompany: e.target.value })} id="mutation-sender-company" />
+                                                    <label htmlFor="mutation-sender-name" className="sr-only">ပေးပို့သူအမည်</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                                        placeholder="Person In Charge" value={formData.senderName} onChange={e => setFormData({ ...formData, senderName: e.target.value })} id="mutation-sender-name" />
+                                                        placeholder="တာဝန်ခံပုဂ္ဂိုလ်" value={formData.senderName} onChange={e => setFormData({ ...formData, senderName: e.target.value })} id="mutation-sender-name" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="mutation-recipient-company" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Recipient (To)</label>
+                                                    <label htmlFor="mutation-recipient-company" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">လက်ခံသူ (သို့)</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-2"
-                                                        placeholder="Company / Site" value={formData.recipientCompany} onChange={e => setFormData({ ...formData, recipientCompany: e.target.value })} id="mutation-recipient-company" />
-                                                    <label htmlFor="mutation-recipient-name" className="sr-only">Recipient Name</label>
+                                                        placeholder="ကုမ္ပဏီ / လုပ်ငန်းခွင်" value={formData.recipientCompany} onChange={e => setFormData({ ...formData, recipientCompany: e.target.value })} id="mutation-recipient-company" />
+                                                    <label htmlFor="mutation-recipient-name" className="sr-only">လက်ခံသူအမည်</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                                        placeholder="Person Receiving" value={formData.recipientName} onChange={e => setFormData({ ...formData, recipientName: e.target.value })} id="mutation-recipient-name" />
+                                                        placeholder="လက်ခံသူ" value={formData.recipientName} onChange={e => setFormData({ ...formData, recipientName: e.target.value })} id="mutation-recipient-name" />
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-3 gap-4">
                                                 <div>
-                                                    <label htmlFor="mutation-transport-unit" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Transport Unit</label>
+                                                    <label htmlFor="mutation-transport-unit" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">သယ်ယူယာဉ်</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                                        placeholder="e.g. Trailer" value={formData.transportUnit} onChange={e => setFormData({ ...formData, transportUnit: e.target.value })} id="mutation-transport-unit" />
+                                                        placeholder="ဥပမာ - Trailer" value={formData.transportUnit} onChange={e => setFormData({ ...formData, transportUnit: e.target.value })} id="mutation-transport-unit" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="mutation-police-number" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Police No.</label>
+                                                    <label htmlFor="mutation-police-number" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ယာဉ်မှတ်ပုံတင်နံပါတ်</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                         placeholder="DA 1234 XX" value={formData.transportPolNumber} onChange={e => setFormData({ ...formData, transportPolNumber: e.target.value })} id="mutation-police-number" />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor="mutation-driver-name" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Driver</label>
+                                                    <label htmlFor="mutation-driver-name" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ယာဉ်မောင်း</label>
                                                     <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                                        placeholder="Driver Name" value={formData.driverName} onChange={e => setFormData({ ...formData, driverName: e.target.value })} id="mutation-driver-name" />
+                                                        placeholder="ယာဉ်မောင်းအမည်" value={formData.driverName} onChange={e => setFormData({ ...formData, driverName: e.target.value })} id="mutation-driver-name" />
                                                 </div>
                                             </div>
                                             <div>
-                                                <label htmlFor="mutation-arrival-date" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Arrival Date (Est.)</label>
+                                                <label htmlFor="mutation-arrival-date" className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ရောက်ရှိမည့်ရက် (ခန့်မှန်း)</label>
                                                 <input type="date" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                                     value={formData.arrivalDate} onChange={e => setFormData({ ...formData, arrivalDate: e.target.value })} id="mutation-arrival-date" />
-                                                <p className="text-[10px] text-slate-400 mt-1">Leave blank if currently &quot;In Transit&quot;</p>
+                                                <p className="text-[10px] text-slate-400 mt-1">လက်ရှိ ပို့ဆောင်နေပါက ဗလာထားပါ။</p>
                                             </div>
                                         </div>
                                     </div>
@@ -820,13 +821,13 @@ const MutationView: React.FC = () => {
                                 {/* Section 5: Notes */}
                                 <div>
                                     <label className="block w-full">
-                                        <span className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Additional Notes</span>
+                                        <span className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">ထပ်ဆောင်းမှတ်ချက်များ</span>
                                         <textarea
                                             rows={2}
                                             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                             value={formData.notes}
                                             onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                            placeholder="Enter any additional details, approval info, or condition remarks..."
+                                            placeholder="ထပ်ဆောင်းအသေးစိတ်၊ ခွင့်ပြုချက်အချက်အလက် သို့မဟုတ် အခြေအနေမှတ်ချက်များကို ရိုက်ထည့်ပါ..."
                                             id="mutation-notes"
                                         />
                                     </label>
@@ -834,7 +835,7 @@ const MutationView: React.FC = () => {
 
                                 {/* Footer Actions */}
                                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors">ပယ်ဖျက်ရန်</button>
                                     <button
                                         type="submit"
                                         className={`px-4 py-2 text-white font-medium rounded-lg shadow-lg flex items-center gap-2 transition-all ${modalType === MutationType.ACQUISITION ? 'bg-green-600 hover:bg-green-700' :
@@ -865,22 +866,22 @@ const MutationView: React.FC = () => {
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label htmlFor="edit-status-select" className="block text-sm font-bold text-slate-700 mb-1">Status</label>
+                                <label htmlFor="edit-status-select" className="block text-sm font-bold text-slate-700 mb-1">အခြေအနေ</label>
                                 <select
                                     id="edit-status-select"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2"
                                     value={editStatus}
                                     onChange={e => setEditStatus(e.target.value)}
                                 >
-                                    <option value="IN_TRANSIT">In Transit (Masih Transit)</option>
-                                    <option value="COMPLETED">Arrived (Sudah Sampai)</option>
-                                    <option value="CANCELLED">Cancelled (Batal)</option>
+                                    <option value="IN_TRANSIT">ပို့ဆောင်နေသည်</option>
+                                    <option value="COMPLETED">ရောက်ရှိပြီး</option>
+                                    <option value="CANCELLED">ပယ်ဖျက်ပြီး</option>
                                 </select>
                             </div>
 
                             {editStatus === 'COMPLETED' && (
                                 <div>
-                                    <label htmlFor="edit-arrival-date" className="block text-sm font-bold text-slate-700 mb-1">Arrival Date</label>
+                                    <label htmlFor="edit-arrival-date" className="block text-sm font-bold text-slate-700 mb-1">ရောက်ရှိသည့်ရက်</label>
                                     <input
                                         id="edit-arrival-date"
                                         type="date"
@@ -893,12 +894,12 @@ const MutationView: React.FC = () => {
 
                             {editStatus === 'CANCELLED' && (
                                 <div className="bg-red-50 text-red-700 p-3 rounded-lg text-xs">
-                                    <strong>Warning:</strong> Cancelling this mutation will attempt to revert equipment location/status changes. Please verify equipment status manually after cancellation.
+                                    <strong>သတိပေးချက်:</strong> Cancelling this mutation will attempt to revert equipment location/status changes. Please verify equipment status manually after cancellation.
                                 </div>
                             )}
 
                             <div className="flex justify-end gap-3 pt-4">
-                                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">Cancel</button>
+                                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">ပယ်ဖျက်ရန်</button>
                                 <button
                                     onClick={handleUpdateStatus}
                                     className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700"
@@ -925,11 +926,11 @@ const MutationView: React.FC = () => {
                             <div className="h-16 w-px bg-slate-300"></div>
                             <div className="flex flex-col justify-center h-full pt-1">
                                 <h1 className="text-2xl font-extrabold text-red-600 tracking-tight leading-none">PT JAVA PERSADA MANDIRI</h1>
-                                <p className="text-xs font-bold text-blue-900 tracking-[0.35em] mt-1">GENERAL CONTRACTOR</p>
+                                <p className="text-xs font-bold text-blue-900 tracking-[0.35em] mt-1">အထွေထွေကန်ထရိုက်တာ</p>
                             </div>
                         </div>
                         <div className="text-right text-[9px] text-slate-700 leading-tight font-medium">
-                            <p className="font-bold text-slate-900 mb-1">HEAD OFFICE</p>
+                            <p className="font-bold text-slate-900 mb-1">ရုံးချုပ်</p>
                             <p>Jl.Trikora RT.11 RW.02 No.57</p>
                             <p>Kel.Gt Manggis, Banjarbaru</p>
                             <p>Kalimantan Selatan 70721</p>
@@ -937,20 +938,20 @@ const MutationView: React.FC = () => {
                     </div>
 
                     <div className="mb-6">
-                        <h2 className="text-xl font-bold text-center uppercase mb-1">Logistics & Unit Mutation Report</h2>
-                        <p className="text-center text-xs text-slate-500">Generated: {new Date().toLocaleDateString()}</p>
+                        <h2 className="text-xl font-bold text-center uppercase mb-1">ပို့ဆောင်ရေးနှင့် ယူနစ်ပြောင်းရွှေ့မှု အစီရင်ခံစာ</h2>
+                        <p className="text-center text-xs text-slate-500">ဖန်တီးသည့်ရက်: {formatDate(new Date())}</p>
                     </div>
 
                     <table className="w-full text-xs border-collapse border border-slate-300 main-table">
                         <thead className="bg-slate-100">
                             <tr>
-                                <th className="p-2 text-left">Date</th>
-                                <th className="p-2 text-left">Ref / DO No.</th>
-                                <th className="p-2 text-left">Type</th>
-                                <th className="p-2 text-left">Unit Code</th>
+                                <th className="p-2 text-left">ရက်စွဲ</th>
+                                <th className="p-2 text-left">ကိုးကား / DO နံပါတ်</th>
+                                <th className="p-2 text-left">အမျိုးအစား</th>
+                                <th className="p-2 text-left">ယူနစ်ကုဒ်</th>
                                 <th className="p-2 text-right">HM</th>
-                                <th className="p-2 text-left">Route (Source - Target)</th>
-                                <th className="p-2 text-left">Status</th>
+                                <th className="p-2 text-left">လမ်းကြောင်း (မူလ - ရောက်ရာ)</th>
+                                <th className="p-2 text-left">အခြေအနေ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -958,7 +959,7 @@ const MutationView: React.FC = () => {
                                 <tr key={m.id}>
                                     <td className="p-2">{m.departureDate}</td>
                                     <td className="p-2 font-mono">{m.referenceDocument}</td>
-                                    <td className="p-2">{m.type}</td>
+                                    <td className="p-2">{translateValue(m.type)}</td>
                                     <td className="p-2 font-bold">{m.equipmentCode}</td>
                                     <td className="p-2 text-right">{m.mutationHM.toLocaleString()}</td>
                                     <td className="p-2">{m.sourceLocation} → {m.targetLocation}</td>
@@ -973,15 +974,15 @@ const MutationView: React.FC = () => {
                     <div className="mt-12 grid grid-cols-3 gap-8 text-center">
                         <div>
                             <div className="h-16 border-b border-slate-400 mb-2"></div>
-                            <span className="text-xs font-bold">Logistics Manager</span>
+                            <span className="text-xs font-bold">ပို့ဆောင်ရေးမန်နေဂျာ</span>
                         </div>
                         <div>
                             <div className="h-16 border-b border-slate-400 mb-2"></div>
-                            <span className="text-xs font-bold">Head of Plant</span>
+                            <span className="text-xs font-bold">စက်ရုံအကြီးအကဲ</span>
                         </div>
                         <div>
                             <div className="h-16 border-b border-slate-400 mb-2"></div>
-                            <span className="text-xs font-bold">Project Manager</span>
+                            <span className="text-xs font-bold">ပရောဂျက်မန်နေဂျာ</span>
                         </div>
                     </div>
                 </div>
@@ -992,7 +993,7 @@ const MutationView: React.FC = () => {
                 {printingMutation && (
                     <div ref={doPrintRef} className="p-8 max-w-[210mm] mx-auto bg-white text-black font-sans text-xs">
                         {/* Title */}
-                        <div className="text-center font-bold text-lg underline mb-6">SURAT JALAN</div>
+                        <div className="text-center font-bold text-lg underline mb-6">ပို့ဆောင်လွှာ</div>
 
                         {/* Header Section */}
                         <div className="flex justify-between items-start mb-6">
@@ -1011,32 +1012,32 @@ const MutationView: React.FC = () => {
                                 <table className="w-full text-xs">
                                     <tbody>
                                         <tr>
-                                            <td className="w-28 py-1">Pengirim</td>
+                                            <td className="w-28 py-1">ပေးပို့သူ</td>
                                             <td className="w-4">:</td>
                                             <td className="uppercase font-bold">{printingMutation.senderCompany || printingMutation.sourceLocation}</td>
                                         </tr>
                                         <tr>
-                                            <td className="py-1">Tgl Surat</td>
+                                            <td className="py-1">စာရွက်စာတမ်းရက်စွဲ</td>
                                             <td>:</td>
                                             <td className="uppercase">{formatDateID(printingMutation.departureDate)}</td>
                                         </tr>
                                         <tr>
-                                            <td className="py-1">Tgl Pengiriman</td>
+                                            <td className="py-1">ပို့ဆောင်သည့်ရက်</td>
                                             <td>:</td>
                                             <td className="uppercase">{formatDateID(printingMutation.departureDate)}</td>
                                         </tr>
                                         <tr>
-                                            <td className="py-1">No. Surat Jalan</td>
+                                            <td className="py-1">စဉ် / ပို့ဆောင်လွှာ</td>
                                             <td>:</td>
                                             <td className="uppercase font-bold">{printingMutation.referenceDocument}</td>
                                         </tr>
                                         <tr>
-                                            <td className="py-1">Unit Pengantar</td>
+                                            <td className="py-1">ပို့ဆောင်ယာဉ်</td>
                                             <td>:</td>
                                             <td className="uppercase">{printingMutation.transportUnit || 'TRAILER'}</td>
                                         </tr>
                                         <tr>
-                                            <td className="py-1">No. Pol/Kode Unit</td>
+                                            <td className="py-1">စဉ် / ယူနစ်ကုဒ်</td>
                                             <td>:</td>
                                             <td className="uppercase">{printingMutation.transportPolNumber || '-'}</td>
                                         </tr>
@@ -1049,12 +1050,12 @@ const MutationView: React.FC = () => {
                         <table className="w-full border-collapse border border-black mb-4 main-table">
                             <thead>
                                 <tr className="bg-white text-center font-bold">
-                                    <th className="p-2 w-10">NO</th>
-                                    <th className="p-2">NAMA ALAT</th>
+                                    <th className="p-2 w-10">နံပါတ်</th>
+                                    <th className="p-2">စက်ယာဉ်အမည်</th>
                                     <th className="p-2 w-24">KODE UNIT</th>
-                                    <th className="p-2 w-20">METER</th>
-                                    <th className="p-2 w-12">QTY</th>
-                                    <th className="p-2 w-32">SERIAL NUMBER</th>
+                                    <th className="p-2 w-20">မီတာ</th>
+                                    <th className="p-2 w-12">အရေအတွက်</th>
+                                    <th className="p-2 w-32">Serial နံပါတ်</th>
                                     <th className="p-2">KETERANGAN</th>
                                 </tr>
                             </thead>
@@ -1065,7 +1066,7 @@ const MutationView: React.FC = () => {
                                         {getEquipmentDetailsForPrint(printingMutation.equipmentCode)?.type} {getEquipmentDetailsForPrint(printingMutation.equipmentCode)?.model}
                                     </td>
                                     <td className="p-2 font-bold uppercase">{printingMutation.equipmentCode}</td>
-                                    <td className="p-2">{printingMutation.mutationHM.toLocaleString('id-ID')}</td>
+                                    <td className="p-2">{formatNumber(printingMutation.mutationHM)}</td>
                                     <td className="p-2">1</td>
                                     <td className="p-2 uppercase">
                                         {getEquipmentDetailsForPrint(printingMutation.equipmentCode)?.id}
@@ -1080,14 +1081,14 @@ const MutationView: React.FC = () => {
                         {/* Footer Boxes */}
                         <div className="flex border border-black mb-6">
                             <div className="w-1/2 p-2 border-r border-black min-h-[100px]">
-                                <div className="font-bold mb-1">Catatan :</div>
+                                <div className="font-bold mb-1">မှတ်ချက်:</div>
                             </div>
                             <div className="w-1/2 p-2">
                                 <div className="font-bold mb-1">PERHATIAN :</div>
                                 <ol className="list-decimal list-inside text-[10px] space-y-0.5">
-                                    <li>Surat Jalan ini merupakan bukti resmi pengiriman barang</li>
-                                    <li>Surat Jalan ini bukan bukti penjualan</li>
-                                    <li>Surat Jalan ini akan dilengkapi invoice sebagai bukti penjualan</li>
+                                    <li>ဤပို့ဆောင်လွှာသည် ကုန်ပစ္စည်းပို့ဆောင်မှု၏ တရားဝင်အထောက်အထား ဖြစ်သည်။</li>
+                                    <li>ဤပို့ဆောင်လွှာသည် အရောင်းအထောက်အထား မဟုတ်ပါ။</li>
+                                    <li>ဤပို့ဆောင်လွှာတွင် အရောင်းအထောက်အထားအဖြစ် ငွေတောင်းခံလွှာ ပါဝင်မည်။</li>
                                 </ol>
                             </div>
                         </div>
@@ -1119,19 +1120,19 @@ const MutationView: React.FC = () => {
                             {/* Right Signatures */}
                             <div className="w-2/3 flex justify-between px-4">
                                 <div className="text-center flex flex-col justify-between">
-                                    <div className="font-bold mb-12">Pengirim</div>
+                                    <div className="font-bold mb-12">ပေးပို့သူ</div>
                                     <div className="border-b border-black border-dotted w-32 mx-auto"></div>
-                                    <div className="text-left mt-1">Tgl :</div>
+                                    <div className="text-left mt-1">ရက်စွဲ:</div>
                                 </div>
                                 <div className="text-center flex flex-col justify-between">
-                                    <div className="font-bold mb-12">Sopir</div>
+                                    <div className="font-bold mb-12">ယာဉ်မောင်း</div>
                                     <div className="border-b border-black border-dotted w-32 mx-auto"></div>
-                                    <div className="text-left mt-1">Tgl :</div>
+                                    <div className="text-left mt-1">ရက်စွဲ:</div>
                                 </div>
                                 <div className="text-center flex flex-col justify-between">
-                                    <div className="font-bold mb-12">Penerima</div>
+                                    <div className="font-bold mb-12">လက်ခံသူ</div>
                                     <div className="border-b border-black border-dotted w-32 mx-auto"></div>
-                                    <div className="text-left mt-1">Tgl :</div>
+                                    <div className="text-left mt-1">ရက်စွဲ:</div>
                                 </div>
                             </div>
                         </div>

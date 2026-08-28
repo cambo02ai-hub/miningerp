@@ -58,7 +58,7 @@ const App: React.FC = () => {
       <div className="min-h-screen transition-colors duration-300 bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white">Loading...</p>
+          <p className="text-white">တင်နေပါသည်...</p>
         </div>
       </div>
     );
@@ -78,7 +78,7 @@ const App: React.FC = () => {
 
       <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
         <div className="max-w-7xl mx-auto animate-fade-in">
-          <React.Suspense fallback={<div className="text-center py-20 text-text-muted">Loading...</div>}>
+          <React.Suspense fallback={<div className="text-center py-20 text-text-muted">တင်နေပါသည်...</div>}>
             <Routes>
               <Route path="/" element={<ErrorBoundary><DashboardView /></ErrorBoundary>} />
               <Route path="/fleet" element={<ErrorBoundary><FleetView /></ErrorBoundary>} />
