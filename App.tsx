@@ -14,9 +14,11 @@ const SupplierView = React.lazy(() => import('./components/SupplierView'))
 const LocationView = React.lazy(() => import('./components/LocationView'))
 const TimesheetView = React.lazy(() => import('./components/TimesheetView'))
 const DebtView = React.lazy(() => import('./components/DebtView'))
+const UserManagementView = React.lazy(() => import('./components/UserManagementView'))
 import LoginPage from './components/LoginPage';
 import AIChatWidget from './components/AIChatWidget';
 import { getCurrentUser, clearAuthData } from './services/authStorage';
+import { hasPermission } from './services/rbac';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -92,6 +94,7 @@ const App: React.FC = () => {
               <Route path="/location" element={<ErrorBoundary><LocationView /></ErrorBoundary>} />
               <Route path="/hse" element={<ErrorBoundary><HSEView /></ErrorBoundary>} />
               <Route path="/audit" element={<ErrorBoundary><AuditLogView /></ErrorBoundary>} />
+              <Route path="/user-management" element={hasPermission(currentUser, 'user_management.manage') ? <ErrorBoundary><UserManagementView currentUser={currentUser} /></ErrorBoundary> : <Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </React.Suspense>

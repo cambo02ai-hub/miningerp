@@ -2,6 +2,7 @@ import { formatDateTime } from '../utils/locale';
 
 import React, { useState, useEffect } from 'react';
 import { auditAPI } from '../services/api';
+import { loadRBACAudit } from '../services/rbac';
 import { ShieldCheck, ArrowRight, History, RefreshCw } from 'lucide-react';
 
 const AuditLogView: React.FC = () => {
@@ -14,14 +15,26 @@ const AuditLogView: React.FC = () => {
     }, []);
 
     const loadLogs = async () => {
+        const localRBACLogs = loadRBACAudit().map((entry) => ({
+            id: entry.id,
+            timestamp: entry.createdAt,
+            user_name: entry.actor,
+            user_role: 'RBAC',
+            module: 'USER MANAGEMENT',
+            action: entry.action,
+            description: `${entry.targetUsername} — ${entry.details}`,
+            entity_id: entry.targetUsername,
+            changes: [],
+        }));
         try {
             setLoading(true);
             const data = await auditAPI.getLogs({ limit: 100 });
-            setLogs(data);
+            setLogs([...localRBACLogs, ...data]);
             setError(null);
         } catch (err: any) {
             console.error('Failed to load audit logs:', err);
-            setError('Failed to load audit logs');
+            setLogs(localRBACLogs);
+            setError('စနစ်စစ်ဆေးမှတ်တမ်းများ တင်ရာတွင် အမှားရှိပါသည်');
         } finally {
             setLoading(false);
         }
@@ -88,14 +101,14 @@ const AuditLogView: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 align-top">
                                         <span className="inline-block px-2 py-1 rounded bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wide border border-slate-200">
-                                            {log.module}
+                                            {log.module === 'USER MANAGEMENT' ? 'အသုံးပြုသူစီမံခန့်ခွဲမှု' : log.module}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 align-top">
                                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${log.action === 'CREATE' ? 'text-green-700 bg-green-50 border border-green-100' :
                                                 log.action === 'UPDATE' ? 'text-blue-700 bg-blue-50 border border-blue-100' : 'text-red-700 bg-red-50 border border-red-100'
                                             }`}>
-                                            {log.action}
+                                            {log.action === 'USER_CREATED' ? 'Account ဖန်တီး' : log.action === 'USER_UPDATED' ? 'Account ပြင်ဆင်' : log.action === 'USER_SUSPENDED' ? 'Account ပိတ်' : log.action === 'USER_ACTIVATED' ? 'Account ပြန်ဖွင့်' : log.action === 'USER_DELETED' ? 'Account ဖယ်ရှား' : log.action}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-slate-700 align-top text-xs">
@@ -134,7 +147,7 @@ const AuditLogView: React.FC = () => {
                             {logs.length === 0 && !loading && (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
-                                        No audit logs found.
+                                        စစ်ဆေးမှတ်တမ်း မတွေ့ပါ။
                                     </td>
                                 </tr>
                             )}

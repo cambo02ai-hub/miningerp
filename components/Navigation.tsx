@@ -1,7 +1,8 @@
 import { translateValue } from '../utils/locale';
+import { hasPermission, PermissionKey } from '../services/rbac';
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun, ShieldCheck } from 'lucide-react';
 
 interface NavProps {
   currentUser?: any;
@@ -40,6 +41,7 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
     { id: 'location', label: 'တည်နေရာများ', icon: MapPin },
     { id: 'hse', label: 'HSE နှင့် ဘေးကင်းရေး', icon: Activity },
     { id: 'audit', label: 'စစ်ဆေးမှတ်တမ်းများ', icon: FileText },
+    { id: 'user-management', label: 'အသုံးပြုသူနှင့် Permission', icon: ShieldCheck, requiredPermission: 'user_management.view' as PermissionKey },
   ];
 
   return (
@@ -65,6 +67,7 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
 
       <nav className="flex-1 py-4 space-y-0.5 px-3 overflow-y-auto">
         {menuItems.map((item) => {
+          if (item.requiredPermission && !hasPermission(currentUser, item.requiredPermission)) return null;
           const Icon = item.icon;
           const to = item.id === 'dashboard' ? '/' : `/${item.id}`;
           return (

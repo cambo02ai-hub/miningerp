@@ -65,6 +65,13 @@ export const translateStatus = (value: string | null | undefined): string => {
     Approved: 'အတည်ပြုပြီး',
     Rejected: 'ပယ်ချပြီး',
     'Super Admin': 'စနစ်အကြီးအကဲ',
+    SUPER_ADMIN: 'စနစ်အကြီးအကဲ',
+    SUPERADMIN: 'စနစ်အကြီးအကဲ',
+    ADMIN: 'စီမံခန့်ခွဲသူ',
+    MANAGER: 'မန်နေဂျာ',
+    SUPERVISOR: 'ကြီးကြပ်သူ',
+    OPERATOR: 'လုပ်ငန်းဆောင်ရွက်သူ',
+    VIEWER: 'ကြည့်ရှုသူ',
     Admin: 'စီမံခန့်ခွဲသူ',
   };
   return value ? translations[value] ?? value : '—';

@@ -16,7 +16,16 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 export const authAPI = {
     async login(username: string, password: string) {
         const data = await apiRequest<any>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) })
-        const user = { username: data.username, role: data.role };
+        const user = {
+            ...(data.user || {}),
+            username: data.username || data.user?.username,
+            fullName: data.fullName || data.full_name || data.user?.fullName || data.user?.full_name,
+            email: data.email || data.user?.email,
+            role: data.role || data.user?.role,
+            status: data.status || data.user?.status || 'ACTIVE',
+            permissions: data.permissions || data.user?.permissions,
+            permissionOverrides: data.permissionOverrides || data.user?.permissionOverrides,
+        };
         setAuthData(data.token, user);
         return { token: data.token, user };
     },
