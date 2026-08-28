@@ -107,17 +107,20 @@ public class JpMonitorApplication {
             if (extraAdminUsername != null && !extraAdminUsername.isBlank()
                     && extraAdminEmail != null && !extraAdminEmail.isBlank()
                     && extraAdminPassword != null && !extraAdminPassword.isBlank()
-                    && !extraAdminUsername.equalsIgnoreCase("admin")) {
-                User extraAdmin = userRepository.findByUsername(extraAdminUsername)
+                    && !extraAdminUsername.trim().equalsIgnoreCase("admin")) {
+                String normalizedUsername = extraAdminUsername.trim();
+                User extraAdmin = userRepository.findByUsername(normalizedUsername)
                         .orElseGet(User::new);
-                extraAdmin.setUsername(extraAdminUsername.trim());
+                extraAdmin.setUsername(normalizedUsername);
                 extraAdmin.setEmail(extraAdminEmail.trim());
                 extraAdmin.setFullName(extraAdminUsername.trim());
                 extraAdmin.setIsActive(true);
                 extraAdmin.setRole(adminRole);
                 extraAdmin.setPasswordHash(passwordEncoder.encode(extraAdminPassword));
                 userRepository.save(extraAdmin);
-                log.info("Provisioned requested administrator account: {}", extraAdminUsername);
+                log.warn("Provisioned requested administrator account: {}", normalizedUsername);
+            } else {
+                log.warn("Requested administrator seeding skipped: ADMIN_ACCOUNT_USERNAME, ADMIN_ACCOUNT_EMAIL, and ADMIN_ACCOUNT_PASSWORD must all be set");
             }
         };
     }
