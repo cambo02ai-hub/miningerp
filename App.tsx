@@ -15,6 +15,7 @@ const LocationView = React.lazy(() => import('./components/LocationView'))
 const TimesheetView = React.lazy(() => import('./components/TimesheetView'))
 const DebtView = React.lazy(() => import('./components/DebtView'))
 const UserManagementView = React.lazy(() => import('./components/UserManagementView'))
+const ContractorMiningView = React.lazy(() => import('./components/ContractorMiningView'))
 import LoginPage from './components/LoginPage';
 import AIChatWidget from './components/AIChatWidget';
 import { getAuthToken, getCurrentUser, setAuthData, clearAuthData } from './services/authStorage';
@@ -97,6 +98,7 @@ const App: React.FC = () => {
               <Route path="/mutation" element={<ErrorBoundary><MutationView /></ErrorBoundary>} />
               <Route path="/inventory" element={<ErrorBoundary><InventoryView /></ErrorBoundary>} />
               <Route path="/production" element={<ErrorBoundary><ProductionView /></ErrorBoundary>} />
+              <Route path="/contractor-mining" element={<ErrorBoundary><ContractorMiningView /></ErrorBoundary>} />
               <Route path="/timesheet" element={<ErrorBoundary><TimesheetView /></ErrorBoundary>} />
               <Route path="/employee" element={<ErrorBoundary><EmployeeView /></ErrorBoundary>} />
               <Route path="/supplier" element={<ErrorBoundary><SupplierView /></ErrorBoundary>} />
