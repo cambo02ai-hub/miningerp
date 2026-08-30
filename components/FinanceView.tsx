@@ -3,20 +3,14 @@ import { financeAPI } from '../services/api';
 import { formatCurrency } from '../utils/locale';
 import {
     DollarSign,
-    TrendingUp,
     Gauge,
     Scale,
     PieChart,
     Wallet,
     FileSpreadsheet,
     Plus,
-    CheckCircle,
     Clock,
-    AlertCircle,
-    ArrowUpRight,
-    ArrowDownRight,
-    Truck,
-    Layers
+    Truck
 } from 'lucide-react';
 
 const FinanceView: React.FC = () => {
@@ -505,8 +499,9 @@ const FinanceView: React.FC = () => {
                         <h3 className="text-lg font-bold text-slate-900">Sales Invoice အသစ် ဖန်တီးရန်</h3>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Invoice Number</label>
+                            <label htmlFor="invNumber" className="block text-xs font-bold text-slate-600 mb-1">Invoice Number</label>
                             <input
+                                id="invNumber"
                                 type="text"
                                 required
                                 placeholder="e.g. INV-2025-001"
@@ -517,8 +512,9 @@ const FinanceView: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">ဝယ်ယူသူ (Customer / Buyer Name)</label>
+                            <label htmlFor="customerName" className="block text-xs font-bold text-slate-600 mb-1">ဝယ်ယူသူ (Customer / Buyer Name)</label>
                             <input
+                                id="customerName"
                                 type="text"
                                 required
                                 placeholder="e.g. Energy Power Co., Ltd."
@@ -530,8 +526,9 @@ const FinanceView: React.FC = () => {
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">တန်ချိန် (Tonnage)</label>
+                                <label htmlFor="totalTonnage" className="block text-xs font-bold text-slate-600 mb-1">တန်ချိန် (Tonnage)</label>
                                 <input
+                                    id="totalTonnage"
                                     type="number"
                                     required
                                     className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -540,8 +537,9 @@ const FinanceView: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">၁ တန် ဈေးနှုန်း ($/Ton)</label>
+                                <label htmlFor="pricePerTon" className="block text-xs font-bold text-slate-600 mb-1">၁ တန် ဈေးနှုန်း ($/Ton)</label>
                                 <input
+                                    id="pricePerTon"
                                     type="number"
                                     required
                                     className="w-full border rounded-lg px-3 py-2 text-sm"

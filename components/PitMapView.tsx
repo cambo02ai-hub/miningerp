@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Layers, Box, Pickaxe, ShieldAlert, Sparkles, Navigation, ChevronRight, Eye, Upload, Globe, CheckCircle, Bot, Send, AlertTriangle, TrendingUp, Cpu, TestTube } from 'lucide-react';
+import { MapPin, Layers, Box, ShieldAlert, Sparkles, Navigation, Upload, Globe, CheckCircle, Bot, Send, TrendingUp, Cpu, TestTube } from 'lucide-react';
 import { chatAPI, locationsAPI } from '../services/api';
 
 export interface PitGisFeature {
@@ -296,7 +296,15 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                 return (
                   <div
                     key={pit.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedPit(pit)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedPit(pit);
+                      }
+                    }}
                     className={`absolute rounded-2xl cursor-pointer transition-all duration-300 border-2 p-4 flex flex-col justify-between ${
                       isSelected
                         ? 'bg-amber-500/20 border-amber-400 shadow-2xl shadow-amber-500/20 scale-105 z-20'
@@ -462,8 +470,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Lab Sample ID</label>
+                  <label htmlFor="sampleId" className="block font-bold text-slate-600 mb-1">Lab Sample ID</label>
                   <input
+                    id="sampleId"
                     type="text"
                     required
                     className="w-full border border-slate-300 rounded-lg p-2 font-mono outline-none focus:ring-2 focus:ring-purple-500"
@@ -472,8 +481,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Tested Date</label>
+                  <label htmlFor="testedDate" className="block font-bold text-slate-600 mb-1">Tested Date</label>
                   <input
+                    id="testedDate"
                     type="date"
                     required
                     className="w-full border border-slate-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-purple-500"
@@ -486,8 +496,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
               <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-purple-900 mb-1">Assay Gold Grade (g/t) *</label>
+                    <label htmlFor="goldGrade" className="block font-bold text-purple-900 mb-1">Assay Gold Grade (g/t) *</label>
                     <input
+                      id="goldGrade"
                       type="number"
                       step="0.1"
                       min="0.1"
@@ -498,8 +509,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-purple-900 mb-1">Moisture (%)</label>
+                    <label htmlFor="moisturePct" className="block font-bold text-purple-900 mb-1">Moisture (%)</label>
                     <input
+                      id="moisturePct"
                       type="number"
                       step="0.1"
                       min="0"
@@ -516,8 +528,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">Lab Technician Notes</label>
+                <label htmlFor="labNotes" className="block font-bold text-slate-600 mb-1">Lab Technician Notes</label>
                 <input
+                  id="labNotes"
                   type="text"
                   className="w-full border border-slate-300 rounded-lg p-2 outline-none"
                   placeholder="ဓာတ်ခွဲခန်း မှတ်ချက်..."
@@ -711,8 +724,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">သို့မဟုတ် KML / GeoJSON XML Content ကို တိုက်ရိုက် Paste လုပ်ပါ:</label>
+                    <label htmlFor="kmlContent" className="block font-bold text-slate-700 mb-1">သို့မဟုတ် KML / GeoJSON XML Content ကို တိုက်ရိုက် Paste လုပ်ပါ:</label>
                     <textarea
+                      id="kmlContent"
                       rows={5}
                       className="w-full border border-slate-300 rounded-xl p-3 font-mono text-[11px] outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder={`<kml xmlns="http://www.opengis.net/kml/2.2">\n  <Placemark>\n    <name>Pit Delta - Gold Vein</name>\n    <Polygon><outerBoundaryIs><LinearRing><coordinates>114.815,-3.450 114.818,-3.450 114.818,-3.453 114.815,-3.453</coordinates></LinearRing></outerBoundaryIs></Polygon>\n  </Placemark>\n</kml>`}
