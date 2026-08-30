@@ -109,4 +109,17 @@ describe('StoreEmployeeInventoryView Component', () => {
       expect(screen.getByText(/လက်ရှိစတော့ နည်းနေသော ပစ္စည်း/i)).toBeInTheDocument();
     });
   });
+
+  it('opens AI Vision Invoice Scan modal when scanner button is clicked', async () => {
+    render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw' }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('AI Invoice Scan')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('AI Invoice Scan'));
+
+    expect(screen.getByText('AI Vision Invoice / Receipt Scanner')).toBeInTheDocument();
+    expect(screen.getByText('အင်ဗွိုက် သို့မဟုတ် စတော့အဝင် ဘာောင်ချာ ဓာတ်ပုံတင်ပါ')).toBeInTheDocument();
+  });
 });
