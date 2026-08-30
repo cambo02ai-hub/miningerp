@@ -202,6 +202,40 @@ export const equipmentAPI = {
 };
 
 // ============================================================================
+// FINANCE EXTENSIONS API
+// ============================================================================
+
+export const financeAPI = {
+    async getSalesInvoices() {
+        return apiRequest<any[]>('/finance/sales-invoices');
+    },
+    async createSalesInvoice(data: any) {
+        return apiRequest<any>('/finance/sales-invoices', { method: 'POST', body: JSON.stringify(data) });
+    },
+    async getCostPerTon() {
+        return apiRequest<any>('/finance/cost-per-ton');
+    },
+    async getEquipmentDepreciation() {
+        return apiRequest<any[]>('/finance/equipment-depreciation');
+    },
+    async getRoyalties() {
+        return apiRequest<any[]>('/finance/royalties');
+    },
+    async createRoyalty(data: any) {
+        return apiRequest<any>('/finance/royalties', { method: 'POST', body: JSON.stringify(data) });
+    },
+    async getBudgetVariance(year?: number) {
+        const query = year ? `?year=${year}` : '';
+        return apiRequest<any[]>(`/finance/budget-variance${query}`);
+    },
+    async getCashFlowForecast() {
+        return apiRequest<any[]>('/finance/cashflow-forecast');
+    },
+    async getFinancialReport() {
+        return apiRequest<any>('/finance/financial-report');
+    }
+};
+
 // SUPPLIERS API
 // ============================================================================
 

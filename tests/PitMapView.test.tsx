@@ -44,8 +44,8 @@ describe('PitMapView Component', () => {
     const onAddLocationMock = vi.fn().mockResolvedValue(undefined);
     render(<PitMapView onAddLocation={onAddLocationMock} />);
 
-    const importBtn = screen.getAllByText(/Google Earth Import/i)[0];
-    fireEvent.click(importBtn);
+    const importBtns = screen.getAllByRole('button', { name: /Google Earth Import/i });
+    fireEvent.click(importBtns[importBtns.length - 1]);
 
     expect(screen.getByText(/Google Earth Spatial Data Import/i)).toBeInTheDocument();
 

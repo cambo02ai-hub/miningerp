@@ -15,6 +15,7 @@ const SupplierView = React.lazy(() => import('./components/SupplierView'))
 const LocationView = React.lazy(() => import('./components/LocationView'))
 const TimesheetView = React.lazy(() => import('./components/TimesheetView'))
 const DebtView = React.lazy(() => import('./components/DebtView'))
+const FinanceView = React.lazy(() => import('./components/FinanceView'))
 const UserManagementView = React.lazy(() => import('./components/UserManagementView'))
 const ContractorMiningView = React.lazy(() => import('./components/ContractorMiningView'))
 import LoginPage from './components/LoginPage';
@@ -105,6 +106,7 @@ const App: React.FC = () => {
               <Route path="/employee" element={<ErrorBoundary><EmployeeView /></ErrorBoundary>} />
               <Route path="/supplier" element={<ErrorBoundary><SupplierView /></ErrorBoundary>} />
               <Route path="/debt" element={<ErrorBoundary><DebtView /></ErrorBoundary>} />
+              <Route path="/finance" element={<ErrorBoundary><FinanceView /></ErrorBoundary>} />
               <Route path="/location" element={<ErrorBoundary><LocationView /></ErrorBoundary>} />
               <Route path="/hse" element={<ErrorBoundary><HSEView /></ErrorBoundary>} />
               <Route path="/audit" element={<ErrorBoundary><AuditLogView /></ErrorBoundary>} />
