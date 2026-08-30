@@ -28,4 +28,12 @@ describe('PitMapView Component', () => {
 
     expect(screen.getByText(/3D Tilt Angle/i)).toBeInTheDocument();
   });
+
+  it('opens Google Earth Import modal when import button is clicked', () => {
+    const importBtn = screen.getByText(/Google Earth Import/i);
+    fireEvent.click(importBtn);
+
+    expect(screen.getByText(/Google Earth Spatial Data Import/i)).toBeInTheDocument();
+    expect(screen.getByText(/KML \/ GeoJSON File တင်ရန်/i)).toBeInTheDocument();
+  });
 });
