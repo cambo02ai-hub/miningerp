@@ -2,7 +2,7 @@ import { translateValue } from '../utils/locale';
 import { hasPermission, PermissionKey } from '../services/rbac';
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun, ShieldCheck, Pickaxe } from 'lucide-react';
+import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun, ShieldCheck, Pickaxe, Store } from 'lucide-react';
 
 interface NavProps {
   currentUser?: any;
@@ -32,7 +32,8 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
     { id: 'dashboard', label: 'ဒက်ရှ်ဘုတ်', icon: LayoutDashboard },
     { id: 'fleet', label: 'ယာဉ်/စက် စီမံခန့်ခွဲမှု', icon: Truck },
     { id: 'mutation', label: 'ယူနစ် ပြောင်းရွှေ့မှု', icon: ArrowRightLeft },
-    { id: 'inventory', label: 'စတော့', icon: PackageSearch },
+    { id: 'inventory', label: 'စတော့ (Admin/Manager)', icon: PackageSearch },
+    { id: 'store-inventory', label: 'Store ဝန်ထမ်း မုဒ်', icon: Store },
     { id: 'production', label: 'ထုတ်လုပ်ရေး', icon: Hammer },
     { id: 'contractor-mining', label: 'Contractor Mining', icon: Pickaxe },
     { id: 'timesheet', label: 'အလုပ်ချိန်မှတ်တမ်းများ', icon: Clock },

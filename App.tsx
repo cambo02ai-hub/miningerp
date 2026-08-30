@@ -8,6 +8,7 @@ const FleetView = React.lazy(() => import('./components/FleetView'))
 const AuditLogView = React.lazy(() => import('./components/AuditLogView'))
 const HSEView = React.lazy(() => import('./components/HSEView'))
 const InventoryView = React.lazy(() => import('./components/InventoryView'))
+const StoreEmployeeInventoryView = React.lazy(() => import('./components/StoreEmployeeInventoryView'))
 const MutationView = React.lazy(() => import('./components/MutationView'))
 const EmployeeView = React.lazy(() => import('./components/EmployeeView'))
 const SupplierView = React.lazy(() => import('./components/SupplierView'))
@@ -97,6 +98,7 @@ const App: React.FC = () => {
               <Route path="/fleet" element={<ErrorBoundary><FleetView /></ErrorBoundary>} />
               <Route path="/mutation" element={<ErrorBoundary><MutationView /></ErrorBoundary>} />
               <Route path="/inventory" element={<ErrorBoundary><InventoryView /></ErrorBoundary>} />
+              <Route path="/store-inventory" element={<ErrorBoundary><StoreEmployeeInventoryView currentUser={currentUser} /></ErrorBoundary>} />
               <Route path="/production" element={<ErrorBoundary><ProductionView /></ErrorBoundary>} />
               <Route path="/contractor-mining" element={<ErrorBoundary><ContractorMiningView /></ErrorBoundary>} />
               <Route path="/timesheet" element={<ErrorBoundary><TimesheetView /></ErrorBoundary>} />
