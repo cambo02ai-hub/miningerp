@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { inventoryAPI, equipmentAPI, suppliersAPI, chatAPI } from '../services/api';
 import { SparePart, InventoryTransaction, InventoryTxType } from '../types';
-import { Search, PackageCheck, ArrowUpRight, ArrowDownLeft, AlertTriangle, Bot, Send, Sparkles, RefreshCw, Layers, CheckCircle, FileText, Wrench, Camera, Upload, Eye } from 'lucide-react';
+import { Search, PackageCheck, ArrowUpRight, ArrowDownLeft, AlertTriangle, Bot, Send, Sparkles, RefreshCw, Layers, CheckCircle, FileText, Wrench, Camera, Upload, Eye, QrCode, ShoppingCart, SlidersHorizontal, Printer } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
 
 interface StoreEmployeeInventoryViewProps {
@@ -25,7 +25,21 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
   const [isInwardModalOpen, setIsInwardModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [isPrModalOpen, setIsPrModalOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
+
+  // Stock Adjustment Form
+  const [adjustmentForm, setAdjustmentForm] = useState({
+    reason: 'PHYSICAL_COUNT_AUDIT' as 'PHYSICAL_COUNT_AUDIT' | 'DAMAGED' | 'EXPIRED' | 'WRITE_OFF',
+    adjustedQty: 0,
+    notes: '',
+  });
+
+  // Auto PR Form
+  const [prItems, setPrItems] = useState<Array<{ partId: string; partNumber: string; name: string; currentStock: number; minStock: number; suggestedQty: number; estCost: number }>>([]);
+  const [prCreatedSuccess, setPrCreatedSuccess] = useState(false);
 
   // Vision Scan State
   const [scanImage, setScanImage] = useState<string | null>(null);
@@ -306,6 +320,26 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => {
+                const low = lowStockParts.map((p) => ({
+                  partId: p.id,
+                  partNumber: p.partNumber,
+                  name: p.name,
+                  currentStock: p.currentStock,
+                  minStock: p.minStockLevel,
+                  suggestedQty: Math.max((p.minStockLevel * 2) - p.currentStock, 5),
+                  estCost: p.averageCost || 50000,
+                }));
+                setPrItems(low);
+                setPrCreatedSuccess(false);
+                setIsPrModalOpen(true);
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-900/40 flex items-center gap-2 transition-all active:scale-95 text-sm"
+            >
+              <ShoppingCart size={18} />
+              AI Auto-PR ({lowStockParts.length})
+            </button>
+            <button
               onClick={() => setIsScanModalOpen(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-purple-900/40 flex items-center gap-2 transition-all active:scale-95 text-sm"
             >
@@ -487,19 +521,42 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
                     </div>
 
                     {/* Quick Action Buttons for Store Staff */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100 mt-2">
-                      <button
-                        onClick={() => handleOpenIssue(part)}
-                        className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 transition-colors"
-                      >
-                        <ArrowUpRight size={14} /> ထုတ်ပေးမည်
-                      </button>
-                      <button
-                        onClick={() => handleOpenInward(part)}
-                        className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 transition-colors"
-                      >
-                        <ArrowDownLeft size={14} /> အဝင်သွင်းမည်
-                      </button>
+                    <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 mt-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenIssue(part)}
+                          className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <ArrowUpRight size={14} /> ထုတ်ပေးမည်
+                        </button>
+                        <button
+                          onClick={() => handleOpenInward(part)}
+                          className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <ArrowDownLeft size={14} /> အဝင်သွင်းမည်
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedPart(part);
+                            setIsQrModalOpen(true);
+                          }}
+                          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1 px-2 rounded text-[11px] flex items-center justify-center gap-1"
+                        >
+                          <QrCode size={13} /> QR Label
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedPart(part);
+                            setAdjustmentForm({ reason: 'PHYSICAL_COUNT_AUDIT', adjustedQty: part.currentStock, notes: '' });
+                            setIsAdjustmentModalOpen(true);
+                          }}
+                          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1 px-2 rounded text-[11px] flex items-center justify-center gap-1"
+                        >
+                          <SlidersHorizontal size={13} /> Adjust Stock
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -946,6 +1003,214 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
                   <CheckCircle size={14} /> စတော့အဝင် စာရင်းသို့ ဖြည့်မည်
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR LABEL MODAL */}
+      {isQrModalOpen && selectedPart && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in text-center p-6 space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <QrCode className="text-blue-600" size={18} /> QR / Barcode Label
+              </h3>
+              <button onClick={() => setIsQrModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            <div className="border-2 border-dashed border-slate-300 p-6 rounded-xl bg-slate-50 space-y-3">
+              <div className="w-32 h-32 bg-white border-2 border-slate-900 mx-auto flex items-center justify-center font-mono text-[10px] p-2 shadow-inner">
+                {/* QR Code graphic mockup */}
+                <div className="text-slate-800 font-extrabold flex flex-col items-center">
+                  <div className="text-[8px] bg-slate-900 text-white px-1 py-0.5 rounded mb-1">JPM-ERP</div>
+                  <div className="w-16 h-16 bg-slate-900 flex items-center justify-center text-white text-[9px] font-bold p-1 text-center">
+                    [QR CODE]
+                  </div>
+                  <span className="text-[9px] mt-1">{selectedPart.partNumber}</span>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-extrabold text-slate-800 text-base">{selectedPart.name}</h4>
+                <p className="font-mono text-xs text-blue-600 font-bold">{selectedPart.partNumber}</p>
+                <p className="text-xs text-slate-500 mt-1">Rack Location: <span className="font-bold text-slate-700">{selectedPart.location || 'N/A'}</span></p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setIsQrModalOpen(false)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">
+                ပိတ်မည်
+              </button>
+              <button
+                onClick={() => {
+                  window.print();
+                }}
+                className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg shadow hover:bg-slate-800 flex items-center gap-1.5"
+              >
+                <Printer size={14} /> Label ပုံနှိပ်မည် (Print Label)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STOCK ADJUSTMENT MODAL */}
+      {isAdjustmentModalOpen && selectedPart && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+            <div className="bg-slate-900 text-white p-4 flex justify-between items-center">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <SlidersHorizontal size={18} /> Stock Adjustment / Write-off
+              </h3>
+              <button onClick={() => setIsAdjustmentModalOpen(false)} className="text-white/80 hover:text-white">✕</button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const diff = adjustmentForm.adjustedQty - selectedPart.currentStock;
+                if (diff === 0) {
+                  alert('စတော့ အရေအတွက် မပြောင်းလဲပါ။');
+                  return;
+                }
+                try {
+                  await inventoryAPI.createTransaction({
+                    date: new Date().toISOString().split('T')[0],
+                    type: diff > 0 ? InventoryTxType.RESTOCK_UNUSED : InventoryTxType.USAGE,
+                    partId: selectedPart.id,
+                    quantity: Math.abs(diff),
+                    notes: `[Stock Adjustment: ${adjustmentForm.reason}] ${adjustmentForm.notes}`,
+                  });
+                  await refreshData();
+                  setIsAdjustmentModalOpen(false);
+                  alert('စတော့ ပြင်ဆင်ညှိနှိုင်းမှု အောင်မြင်ပါသည်။');
+                } catch (err: any) {
+                  alert(`အမှားအယွင်း: ${err.message || 'စတော့ ပြင်ဆင်ရန် မအောင်မြင်ပါ'}`);
+                }
+              }}
+              className="p-6 space-y-4 text-xs"
+            >
+              <div>
+                <span className="text-slate-400 block mb-0.5">ပစ္စည်းအမည်</span>
+                <p className="font-bold text-slate-800 text-sm">{selectedPart.name} ({selectedPart.partNumber})</p>
+                <p className="text-slate-500">လက်ရှိစတော့: <span className="font-extrabold text-blue-600">{selectedPart.currentStock} {selectedPart.unit}</span></p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">ပြင်ဆင်လိုသည့် အကြောင်းအရင်း (Reason)</label>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 outline-none"
+                  value={adjustmentForm.reason}
+                  onChange={(e: any) => setAdjustmentForm({ ...adjustmentForm, reason: e.target.value })}
+                >
+                  <option value="PHYSICAL_COUNT_AUDIT">Physical Stock Count Audit (စတော့စစ်ဆေးတွေ့ရှိချက်)</option>
+                  <option value="DAMAGED">Damaged / Broken (ပျက်စီး/ကျိုးပဲ့)</option>
+                  <option value="EXPIRED">Expired / Quality Issue (သက်တမ်းလွန်/အရည်အသွေးမမီ)</option>
+                  <option value="WRITE_OFF">Write-off / Lost (ပယ်ဖျက်/ပျောက်ဆုံး)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">စတော့ ပမာဏ အသစ် (Adjusted Stock Qty)</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  className="w-full border border-slate-300 rounded-lg p-2 font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-slate-900"
+                  value={adjustmentForm.adjustedQty}
+                  onChange={(e) => setAdjustmentForm({ ...adjustmentForm, adjustedQty: Number(e.target.value) })}
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">မှတ်ချက် (Notes)</label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-300 rounded-lg p-2 outline-none"
+                  placeholder="စတော့ ညှိနှိုင်းမှု မှတ်ချက်..."
+                  value={adjustmentForm.notes}
+                  onChange={(e) => setAdjustmentForm({ ...adjustmentForm, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button type="button" onClick={() => setIsAdjustmentModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold">
+                  မလုပ်တော့ပါ
+                </button>
+                <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg shadow hover:bg-slate-800">
+                  Save Adjustment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* AI AUTO-PR MODAL */}
+      {isPrModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in max-h-[90vh] flex flex-col">
+            <div className="bg-amber-600 text-white p-4 flex justify-between items-center">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <ShoppingCart size={20} /> AI Auto Purchase Requisition (PR)
+              </h3>
+              <button onClick={() => setIsPrModalOpen(false)} className="text-white/80 hover:text-white">✕</button>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <p className="text-slate-600 text-xs">
+                စတော့ နည်းနေသော ပစ္စည်းများအတွက် AI မှ အလိုအလျောက် တွက်ချက်ပေးထားသော ဝယ်ယူရန် တောင်းဆိုလွှာ (PR Draft) ဖြစ်ပါသည်။
+              </p>
+
+              {prCreatedSuccess ? (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 text-center font-bold text-sm space-y-2">
+                  <CheckCircle className="mx-auto text-emerald-600" size={32} />
+                  <div>Purchase Requisition (PR) အလိုအလျောက် ဖန်တီးပြီးပါပြီ!</div>
+                  <p className="text-xs text-emerald-600 font-normal">ဝယ်ယူရေး ဌာန သို့ ပို့ဆောင်ပြီး ဖြစ်ပါသည်။</p>
+                </div>
+              ) : prItems.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 italic">စတော့ နည်းနေသော ပစ္စည်းများ မရှိပါ!</div>
+              ) : (
+                <div className="border rounded-xl overflow-hidden text-xs">
+                  <table className="w-full text-left">
+                    <thead className="bg-amber-100 text-amber-900 font-bold border-b">
+                      <tr>
+                        <th className="p-2.5">Part # / အမည်</th>
+                        <th className="p-2.5 text-center">လက်ရှိစတော့</th>
+                        <th className="p-2.5 text-center">အကြံပြု Qty</th>
+                        <th className="p-2.5 text-right">ခန့်မှန်း ကုန်ကျစရိတ်</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {prItems.map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="p-2.5 font-medium">
+                            <div className="font-bold text-slate-800">{item.name}</div>
+                            <div className="font-mono text-slate-400">{item.partNumber}</div>
+                          </td>
+                          <td className="p-2.5 text-center font-bold text-amber-700">{item.currentStock} / {item.minStock}</td>
+                          <td className="p-2.5 text-center font-extrabold text-slate-900">{item.suggestedQty} Pcs</td>
+                          <td className="p-2.5 text-right font-bold text-slate-700">{(item.suggestedQty * item.estCost).toLocaleString()} ကျပ်</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t flex justify-end gap-2">
+              <button onClick={() => setIsPrModalOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg">
+                ပိတ်မည်
+              </button>
+              {!prCreatedSuccess && prItems.length > 0 && (
+                <button
+                  onClick={() => setPrCreatedSuccess(true)}
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow flex items-center gap-1.5"
+                >
+                  <ShoppingCart size={14} /> PR တောင်းဆိုလွှာ ဖန်တီးမည်
+                </button>
+              )}
             </div>
           </div>
         </div>
