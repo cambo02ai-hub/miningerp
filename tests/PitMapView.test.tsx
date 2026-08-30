@@ -36,4 +36,14 @@ describe('PitMapView Component', () => {
     expect(screen.getByText(/Google Earth Spatial Data Import/i)).toBeInTheDocument();
     expect(screen.getByText(/KML \/ GeoJSON File တင်ရန်/i)).toBeInTheDocument();
   });
+
+  it('renders AI Vein Trend and Slope Risk indicators and opens Drone Volume modal', () => {
+    expect(screen.getByText(/AI Vein Trend/i)).toBeInTheDocument();
+    expect(screen.getByText(/Slope Risk/i)).toBeInTheDocument();
+
+    const droneBtn = screen.getByText(/AI Drone Stockpile Volume/i);
+    fireEvent.click(droneBtn);
+
+    expect(screen.getByText('AI Drone Stockpile Volume Estimation')).toBeInTheDocument();
+  });
 });
