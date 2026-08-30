@@ -469,6 +469,18 @@ export const auditAPI = {
     }
 };
 
+// =============================================================================
+// Chat API (AI Assistant Bridge)
+// =============================================================================
+export const chatAPI = {
+    async sendMessage(message: string, context?: any) {
+        return apiRequest<any>('/chat', {
+            method: 'POST',
+            body: JSON.stringify({ message, context }),
+        });
+    },
+};
+
 // Export all APIs
 export default {
     auth: authAPI,
@@ -481,6 +493,7 @@ export default {
     hse: hseAPI,
     dashboard: dashboardAPI,
     audit: auditAPI,
+    chat: chatAPI,
 };
 
 // =============================================================================
