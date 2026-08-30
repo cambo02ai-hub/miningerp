@@ -221,6 +221,16 @@ export interface SparePart {
 export type PaymentType = 'CASH' | 'CREDIT';
 export type PaymentStatus = 'PAID' | 'UNPAID';
 
+export interface SupplierAgingAnalysis {
+  supplierId: string;
+  supplierName: string;
+  current0To30: number;
+  days31To60: number;
+  days61To90: number;
+  days90Plus: number;
+  totalOutstanding: number;
+}
+
 export interface InventoryTransaction {
   id: string;
   date: string;

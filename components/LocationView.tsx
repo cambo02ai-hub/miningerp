@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { locationsAPI } from '../services/api';
-import { MapPin, Plus, Building2, Trash2, Search } from 'lucide-react'; // Removed RefreshCw
+import { MapPin, Plus, Building2, Trash2, Search, Map } from 'lucide-react'; // Removed RefreshCw
 import SearchableSelect from './SearchableSelect';
+import PitMapView from './PitMapView';
 
 const LocationView: React.FC = () => {
     const [locations, setLocations] = useState<any[]>([]);
@@ -9,6 +10,7 @@ const LocationView: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [viewTab, setViewTab] = useState<'LIST' | 'GIS_MAP'>('LIST');
 
     const [formData, setFormData] = useState({
         code: '',
@@ -87,28 +89,54 @@ const LocationView: React.FC = () => {
                     <h2 className="text-2xl font-bold text-slate-800">လုပ်ငန်းခွင် တည်နေရာများ</h2>
                     <p className="text-slate-500 text-sm">အခြေခံဒေတာ - လုပ်ငန်းခွင်၊ ဆိပ်ကမ်းနှင့် ရုံးများ</p>
                 </div>
-                <div className="flex gap-3">
-                    <div className="relative">
-                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <label htmlFor="location-search-input" className="sr-only">တည်နေရာများ ရှာရန်...</label>
-                        <input
-                            id="location-search-input"
-                            type="text"
-                            placeholder="တည်နေရာများ ရှာရန်..."
-                            className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                <div className="flex gap-3 items-center">
+                    <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1">
+                        <button
+                            onClick={() => setViewTab('LIST')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${viewTab === 'LIST' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                        >
+                            တည်နေရာ စာရင်း
+                        </button>
+                        <button
+                            onClick={() => setViewTab('GIS_MAP')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${viewTab === 'GIS_MAP' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600'}`}
+                        >
+                            <Map size={14} /> GIS & 3D Pit Map
+                        </button>
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition-colors"
-                    >
-                        <Plus size={18} />
-                        Add Location
-                    </button>
+
+                    {viewTab === 'LIST' && (
+                        <>
+                            <div className="relative">
+                                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <label htmlFor="location-search-input" className="sr-only">တည်နေရာများ ရှာရန်...</label>
+                                <input
+                                    id="location-search-input"
+                                    type="text"
+                                    placeholder="တည်နေရာများ ရှာရန်..."
+                                    className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition-colors"
+                            >
+                                <Plus size={18} />
+                                Add Location
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
+
+            {viewTab === 'GIS_MAP' && (
+                <PitMapView />
+            )}
+
+            {viewTab === 'LIST' && (
+                <>
 
             {error && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 flex justify-between items-center">
@@ -163,6 +191,8 @@ const LocationView: React.FC = () => {
                 <div className="text-center py-12 text-slate-400">
                     <p>No locations found matching &quot;{searchTerm}&quot;</p>
                 </div>
+            )}
+                </>
             )}
 
             {/* Modal */}

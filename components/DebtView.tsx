@@ -1,7 +1,7 @@
 import { formatCurrency } from '../utils/locale';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { suppliersAPI, inventoryAPI } from '../services/api';
-import { Landmark, AlertTriangle, Banknote, CalendarClock, CheckCircle, Filter, Search, DollarSign } from 'lucide-react';
+import { Landmark, AlertTriangle, Banknote, CalendarClock, CheckCircle, Filter, Search, DollarSign, Clock } from 'lucide-react';
 import { InventoryTransaction } from '../types';
 
 const DebtView: React.FC = () => {
@@ -41,6 +41,28 @@ const DebtView: React.FC = () => {
             tx.paymentStatus !== 'PAID'
         );
     }, [transactions]);
+
+    // AP Aging Calculation (0-30, 31-60, 61-90, 90+ days)
+    const agingBuckets = useMemo(() => {
+        const now = new Date();
+        let bucket0To30 = 0;
+        let bucket31To60 = 0;
+        let bucket61To90 = 0;
+        let bucket90Plus = 0;
+
+        outstandingInvoices.forEach((inv) => {
+            const amount = inv.quantity * (inv.pricePerUnit || 0);
+            const invDate = new Date(inv.date || inv.dueDate || new Date());
+            const diffDays = Math.floor((now.getTime() - invDate.getTime()) / (1000 * 3600 * 24));
+
+            if (diffDays <= 30) bucket0To30 += amount;
+            else if (diffDays <= 60) bucket31To60 += amount;
+            else if (diffDays <= 90) bucket61To90 += amount;
+            else bucket90Plus += amount;
+        });
+
+        return { bucket0To30, bucket31To60, bucket61To90, bucket90Plus };
+    }, [outstandingInvoices]);
 
     // Calculate analytics
     const analytics = useMemo(() => {
@@ -119,6 +141,35 @@ const DebtView: React.FC = () => {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">ပေးရန်ရှိသော အကြွေးစာရင်း</h2>
                     <p className="text-slate-500 text-sm">ပေးချေရန်ကျန်ရှိသော ပစ္စည်းရောင်းချသူ ငွေတောင်းခံလွှာများကို စောင့်ကြည့်ပြီး ရှင်းလင်းပါ။</p>
+                </div>
+            </div>
+
+            {/* AP AGING ANALYSIS BUCKETS */}
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <Clock size={16} className="text-purple-600" />
+                        Supplier Accounts Payable (AP) Aging Analysis
+                    </h3>
+                    <span className="text-xs text-slate-400 font-mono">0 - 90+ Days Aging Breakdown</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                    <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg">
+                        <span className="text-[11px] font-bold text-emerald-800 uppercase block">0 - 30 ရက် (Current)</span>
+                        <span className="font-extrabold text-slate-900 text-base">{formatCurrency(agingBuckets.bucket0To30)}</span>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                        <span className="text-[11px] font-bold text-blue-800 uppercase block">31 - 60 ရက်</span>
+                        <span className="font-extrabold text-slate-900 text-base">{formatCurrency(agingBuckets.bucket31To60)}</span>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-lg">
+                        <span className="text-[11px] font-bold text-amber-800 uppercase block">61 - 90 ရက်</span>
+                        <span className="font-extrabold text-slate-900 text-base">{formatCurrency(agingBuckets.bucket61To90)}</span>
+                    </div>
+                    <div className="bg-red-50 border border-red-100 p-3 rounded-lg">
+                        <span className="text-[11px] font-bold text-red-800 uppercase block">90+ ရက် (High Overdue)</span>
+                        <span className="font-extrabold text-red-700 text-base">{formatCurrency(agingBuckets.bucket90Plus)}</span>
+                    </div>
                 </div>
             </div>
 
