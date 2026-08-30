@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Layers, Box, Pickaxe, ShieldAlert, Sparkles, Navigation, ChevronRight, Eye, Upload, Globe, CheckCircle, Bot, Send, AlertTriangle, TrendingUp, Cpu, TestTube } from 'lucide-react';
-import { chatAPI } from '../services/api';
+import { chatAPI, locationsAPI } from '../services/api';
 
 export interface PitGisFeature {
   id: string;
@@ -81,9 +81,52 @@ const DEFAULT_PITS: PitGisFeature[] = [
   },
 ];
 
-const PitMapView: React.FC = () => {
+interface PitMapViewProps {
+  locations?: any[];
+  onAddLocation?: (newLoc: any) => Promise<void> | void;
+}
+
+const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }) => {
   const [pits, setPits] = useState<PitGisFeature[]>(DEFAULT_PITS);
   const [selectedPit, setSelectedPit] = useState<PitGisFeature>(DEFAULT_PITS[0]);
+
+  // Sync props locations with pits when locations change
+  useEffect(() => {
+    if (locations && locations.length > 0) {
+      const locationPits: PitGisFeature[] = locations
+        .filter((loc) => loc.type === 'Mine Site' || loc.type === 'MINE_SITE' || (loc.code && loc.code.startsWith('PIT')))
+        .map((loc, index) => ({
+          id: loc.id || `loc-${index}`,
+          name: loc.name || 'Unnamed Pit',
+          code: loc.code || `PIT-${index + 1}`,
+          lat: loc.lat || -3.4561 - index * 0.008,
+          lng: loc.lng || 114.8123 + index * 0.008,
+          depthMeters: loc.depthMeters || 45 + index * 10,
+          elevationMeters: loc.elevationMeters || 280 - index * 10,
+          estimatedOreTons: loc.estimatedOreTons || 12000 + index * 2000,
+          goldGradeGramsPerTon: loc.goldGradeGramsPerTon || 5.2,
+          status: 'ACTIVE_DIGGING',
+          boundaryCoordinates: [
+            [-3.455, 114.811],
+            [-3.455, 114.814],
+            [-3.458, 114.814],
+            [-3.458, 114.811],
+          ],
+          slopeStabilityRiskPct: 12,
+          predictedVeinTrendAngle: 'NE-40°',
+        }));
+
+      if (locationPits.length > 0) {
+        // Combine unique pits by code or id
+        setPits((prevPits) => {
+          const existingCodes = new Set(prevPits.map((p) => p.code));
+          const newToAdd = locationPits.filter((lp) => !existingCodes.has(lp.code));
+          const updated = [...newToAdd, ...prevPits];
+          return updated;
+        });
+      }
+    }
+  }, [locations]);
   const [mapMode, setMapMode] = useState<'2D_SATELLITE' | '3D_ELEVATION' | 'GRADE_HEATMAP'>('2D_SATELLITE');
   const [pitch3d, setPitch3d] = useState(45);
 
@@ -696,14 +739,17 @@ const PitMapView: React.FC = () => {
               {!importSuccess && (
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     // Extract Pit Name and Lat/Lng from KML or default fallback
+                    const pitName = importText.includes('<name>')
+                      ? importText.split('<name>')[1]?.split('</name>')[0] || 'Imported KML Pit'
+                      : 'Pit Delta - Gold Vein (KML)';
+                    const pitCode = `PIT-KML-${Math.floor(100 + Math.random() * 900)}`;
+
                     const newPit: PitGisFeature = {
                       id: `pit-imported-${Date.now()}`,
-                      name: importText.includes('<name>')
-                        ? importText.split('<name>')[1]?.split('</name>')[0] || 'Imported KML Pit'
-                        : 'Pit Delta - Gold Vein (KML)',
-                      code: `PIT-KML-${Math.floor(100 + Math.random() * 900)}`,
+                      name: pitName,
+                      code: pitCode,
                       lat: -3.450,
                       lng: 114.815,
                       depthMeters: 50,
@@ -720,7 +766,26 @@ const PitMapView: React.FC = () => {
                       slopeStabilityRiskPct: 10,
                       predictedVeinTrendAngle: 'NE-30°',
                     };
-                    setPits((prev) => [...prev, newPit]);
+
+                    // Persist to ERP Locations database & trigger parent list update
+                    try {
+                      const newLocData = {
+                        code: pitCode,
+                        name: pitName,
+                        type: 'Mine Site',
+                        address: 'Google Earth KML Coordinates Boundary (-3.450, 114.815)',
+                        city: 'Gold Mining Pit Zone',
+                      };
+                      if (onAddLocation) {
+                        await onAddLocation(newLocData);
+                      } else {
+                        await locationsAPI.createLocation(newLocData);
+                      }
+                    } catch (e) {
+                      console.warn('Failed to sync imported pit to location API:', e);
+                    }
+
+                    setPits((prev) => [newPit, ...prev]);
                     setSelectedPit(newPit);
                     setImportSuccess(true);
                   }}

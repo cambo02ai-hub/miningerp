@@ -132,7 +132,13 @@ const LocationView: React.FC = () => {
             </div>
 
             {viewTab === 'GIS_MAP' && (
-                <PitMapView />
+                <PitMapView
+                    locations={locations}
+                    onAddLocation={async (newLoc) => {
+                        await locationsAPI.createLocation(newLoc);
+                        await loadLocations();
+                    }}
+                />
             )}
 
             {viewTab === 'LIST' && (

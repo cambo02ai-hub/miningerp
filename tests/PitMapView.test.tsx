@@ -1,8 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import PitMapView from '../components/PitMapView';
+
+// Mock chatAPI and locationsAPI
+vi.mock('../services/api', () => ({
+  chatAPI: {
+    sendMessage: vi.fn().mockResolvedValue({ reply: 'Mocked AI Pit Response' }),
+  },
+  locationsAPI: {
+    getLocations: vi.fn().mockResolvedValue([]),
+    createLocation: vi.fn().mockResolvedValue({ id: 'loc-101', name: 'Pit Delta - Gold Vein (KML)', code: 'PIT-KML-101' }),
+  },
+}));
 
 describe('PitMapView Component', () => {
   beforeEach(() => {
@@ -29,12 +40,26 @@ describe('PitMapView Component', () => {
     expect(screen.getByText(/3D Tilt Angle/i)).toBeInTheDocument();
   });
 
-  it('opens Google Earth Import modal when import button is clicked', () => {
-    const importBtn = screen.getByText(/Google Earth Import/i);
+  it('opens Google Earth Import modal when import button is clicked and triggers location sync', async () => {
+    const onAddLocationMock = vi.fn().mockResolvedValue(undefined);
+    render(<PitMapView onAddLocation={onAddLocationMock} />);
+
+    const importBtn = screen.getAllByText(/Google Earth Import/i)[0];
     fireEvent.click(importBtn);
 
     expect(screen.getByText(/Google Earth Spatial Data Import/i)).toBeInTheDocument();
-    expect(screen.getByText(/KML \/ GeoJSON File တင်ရန်/i)).toBeInTheDocument();
+
+    const doImportBtn = screen.getByRole('button', { name: /Import Google Earth Data/i });
+    fireEvent.click(doImportBtn);
+
+    await waitFor(() => {
+      expect(onAddLocationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'Mine Site',
+          name: expect.stringContaining('Pit Delta'),
+        })
+      );
+    });
   });
 
   it('renders AI Vein Trend and Slope Risk indicators and opens Drone Volume modal', () => {
