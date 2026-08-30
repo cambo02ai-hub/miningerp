@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Layers, Box, Pickaxe, ShieldAlert, Sparkles, Navigation, ChevronRight, Eye, Upload, Globe, CheckCircle, Bot, Send, AlertTriangle, TrendingUp, Cpu } from 'lucide-react';
+import { MapPin, Layers, Box, Pickaxe, ShieldAlert, Sparkles, Navigation, ChevronRight, Eye, Upload, Globe, CheckCircle, Bot, Send, AlertTriangle, TrendingUp, Cpu, TestTube } from 'lucide-react';
 import { chatAPI } from '../services/api';
 
 export interface PitGisFeature {
@@ -92,6 +92,16 @@ const PitMapView: React.FC = () => {
   const [importText, setImportText] = useState('');
   const [importSuccess, setImportSuccess] = useState(false);
 
+  // Assay Lab Test Entry State
+  const [isAssayModalOpen, setIsAssayModalOpen] = useState(false);
+  const [assayForm, setAssayForm] = useState({
+    sampleId: `LAB-G${Math.floor(100 + Math.random() * 900)}`,
+    date: new Date().toISOString().split('T')[0],
+    goldGradeGramsPerTon: 5.2,
+    moisturePct: 2.5,
+    notes: '',
+  });
+
   // AI Feature Overlays & Modals
   const [showVeinPrediction, setShowVeinPrediction] = useState(true);
   const [isDroneModalOpen, setIsDroneModalOpen] = useState(false);
@@ -137,6 +147,15 @@ const PitMapView: React.FC = () => {
 
         {/* AI Action Overlay & Import */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => {
+              setAssayForm((prev) => ({ ...prev, goldGradeGramsPerTon: selectedPit.goldGradeGramsPerTon }));
+              setIsAssayModalOpen(true);
+            }}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-xl shadow text-xs flex items-center gap-1.5 transition-all"
+          >
+            <TestTube size={14} /> Assay Lab Test Entry
+          </button>
           <button
             onClick={() => setShowVeinPrediction(!showVeinPrediction)}
             className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm ${
@@ -366,6 +385,116 @@ const PitMapView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ASSAY LAB TEST RESULTS MODAL */}
+      {isAssayModalOpen && selectedPit && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in flex flex-col">
+            <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-4 flex justify-between items-center">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <TestTube size={18} /> Assay Lab Test Results Entry (ရွှေပါဝင်မှု စမ်းသပ်ချက်)
+              </h3>
+              <button onClick={() => setIsAssayModalOpen(false)} className="text-white/80 hover:text-white">✕</button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const newGrade = Number(assayForm.goldGradeGramsPerTon);
+                setPits((prev) =>
+                  prev.map((p) =>
+                    p.id === selectedPit.id ? { ...p, goldGradeGramsPerTon: newGrade } : p
+                  )
+                );
+                setSelectedPit((prev) => ({ ...prev, goldGradeGramsPerTon: newGrade }));
+                setIsAssayModalOpen(false);
+                alert(`Assay Lab Results Saved! Updated Gold Grade for ${selectedPit.name} to ${newGrade} g/t.`);
+              }}
+              className="p-6 space-y-4 text-xs"
+            >
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px]">Target Pit / Vein</span>
+                <span className="font-extrabold text-slate-800 text-sm">{selectedPit.name} ({selectedPit.code})</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1">Lab Sample ID</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full border border-slate-300 rounded-lg p-2 font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                    value={assayForm.sampleId}
+                    onChange={(e) => setAssayForm({ ...assayForm, sampleId: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1">Tested Date</label>
+                  <input
+                    type="date"
+                    required
+                    className="w-full border border-slate-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-purple-500"
+                    value={assayForm.date}
+                    onChange={(e) => setAssayForm({ ...assayForm, date: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-purple-900 mb-1">Assay Gold Grade (g/t) *</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      required
+                      className="w-full border border-purple-300 rounded-lg p-2 font-extrabold text-slate-900 text-base outline-none focus:ring-2 focus:ring-purple-500"
+                      value={assayForm.goldGradeGramsPerTon}
+                      onChange={(e) => setAssayForm({ ...assayForm, goldGradeGramsPerTon: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-purple-900 mb-1">Moisture (%)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      className="w-full border border-purple-300 rounded-lg p-2 outline-none"
+                      value={assayForm.moisturePct}
+                      onChange={(e) => setAssayForm({ ...assayForm, moisturePct: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-purple-800 font-semibold">
+                  * ရွှေအထွက် ပမာဏ ခန့်မှန်းချက်: <span className="font-bold underline">{((selectedPit.estimatedOreTons * assayForm.goldGradeGramsPerTon) / 1000).toFixed(2)} Kg Gold</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Lab Technician Notes</label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-300 rounded-lg p-2 outline-none"
+                  placeholder="ဓာတ်ခွဲခန်း မှတ်ချက်..."
+                  value={assayForm.notes}
+                  onChange={(e) => setAssayForm({ ...assayForm, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button type="button" onClick={() => setIsAssayModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold">
+                  မလုပ်တော့ပါ
+                </button>
+                <button type="submit" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow">
+                  Save Assay Result
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* AI DRONE STOCKPILE VOLUME MODAL */}
       {isDroneModalOpen && (

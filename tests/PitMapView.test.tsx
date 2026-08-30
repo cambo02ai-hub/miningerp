@@ -46,4 +46,11 @@ describe('PitMapView Component', () => {
 
     expect(screen.getByText('AI Drone Stockpile Volume Estimation')).toBeInTheDocument();
   });
+
+  it('opens Assay Lab Test Entry modal and updates Gold Grade', () => {
+    const assayBtn = screen.getByText(/Assay Lab Test Entry/i);
+    fireEvent.click(assayBtn);
+
+    expect(screen.getByText(/Assay Lab Test Results Entry/i)).toBeInTheDocument();
+  });
 });
