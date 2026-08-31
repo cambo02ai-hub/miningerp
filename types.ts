@@ -336,3 +336,50 @@ export interface Employee {
   joinedDate: string;
   locationId?: string; // Linked to ProjectLocation (Where they are assigned)
 }
+
+// --- Gold Mining Finance Types ---
+
+export interface GoldSaleRecord {
+  id: string;
+  date: string;
+  batchId: string; // e.g., GOLD-BATCH-2025-001
+  goldWeightKyat: number; // Myanmar Gold weight in Kyat (1 Kyat = 16.6 gram)
+  goldWeightGrams: number; // Weight in Grams
+  purityPct: number; // Gold Purity (e.g., 99.9% 24K, 95% 22K)
+  pricePerKyat: number; // Sale price per Kyat (MMK)
+  pricePerGram: number; // Sale price per Gram
+  totalRevenueMMK: number; // Total revenue in MMK
+  buyerName: string; // Refinery / Buyer name
+  paymentStatus: 'PAID' | 'PENDING' | 'PARTIAL';
+  paidAmountMMK: number;
+  invoiceRef: string;
+  notes?: string;
+}
+
+export interface RoyaltyFeeRecord {
+  id: string;
+  period: string; // e.g. "2025-05"
+  goldProductionKyat: number; // Total gold produced in Kyat
+  goldProductionGrams: number; // Total gold produced in Grams
+  royaltyRatePct: number; // Government mining royalty rate (%)
+  royaltyGoldKyat: number; // Royalty payable in physical gold (Kyat)
+  cashValueEquivalentMMK: number; // Cash value equivalent (MMK)
+  dueDate: string;
+  status: 'PAID' | 'UNPAID' | 'OVERDUE';
+  paidDate?: string;
+  treasuryReceiptRef?: string;
+  notes?: string;
+}
+
+export interface GoldFinanceSummary {
+  totalRevenueMMK: number;
+  totalGoldSoldKyat: number;
+  totalGoldSoldGrams: number;
+  avgPricePerKyat: number;
+  totalRoyaltyPaidMMK: number;
+  totalOpExMMK: number;
+  totalAPDebtMMK: number;
+  netIncomeMMK: number;
+  aiscPerKyatMMK: number; // All-In Sustaining Cost per Kyat
+  aiscPerGramMMK: number; // All-In Sustaining Cost per Gram
+}

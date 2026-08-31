@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Layers, Box, Pickaxe, ShieldAlert, Sparkles, Navigation, ChevronRight, Eye, Upload, Globe, CheckCircle, Bot, Send, AlertTriangle, TrendingUp, Cpu, TestTube } from 'lucide-react';
+import { MapPin, Layers, Box, ShieldAlert, Sparkles, Navigation, Upload, Globe, CheckCircle, Bot, Send, TrendingUp, Cpu, TestTube } from 'lucide-react';
 import { chatAPI, locationsAPI } from '../services/api';
 
 export interface PitGisFeature {
@@ -294,10 +294,11 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
               {pits.map((pit) => {
                 const isSelected = pit.id === selectedPit.id;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={pit.id}
                     onClick={() => setSelectedPit(pit)}
-                    className={`absolute rounded-2xl cursor-pointer transition-all duration-300 border-2 p-4 flex flex-col justify-between ${
+                    className={`absolute rounded-2xl cursor-pointer transition-all duration-300 border-2 p-4 flex flex-col justify-between text-left ${
                       isSelected
                         ? 'bg-amber-500/20 border-amber-400 shadow-2xl shadow-amber-500/20 scale-105 z-20'
                         : 'bg-slate-800/60 border-slate-700 hover:border-slate-500 z-10'
@@ -329,7 +330,7 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                     <div className="w-full bg-slate-900/60 rounded-lg p-1.5 border border-slate-700 text-[10px] text-slate-300 flex justify-between">
                       <span>Ore: {pit.estimatedOreTons.toLocaleString()} Tons</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -462,8 +463,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Lab Sample ID</label>
+                  <label htmlFor="assay-sample-id" className="block font-bold text-slate-600 mb-1">Lab Sample ID</label>
                   <input
+                    id="assay-sample-id"
                     type="text"
                     required
                     className="w-full border border-slate-300 rounded-lg p-2 font-mono outline-none focus:ring-2 focus:ring-purple-500"
@@ -472,8 +474,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Tested Date</label>
+                  <label htmlFor="assay-tested-date" className="block font-bold text-slate-600 mb-1">Tested Date</label>
                   <input
+                    id="assay-tested-date"
                     type="date"
                     required
                     className="w-full border border-slate-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-purple-500"
@@ -486,8 +489,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
               <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-purple-900 mb-1">Assay Gold Grade (g/t) *</label>
+                    <label htmlFor="assay-gold-grade" className="block font-bold text-purple-900 mb-1">Assay Gold Grade (g/t) *</label>
                     <input
+                      id="assay-gold-grade"
                       type="number"
                       step="0.1"
                       min="0.1"
@@ -498,8 +502,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-purple-900 mb-1">Moisture (%)</label>
+                    <label htmlFor="assay-moisture" className="block font-bold text-purple-900 mb-1">Moisture (%)</label>
                     <input
+                      id="assay-moisture"
                       type="number"
                       step="0.1"
                       min="0"
@@ -516,8 +521,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">Lab Technician Notes</label>
+                <label htmlFor="assay-notes" className="block font-bold text-slate-600 mb-1">Lab Technician Notes</label>
                 <input
+                  id="assay-notes"
                   type="text"
                   className="w-full border border-slate-300 rounded-lg p-2 outline-none"
                   placeholder="ဓာတ်ခွဲခန်း မှတ်ချက်..."
@@ -711,8 +717,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">သို့မဟုတ် KML / GeoJSON XML Content ကို တိုက်ရိုက် Paste လုပ်ပါ:</label>
+                    <label htmlFor="kml-text-area" className="block font-bold text-slate-700 mb-1">သို့မဟုတ် KML / GeoJSON XML Content ကို တိုက်ရိုက် Paste လုပ်ပါ:</label>
                     <textarea
+                      id="kml-text-area"
                       rows={5}
                       className="w-full border border-slate-300 rounded-xl p-3 font-mono text-[11px] outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder={`<kml xmlns="http://www.opengis.net/kml/2.2">\n  <Placemark>\n    <name>Pit Delta - Gold Vein</name>\n    <Polygon><outerBoundaryIs><LinearRing><coordinates>114.815,-3.450 114.818,-3.450 114.818,-3.453 114.815,-3.453</coordinates></LinearRing></outerBoundaryIs></Polygon>\n  </Placemark>\n</kml>`}
