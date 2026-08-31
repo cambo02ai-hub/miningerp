@@ -11,10 +11,22 @@ interface Message {
   loading?: boolean;
 }
 
+const QUICK_PROMPTS = [
+  "ရွှေရောင်းရငွေနှင့် တော်ဝင်ကြေး အခြေအနေ မေးမည်",
+  "စတိုရှိ Low Stock ပစ္စည်းများ စစ်ဆေးပေးပါ",
+  "စက်ယန္တရားများ၏ Maintenance Status မေးမည်",
+  "Pit ကျင်းများ၏ Gold Grade (g/t) မေးမည်"
+];
+
 const AIChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: "1", role: "assistant", content: "Halo! Saya Hestia, asisten AI jpmonitor. Ada yang bisa saya bantu?", timestamp: new Date() }
+    {
+      id: "1",
+      role: "assistant",
+      content: "မင်္ဂလာပါ! ကျွန်မ **Atia AI** ဖြစ်ပါတယ်။ JP Monitor ရွှေတူးဖော်ရေး ERP စနစ်၏ လုပ်ငန်းစဉ်များနှင့် ပတ်သက်၍ မည်သည်ကို ကူညီပေးရမလဲရှင်။",
+      timestamp: new Date()
+    }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,25 +41,36 @@ const AIChatWidget: React.FC = () => {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+  const sendMessage = async (customPrompt?: string) => {
+    const messageText = (customPrompt || input).trim();
+    if (!messageText || loading) return;
 
-    const userMsg: Message = { id: Date.now().toString(), role: "user", content: input.trim(), timestamp: new Date() };
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: messageText, timestamp: new Date() };
     const loadingMsg: Message = { id: "loading", role: "assistant", content: "", timestamp: new Date(), loading: true };
     setMessages(prev => [...prev, userMsg, loadingMsg]);
-    setInput("");
+    if (!customPrompt) setInput("");
     setLoading(true);
 
     try {
-      const data = await chatAPI.sendMessage(userMsg.content);
+      const data = await chatAPI.sendMessage(messageText);
       setMessages(prev => {
         const filtered = prev.filter(m => m.id !== "loading");
-        return [...filtered, { id: Date.now().toString(), role: "assistant", content: data.reply || data.message || "Maaf, saya tidak bisa memproses permintaan Anda.", timestamp: new Date() }];
+        return [...filtered, {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: data.reply || data.message || "တောင်းပန်ပါသည်။ တုံ့ပြန်မှု မရရှိပါ။ ခေတ္တစောင့်ဆိုင်းပြီး ပြန်လည် ကြိုးစားပေးပါရှင်။",
+          timestamp: new Date()
+        }];
       });
     } catch {
       setMessages(prev => {
         const filtered = prev.filter(m => m.id !== "loading");
-        return [...filtered, { id: Date.now().toString(), role: "assistant", content: "Terjadi kesalahan. Silakan coba lagi.", timestamp: new Date() }];
+        return [...filtered, {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: "မင်္ဂလာပါ! AI Service ချိတ်ဆက်ရာတွင် အမှားအယွင်း ရှိနေပါသည်။ ခေတ္တစောင့်ဆိုင်းပြီး ပြန်လည် ကြိုးစားပေးပါရှင်။",
+          timestamp: new Date()
+        }];
       });
     } finally {
       setLoading(false);
@@ -95,25 +118,25 @@ const AIChatWidget: React.FC = () => {
           <div key={msg.id} className={"flex " + (msg.role === "user" ? "justify-end" : "justify-start")}>
             <div className={"max-w-[85%] px-3.5 py-2.5 rounded-jpmonitor-md text-sm " +
               (msg.role === "user"
-                ? "bg-jpmonitor-red text-white rounded-br-jpmonitor-lg"
-                : "bg-bg-elevated text-text-primary border border-border rounded-bl-jpmonitor-lg")
+                ? "bg-jpmonitor-red text-white rounded-br-jpmonitor-lg shadow-sm"
+                : "bg-bg-elevated text-text-primary border border-border rounded-bl-jpmonitor-lg shadow-sm")
             }>
               {msg.loading ? (
                 <div className="flex items-center gap-2 text-text-muted">
-                  <Loader2 size={14} className="animate-spin" />
-                  <span className="text-xs">Atia စဉ်းစားနေသည်</span>
+                  <Loader2 size={14} className="animate-spin text-jpmonitor-red" />
+                  <span className="text-xs font-medium">Atia AI စဉ်းစားနေသည်...</span>
                 </div>
               ) : (
-                <div className="markdown-content">
+                <div className="markdown-content leading-relaxed">
                   <ReactMarkdown
                     components={{
                       p: ({children}) => <p className="mb-1 last:mb-0">{children}</p>,
                       ul: ({children}) => <ul className="list-disc ml-4 mb-1">{children}</ul>,
                       ol: ({children}) => <ol className="list-decimal ml-4 mb-1">{children}</ol>,
                       li: ({children}) => <li className="text-sm">{children}</li>,
-                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                      strong: ({ children }) => <strong className="font-bold text-jpmonitor-red">{children}</strong>,
                       em: ({ children }) => <em className="italic">{children}</em>,
-                      code: ({ children }) => <code className="bg-bg-page px-1 py-0.5 rounded text-xs">{children}</code>,
+                      code: ({ children }) => <code className="bg-bg-page px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
                     }}
                   >
                     {msg.content}
@@ -121,13 +144,28 @@ const AIChatWidget: React.FC = () => {
                 </div>
               )}
               <p className={"text-[10px] mt-1 " + (msg.role === "user" ? "text-white/60" : "text-text-muted")}>
-                {msg.timestamp.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                {msg.timestamp.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Quick Prompts */}
+      {messages.length < 4 && (
+        <div className="px-4 py-2 border-t border-border/50 bg-bg-page flex flex-wrap gap-1.5">
+          {QUICK_PROMPTS.map((prompt, idx) => (
+            <button
+              key={idx}
+              onClick={() => sendMessage(prompt)}
+              className="text-[11px] bg-bg-surface hover:bg-jpmonitor-red/10 hover:text-jpmonitor-red text-text-primary border border-border px-2.5 py-1 rounded-full transition-all text-left truncate max-w-full"
+            >
+              ✨ {prompt}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-border">
@@ -143,7 +181,7 @@ const AIChatWidget: React.FC = () => {
             disabled={loading}
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={loading || !input.trim()}
             className="p-2 bg-jpmonitor-red text-white rounded-jpmonitor-md hover:bg-jpmonitor-red-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="စာပို့ရန်"
