@@ -3,6 +3,7 @@ import { setAuthData, clearAuthData } from './authStorage'
 export { getCurrentUser } from './authStorage'
 
 import { transformSparePart, transformSparePartToAPI, transformInventoryTransaction, transformInventoryTransactionToAPI, transformEquipment, transformEquipmentToAPI, transformDashboardStats, transformGoodsShipment, transformShipmentToAPI } from './apiTransformers'
+import { GoldSaleRecord, RoyaltyFeeRecord, GoldFinanceSummary } from '../types'
 
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   return fetchJson<T>(endpoint, options)
@@ -481,6 +482,138 @@ export const chatAPI = {
     },
 };
 
+// =============================================================================
+// Gold Mining Finance API
+// =============================================================================
+
+const INITIAL_GOLD_SALES: GoldSaleRecord[] = [
+    {
+        id: 'gs-001',
+        date: '2025-05-10',
+        batchId: 'GOLD-BATCH-2025-001',
+        goldWeightKyat: 10.5,
+        goldWeightGrams: 174.3,
+        purityPct: 99.9,
+        pricePerKyat: 4500000,
+        pricePerGram: 271084,
+        totalRevenueMMK: 47250000,
+        buyerName: 'Myanmar Gold Refinery Co., Ltd.',
+        paymentStatus: 'PAID',
+        paidAmountMMK: 47250000,
+        invoiceRef: 'INV-GOLD-2025-001',
+        notes: '24K High Purity Gold Bar'
+    },
+    {
+        id: 'gs-002',
+        date: '2025-05-18',
+        batchId: 'GOLD-BATCH-2025-002',
+        goldWeightKyat: 8.0,
+        goldWeightGrams: 132.8,
+        purityPct: 95.0,
+        pricePerKyat: 4400000,
+        pricePerGram: 265060,
+        totalRevenueMMK: 35200000,
+        buyerName: 'Golden Shwe Diamond & Gold Trading',
+        paymentStatus: 'PENDING',
+        paidAmountMMK: 0,
+        invoiceRef: 'INV-GOLD-2025-002',
+        notes: '22K Shwe Dory Bar'
+    }
+];
+
+const INITIAL_ROYALTIES: RoyaltyFeeRecord[] = [
+    {
+        id: 'rf-001',
+        period: '2025-04',
+        goldProductionKyat: 25.0,
+        goldProductionGrams: 415.0,
+        royaltyRatePct: 5.0,
+        royaltyGoldKyat: 1.25,
+        cashValueEquivalentMMK: 5625000,
+        dueDate: '2025-05-15',
+        status: 'PAID',
+        paidDate: '2025-05-14',
+        treasuryReceiptRef: 'TR-MINING-2025-0491',
+        notes: 'Paid via Ministry of Mines Account'
+    },
+    {
+        id: 'rf-002',
+        period: '2025-05',
+        goldProductionKyat: 32.0,
+        goldProductionGrams: 531.2,
+        royaltyRatePct: 5.0,
+        royaltyGoldKyat: 1.6,
+        cashValueEquivalentMMK: 7200000,
+        dueDate: '2025-06-15',
+        status: 'UNPAID',
+        notes: 'Pending end of month settlement'
+    }
+];
+
+export const goldFinanceAPI = {
+    async getGoldSales(): Promise<GoldSaleRecord[]> {
+        try {
+            return await apiRequest<GoldSaleRecord[]>('/finance/gold-sales');
+        } catch {
+            const stored = localStorage.getItem('jpmonitor_gold_sales');
+            if (stored) return JSON.parse(stored);
+            localStorage.setItem('jpmonitor_gold_sales', JSON.stringify(INITIAL_GOLD_SALES));
+            return INITIAL_GOLD_SALES;
+        }
+    },
+
+    async createGoldSale(saleData: Omit<GoldSaleRecord, 'id'>): Promise<GoldSaleRecord> {
+        try {
+            return await apiRequest<GoldSaleRecord>('/finance/gold-sales', {
+                method: 'POST',
+                body: JSON.stringify(saleData)
+            });
+        } catch {
+            const newRecord: GoldSaleRecord = {
+                ...saleData,
+                id: `gs-${Date.now()}`
+            };
+            const current = await this.getGoldSales();
+            const updated = [newRecord, ...current];
+            localStorage.setItem('jpmonitor_gold_sales', JSON.stringify(updated));
+            return newRecord;
+        }
+    },
+
+    async getRoyaltyFees(): Promise<RoyaltyFeeRecord[]> {
+        try {
+            return await apiRequest<RoyaltyFeeRecord[]>('/finance/royalties');
+        } catch {
+            const stored = localStorage.getItem('jpmonitor_royalty_fees');
+            if (stored) return JSON.parse(stored);
+            localStorage.setItem('jpmonitor_royalty_fees', JSON.stringify(INITIAL_ROYALTIES));
+            return INITIAL_ROYALTIES;
+        }
+    },
+
+    async updateRoyaltyStatus(id: string, updates: { status: 'PAID' | 'UNPAID' | 'OVERDUE'; paidDate?: string; treasuryReceiptRef?: string }): Promise<RoyaltyFeeRecord> {
+        try {
+            return await apiRequest<RoyaltyFeeRecord>(`/finance/royalties/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(updates)
+            });
+        } catch {
+            const current = await this.getRoyaltyFees();
+            let updatedRecord: RoyaltyFeeRecord | null = null;
+            const updated = current.map(item => {
+                if (item.id === id) {
+                    updatedRecord = { ...item, ...updates };
+                    return updatedRecord;
+                }
+                return item;
+            });
+            localStorage.setItem('jpmonitor_royalty_fees', JSON.stringify(updated));
+            if (!updatedRecord) throw new Error('Royalty record not found');
+            return updatedRecord;
+        }
+    }
+};
+
 // Export all APIs
 export default {
     auth: authAPI,
@@ -494,6 +627,7 @@ export default {
     dashboard: dashboardAPI,
     audit: auditAPI,
     chat: chatAPI,
+    goldFinance: goldFinanceAPI,
 };
 
 // =============================================================================

@@ -16,11 +16,8 @@ vi.mock('../services/api', () => ({
 }));
 
 describe('PitMapView Component', () => {
-  beforeEach(() => {
-    render(<PitMapView />);
-  });
-
   it('renders GIS Pit Mapping header and controls', () => {
+    render(<PitMapView />);
     expect(screen.getByText('GIS & 3D Interactive Pit Mapping')).toBeInTheDocument();
     expect(screen.getByText('2D GIS Satellite')).toBeInTheDocument();
     expect(screen.getByText('3D Depth Model')).toBeInTheDocument();
@@ -28,12 +25,14 @@ describe('PitMapView Component', () => {
   });
 
   it('renders default pit locations and details panel', () => {
+    render(<PitMapView />);
     expect(screen.getAllByText('Pit Alpha - Main Vein').length).toBeGreaterThan(0);
     expect(screen.getAllByText('PIT-A1').length).toBeGreaterThan(0);
     expect(screen.getByText(/Gold Grade \(ရွှေပါဝင်မှု အဆင့်\)/i)).toBeInTheDocument();
   });
 
   it('switches map view modes', () => {
+    render(<PitMapView />);
     const btn3d = screen.getByText('3D Depth Model');
     fireEvent.click(btn3d);
 
@@ -63,6 +62,7 @@ describe('PitMapView Component', () => {
   });
 
   it('renders AI Vein Trend and Slope Risk indicators and opens Drone Volume modal', () => {
+    render(<PitMapView />);
     expect(screen.getByText(/AI Vein Trend/i)).toBeInTheDocument();
     expect(screen.getByText(/Slope Risk/i)).toBeInTheDocument();
 
@@ -73,6 +73,7 @@ describe('PitMapView Component', () => {
   });
 
   it('opens Assay Lab Test Entry modal and updates Gold Grade', () => {
+    render(<PitMapView />);
     const assayBtn = screen.getByText(/Assay Lab Test Entry/i);
     fireEvent.click(assayBtn);
 

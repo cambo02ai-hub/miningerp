@@ -13,6 +13,12 @@ vi.mock('../services/api', () => ({
     getTransactions: vi.fn(),
     updateTransaction: vi.fn(),
   },
+  goldFinanceAPI: {
+    getGoldSales: vi.fn().mockResolvedValue([]),
+    createGoldSale: vi.fn(),
+    getRoyaltyFees: vi.fn().mockResolvedValue([]),
+    updateRoyaltyStatus: vi.fn(),
+  },
 }));
 
 describe('Inventory Valuation & AP Aging Analysis Tests', () => {
