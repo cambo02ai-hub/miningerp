@@ -63,11 +63,17 @@ app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,https://jpmonitor.duckdns.org}
 
-# Hermes AI API Configuration
+# Hermes AI API & CometAPI Configuration
 hermes:
   api:
-    url: http://localhost:8642
-    key: hermes-jpmonitor-dev
+    url: ${HERMES_API_URL:http://localhost:8642}
+    key: ${HERMES_API_KEY:hermes-jpmonitor-dev}
+
+comet:
+  api:
+    url: ${COMET_API_URL:https://api.cometapi.com}
+    key: ${COMET_API_KEY:}
+    model: ${COMET_API_MODEL:gemini-3.5-flash}
 
 # Actuator (health checks)
 management:
