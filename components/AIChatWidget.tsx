@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { MessageSquare, X, Send, Bot, Loader2 } from "lucide-react";
+import { chatAPI } from "../services/api";
 
 interface Message {
   id: string;
@@ -38,15 +39,10 @@ const AIChatWidget: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.content }),
-      });
-      const data = await response.json();
+      const data = await chatAPI.sendMessage(userMsg.content);
       setMessages(prev => {
         const filtered = prev.filter(m => m.id !== "loading");
-        return [...filtered, { id: Date.now().toString(), role: "assistant", content: data.reply || "Maaf, saya tidak bisa memproses permintaan Anda.", timestamp: new Date() }];
+        return [...filtered, { id: Date.now().toString(), role: "assistant", content: data.reply || data.message || "Maaf, saya tidak bisa memproses permintaan Anda.", timestamp: new Date() }];
       });
     } catch {
       setMessages(prev => {
