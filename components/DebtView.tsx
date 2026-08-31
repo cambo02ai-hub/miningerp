@@ -1,7 +1,7 @@
 import { formatCurrency } from '../utils/locale';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { suppliersAPI, inventoryAPI, goldFinanceAPI } from '../services/api';
-import { Landmark, AlertTriangle, Banknote, CalendarClock, CheckCircle, Filter, Search, DollarSign, Clock, Coins, Scale, ShieldCheck, Plus, Layers, Receipt, TrendingUp, Sparkles, Building2 } from 'lucide-react';
+import { Landmark, AlertTriangle, Banknote, CalendarClock, CheckCircle, Filter, Search, DollarSign, Clock, Coins, Scale, Plus, Receipt, TrendingUp, Sparkles, Building2 } from 'lucide-react';
 import { InventoryTransaction, GoldSaleRecord, RoyaltyFeeRecord } from '../types';
 
 const DebtView: React.FC = () => {
@@ -791,8 +791,9 @@ const DebtView: React.FC = () => {
                         <form onSubmit={handleCreateGoldSale} className="p-6 space-y-4 text-xs">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block font-bold text-slate-600 mb-1">ရောင်းချသည့် ရက်စွဲ *</label>
+                                    <label htmlFor="sale-date-input" className="block font-bold text-slate-600 mb-1">ရောင်းချသည့် ရက်စွဲ *</label>
                                     <input
+                                        id="sale-date-input"
                                         type="date"
                                         required
                                         className="w-full border border-slate-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-amber-500"
@@ -801,8 +802,9 @@ const DebtView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-600 mb-1">Batch / Lot ID *</label>
+                                    <label htmlFor="sale-batch-id-input" className="block font-bold text-slate-600 mb-1">Batch / Lot ID *</label>
                                     <input
+                                        id="sale-batch-id-input"
                                         type="text"
                                         required
                                         className="w-full border border-slate-300 rounded-lg p-2 font-mono outline-none focus:ring-2 focus:ring-amber-500"
@@ -815,8 +817,9 @@ const DebtView: React.FC = () => {
                             <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-3">
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
-                                        <label className="block font-bold text-amber-900 mb-1">အလေးချိန် (ကျပ်) *</label>
+                                        <label htmlFor="sale-gold-weight-input" className="block font-bold text-amber-900 mb-1">အလေးချိန် (ကျပ်) *</label>
                                         <input
+                                            id="sale-gold-weight-input"
                                             type="number"
                                             step="0.1"
                                             min="0.1"
@@ -834,8 +837,9 @@ const DebtView: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block font-bold text-amber-900 mb-1">သန့်စင်မှု (%)</label>
+                                        <label htmlFor="sale-purity-pct-input" className="block font-bold text-amber-900 mb-1">သန့်စင်မှု (%)</label>
                                         <input
+                                            id="sale-purity-pct-input"
                                             type="number"
                                             step="0.1"
                                             min="50"
@@ -846,8 +850,9 @@ const DebtView: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block font-bold text-amber-900 mb-1">၁ ကျပ်စျေး (MMK) *</label>
+                                        <label htmlFor="sale-price-per-kyat-input" className="block font-bold text-amber-900 mb-1">၁ ကျပ်စျေး (MMK) *</label>
                                         <input
+                                            id="sale-price-per-kyat-input"
                                             type="number"
                                             step="10000"
                                             min="100000"
@@ -866,8 +871,9 @@ const DebtView: React.FC = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block font-bold text-slate-600 mb-1">ဝယ်ယူသည့် ရွှေဆိုင် / Refinery *</label>
+                                    <label htmlFor="sale-buyer-name-input" className="block font-bold text-slate-600 mb-1">ဝယ်ယူသည့် ရွှေဆိုင် / Refinery *</label>
                                     <input
+                                        id="sale-buyer-name-input"
                                         type="text"
                                         required
                                         className="w-full border border-slate-300 rounded-lg p-2 outline-none"
@@ -876,8 +882,9 @@ const DebtView: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-600 mb-1">Invoice / Ref No.</label>
+                                    <label htmlFor="sale-invoice-ref-input" className="block font-bold text-slate-600 mb-1">Invoice / Ref No.</label>
                                     <input
+                                        id="sale-invoice-ref-input"
                                         type="text"
                                         className="w-full border border-slate-300 rounded-lg p-2 outline-none font-mono"
                                         value={saleForm.invoiceRef}
@@ -887,8 +894,9 @@ const DebtView: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block font-bold text-slate-600 mb-1">မှတ်ချက်</label>
+                                <label htmlFor="sale-notes-input" className="block font-bold text-slate-600 mb-1">မှတ်ချက်</label>
                                 <input
+                                    id="sale-notes-input"
                                     type="text"
                                     className="w-full border border-slate-300 rounded-lg p-2 outline-none"
                                     placeholder="မှတ်ချက်များ..."
@@ -938,8 +946,9 @@ const DebtView: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block font-bold text-slate-600 mb-1">ပေးချေသည့် ရက်စွဲ</label>
+                                <label htmlFor="royalty-paid-date-input" className="block font-bold text-slate-600 mb-1">ပေးချေသည့် ရက်စွဲ</label>
                                 <input
+                                    id="royalty-paid-date-input"
                                     type="date"
                                     required
                                     className="w-full border border-slate-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-purple-500"
@@ -949,8 +958,9 @@ const DebtView: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block font-bold text-slate-600 mb-1">Treasury Receipt / Challan Ref No.</label>
+                                <label htmlFor="royalty-receipt-ref-input" className="block font-bold text-slate-600 mb-1">Treasury Receipt / Challan Ref No.</label>
                                 <input
+                                    id="royalty-receipt-ref-input"
                                     type="text"
                                     required
                                     className="w-full border border-slate-300 rounded-lg p-2 font-mono outline-none focus:ring-2 focus:ring-purple-500"

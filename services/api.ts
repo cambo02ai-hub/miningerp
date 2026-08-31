@@ -3,7 +3,7 @@ import { setAuthData, clearAuthData } from './authStorage'
 export { getCurrentUser } from './authStorage'
 
 import { transformSparePart, transformSparePartToAPI, transformInventoryTransaction, transformInventoryTransactionToAPI, transformEquipment, transformEquipmentToAPI, transformDashboardStats, transformGoodsShipment, transformShipmentToAPI } from './apiTransformers'
-import { GoldSaleRecord, RoyaltyFeeRecord, GoldFinanceSummary } from '../types'
+import { GoldSaleRecord, RoyaltyFeeRecord } from '../types'
 
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   return fetchJson<T>(endpoint, options)
