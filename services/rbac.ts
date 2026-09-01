@@ -2,6 +2,7 @@ export type AppRole =
   | 'SUPER_ADMIN'
   | 'ADMIN'
   | 'MANAGER'
+  | 'STOCK_MANAGER'
   | 'SUPERVISOR'
   | 'OPERATOR'
   | 'VIEWER';
@@ -154,6 +155,14 @@ export const ROLE_DEFINITIONS: Array<{
     ),
   },
   {
+    value: 'STOCK_MANAGER',
+    label: 'စတော့မန်နေဂျာ',
+    description: 'Master Stock Data များကိုသာ ဖြည့်သွင်း စီမံနိုင်သည်။',
+    permissions: permissionKeys.filter((key) =>
+      ['dashboard.view', 'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.export'].includes(key),
+    ),
+  },
+  {
     value: 'SUPERVISOR',
     label: 'ကြီးကြပ်သူ',
     description: 'နေ့စဉ်လုပ်ငန်းဒေတာများကို ထည့်သွင်း၊ ပြင်ဆင်၊ စောင့်ကြည့်နိုင်သည်။',
@@ -183,6 +192,7 @@ export const normalizeRole = (role?: string | null): AppRole => {
   const normalized = String(role ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
   if (normalized === 'SUPER_ADMIN' || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMINISTRATOR') return 'SUPER_ADMIN';
   if (normalized === 'ADMIN' || normalized === 'ADMINISTRATOR' || normalized === 'SYSTEM_ADMIN') return 'ADMIN';
+  if (normalized === 'STOCK_MANAGER' || normalized === 'STOCKMANAGER') return 'STOCK_MANAGER';
   if (normalized === 'MANAGER') return 'MANAGER';
   if (normalized === 'SUPERVISOR') return 'SUPERVISOR';
   if (normalized === 'OPERATOR') return 'OPERATOR';
