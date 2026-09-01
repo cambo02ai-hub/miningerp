@@ -41,25 +41,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen flex bg-bg-page text-text-secondary transition-colors duration-300">
-      {/* Left Panel - JPM Brand */}
+      {/* Left Panel - Gold Mining ERP Brand */}
       <div className="hidden lg:flex lg:w-1/2 bg-jpmonitor-red flex-col items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-12 left-12 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute top-12 left-12 w-96 h-96 bg-amber-400 rounded-full blur-3xl"></div>
           <div className="absolute bottom-12 right-12 w-72 h-72 bg-black rounded-full blur-3xl"></div>
         </div>
         <div className="relative z-10 max-w-md text-center">
-          <div className="inline-flex items-center justify-center mb-8">
-            <span className="text-white font-black text-7xl tracking-tighter leading-none">
-              J<span className="text-white/80">P</span>M
+          <div className="inline-flex items-center justify-center mb-8 bg-white/10 px-6 py-4 rounded-2xl backdrop-blur-sm border border-white/20">
+            <span className="text-amber-400 font-black text-4xl tracking-tight leading-none">
+              ရွှေမိုင်း <span className="text-white font-bold">ERP</span>
             </span>
           </div>
-          <h1 className="text-white text-3xl font-light tracking-tight mb-4" style={{ letterSpacing: "-0.02em" }}>
-            Enterprise Resource Planning
+          <h1 className="text-white text-3xl font-medium tracking-tight mb-4" style={{ letterSpacing: "-0.02em" }}>
+            ရွှေတူးဖော်ရေး ERP System
           </h1>
-          <p className="text-white/70 text-lg font-light leading-relaxed">
-            JpMonitor
+          <p className="text-white/80 text-base font-light leading-relaxed">
+            Gold Mining Enterprise Resource Planning
           </p>
-          <div className="mt-12 flex items-center justify-center gap-3 text-white/50 text-sm">
+          <div className="mt-12 flex items-center justify-center gap-3 text-white/60 text-sm">
             <Shield size={16} />
             <span>လုပ်ငန်းသုံးအဆင့် လုံခြုံရေးဖြင့် ကာကွယ်ထားသည်</span>
           </div>
@@ -83,8 +83,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div className="w-full max-w-sm">
             {/* Mobile Logo */}
             <div className="lg:hidden flex items-center mb-8">
-              <span className="text-jpmonitor-red font-black text-4xl tracking-tighter">
-                J<span className="text-text-muted">P</span>M
+              <span className="text-jpmonitor-red font-black text-2xl tracking-tight">
+                ရွှေတူးဖော်ရေး <span className="text-text-primary font-bold">ERP System</span>
               </span>
             </div>
 
@@ -160,7 +160,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
             <div className="mt-8 pt-6 border-t border-border">
               <p className="text-xs text-text-muted text-center">
-                &copy; {new Date().getFullYear()} JpMonitor. All rights reserved.
+                &copy; {new Date().getFullYear()} ရွှေတူးဖော်ရေး ERP System. All rights reserved.
               </p>
             </div>
           </div>

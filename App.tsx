@@ -22,12 +22,25 @@ import AIChatWidget from './components/AIChatWidget';
 import { getAuthToken, getCurrentUser, setAuthData, clearAuthData } from './services/authStorage';
 import { authAPI } from './services/api';
 import { hasPermission } from './services/rbac';
+import { WifiOff } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [isChecking, setIsChecking] = React.useState(true);
   const [currentUser, setCurrentUser] = React.useState<any>(null);
+  const [isOffline, setIsOffline] = React.useState(!navigator.onLine);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Check authentication on mount
   useEffect(() => {
@@ -84,7 +97,13 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen transition-colors duration-300 bg-bg-page">
+    <div className="flex min-h-screen transition-colors duration-300 bg-bg-page relative">
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-600 text-white px-4 py-2 text-center text-xs font-medium flex items-center justify-center gap-2 shadow-md">
+          <WifiOff size={14} />
+          <span>သင်သည် အော့ဖ်လိုင်း (Offline) မုဒ်တွင် ရောက်ရှိနေပါသည်။ local ဒေတာများကို သုံးစွဲနိုင်ပါသည်။</span>
+        </div>
+      )}
       <Navigation
         currentUser={currentUser}
         onLogout={handleLogout}
