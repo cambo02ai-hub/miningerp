@@ -34,6 +34,12 @@ describe('RBAC permission model', () => {
     expect(hasPermission({ role: 'OPERATOR' }, 'inventory.delete')).toBe(false);
   });
 
+  it('allows Manager role to manage master stock data but not process transaction directly if disabled', () => {
+    expect(hasPermission({ role: 'MANAGER' }, 'inventory.create')).toBe(true);
+    expect(hasPermission({ role: 'MANAGER' }, 'inventory.edit')).toBe(true);
+    expect(hasPermission({ role: 'MANAGER' }, 'inventory.delete')).toBe(false);
+  });
+
   it('applies DENY and ALLOW user overrides', () => {
     const user = {
       role: 'SUPERVISOR',

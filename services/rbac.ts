@@ -150,7 +150,7 @@ export const ROLE_DEFINITIONS: Array<{
     label: 'မန်နေဂျာ',
     description: 'သက်ဆိုင်ရာ လုပ်ငန်းဒေတာများကို စစ်ဆေး၊ ပြင်ဆင်၊ အတည်ပြုနိုင်သည်။',
     permissions: permissionKeys.filter((key) =>
-      ['dashboard.view', 'production.view', 'production.create', 'production.edit', 'production.approve', 'production.export', 'fleet.view', 'fleet.approve', 'fleet.export', 'mutation.view', 'mutation.approve', 'mutation.export', 'inventory.view', 'inventory.approve', 'inventory.export', 'maintenance.view', 'maintenance.approve', 'maintenance.export', 'employee.view', 'employee.export', 'supplier.view', 'supplier.export', 'debt.view', 'debt.approve', 'debt.export', 'location.view', 'hse.view', 'hse.approve', 'hse.export', 'timesheet.view', 'timesheet.approve', 'timesheet.export', 'audit.view', 'audit.export'].includes(key),
+      ['dashboard.view', 'production.view', 'production.create', 'production.edit', 'production.approve', 'production.export', 'fleet.view', 'fleet.approve', 'fleet.export', 'mutation.view', 'mutation.approve', 'mutation.export', 'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.approve', 'inventory.export', 'maintenance.view', 'maintenance.approve', 'maintenance.export', 'employee.view', 'employee.export', 'supplier.view', 'supplier.export', 'debt.view', 'debt.approve', 'debt.export', 'location.view', 'hse.view', 'hse.approve', 'hse.export', 'timesheet.view', 'timesheet.approve', 'timesheet.export', 'audit.view', 'audit.export'].includes(key),
     ),
   },
   {

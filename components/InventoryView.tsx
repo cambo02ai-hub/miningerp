@@ -1,6 +1,7 @@
 import { formatDate, formatDateTime, formatCurrency } from '../utils/locale';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { inventoryAPI, equipmentAPI, suppliersAPI, employeesAPI, shipmentsAPI, locationsAPI } from '../services/api';
+import { getCurrentUser } from '../services/authStorage';
 import { useQueryClient } from '@tanstack/react-query';
 import { InventoryTxType, SparePart, GoodsShipment, ShipmentItem, InventoryTransaction } from '../types';
 import { AlertTriangle, RefreshCw, Plus, Save, BarChart3, PieChart as PieIcon, Trash2, Truck, Printer, DollarSign, CalendarClock } from 'lucide-react';
@@ -522,13 +523,15 @@ const InventoryView: React.FC = () => {
                         <Plus size={18} />
                         Add New Item
                     </button>
-                    <button
-                        onClick={() => openTxModal(null)}
-                        className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition-colors"
-                    >
-                        <RefreshCw size={18} />
-                        Process Transaction
-                    </button>
+                    {getCurrentUser()?.role !== 'MANAGER' && (
+                        <button
+                            onClick={() => openTxModal(null)}
+                            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition-colors"
+                        >
+                            <RefreshCw size={18} />
+                            Process Transaction
+                        </button>
+                    )}
                 </div>
             </div>
 
