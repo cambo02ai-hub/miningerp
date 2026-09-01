@@ -23,3 +23,17 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 )
+
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.error('ServiceWorker registration failed: ', error);
+    });
+  });
+} else if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.warn('ServiceWorker registration in dev mode: ', error);
+    });
+  });
+}

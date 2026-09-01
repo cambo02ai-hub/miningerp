@@ -59,12 +59,9 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <div className="flex font-black text-xl tracking-tighter leading-none">
-            <span className="text-jpmonitor-red">J</span>
-            <span className="text-jpmonitor-red transform translate-y-0.5">P</span>
-            <span className="text-jpmonitor-red">M</span>
+          <div className="flex font-black text-sm tracking-tight leading-none text-jpmonitor-red">
+            ရွှေတူးဖော်ရေး <span className="text-text-primary ml-1 font-bold">ERP</span>
           </div>
-          <h1 className="text-xs font-semibold text-text-primary leading-tight">jpmonitor</h1>
         </div>
 
         <button
@@ -94,14 +91,12 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
       >
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex font-black text-2xl tracking-tighter leading-none">
-              <span className="text-jpmonitor-red">J</span>
-              <span className="text-jpmonitor-red transform translate-y-1">P</span>
-              <span className="text-jpmonitor-red">M</span>
+            <div className="flex font-black text-lg tracking-tight leading-none text-amber-500 bg-amber-500/10 px-2 py-1 rounded">
+              ရွှေမိုင်း
             </div>
             <div>
-              <h1 className="text-xs font-semibold text-text-primary leading-tight">jpmonitor</h1>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider">သတ္တုတွင်းလုပ်ငန်း</p>
+              <h1 className="text-xs font-semibold text-text-primary leading-tight">ရွှေတူးဖော်ရေး ERP System</h1>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider">Gold Mining ERP</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
