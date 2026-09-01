@@ -90,7 +90,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
+      <main className="flex-1 ml-0 lg:ml-64 pt-20 lg:pt-8 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <div className="max-w-7xl mx-auto animate-fade-in">
           <React.Suspense fallback={<div className="text-center py-20 text-text-muted">တင်နေပါသည်...</div>}>
             <Routes>

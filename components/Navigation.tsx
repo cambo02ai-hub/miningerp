@@ -2,7 +2,7 @@ import { translateValue } from '../utils/locale';
 import { hasPermission, PermissionKey } from '../services/rbac';
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun, ShieldCheck, Pickaxe, Store } from 'lucide-react';
+import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun, ShieldCheck, Pickaxe, Store, Menu, X } from 'lucide-react';
 
 interface NavProps {
   currentUser?: any;
@@ -14,6 +14,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   (isActive ? 'bg-jpmonitor-red text-white font-medium' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary');
 
 const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('jpmonitor-dark-mode');
@@ -47,9 +48,49 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
   ];
 
   return (
-    <div className="w-64 bg-bg-panel border-r border-border flex flex-col h-screen fixed left-0 top-0 z-20 transition-colors duration-300">
-      <div className="p-5 border-b border-border">
-        <div className="flex items-center justify-between">
+    <>
+      {/* Mobile Top Navigation Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-bg-panel border-b border-border z-30 flex items-center justify-between px-4 transition-colors duration-300">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-jpmonitor transition-colors"
+            aria-label="မိုဘိုင်း မီနူး ဖွင့်/ပိတ်ရန်"
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <div className="flex font-black text-xl tracking-tighter leading-none">
+            <span className="text-jpmonitor-red">J</span>
+            <span className="text-jpmonitor-red transform translate-y-0.5">P</span>
+            <span className="text-jpmonitor-red">M</span>
+          </div>
+          <h1 className="text-xs font-semibold text-text-primary leading-tight">jpmonitor</h1>
+        </div>
+
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-1.5 rounded-jpmonitor border border-border hover:bg-bg-elevated transition-colors text-text-muted"
+          aria-label="အမှောင်ပုံစံ ပြောင်းရန်"
+        >
+          {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
+      </div>
+
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Main Sidebar (Drawer on mobile, fixed sidebar on desktop) */}
+      <div
+        className={`w-64 bg-bg-panel border-r border-border flex flex-col h-screen fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex font-black text-2xl tracking-tighter leading-none">
               <span className="text-jpmonitor-red">J</span>
@@ -61,41 +102,46 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
               <p className="text-[10px] text-text-muted uppercase tracking-wider">သတ္တုတွင်းလုပ်ငန်း</p>
             </div>
           </div>
-          <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded-jpmonitor border border-border hover:bg-bg-elevated transition-colors text-text-muted" aria-label="အမှောင်ပုံစံ ပြောင်းရန်">
-            {darkMode ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded-jpmonitor border border-border hover:bg-bg-elevated transition-colors text-text-muted" aria-label="အမှောင်ပုံစံ ပြောင်းရန်">
+              {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+            <button onClick={() => setMobileOpen(false)} className="lg:hidden p-1.5 rounded-jpmonitor hover:bg-bg-elevated text-text-muted" aria-label="ပိတ်ရန်">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <nav className="flex-1 py-4 space-y-0.5 px-3 overflow-y-auto">
+          {menuItems.map((item) => {
+            if (item.requiredPermission && !hasPermission(currentUser, item.requiredPermission)) return null;
+            const Icon = item.icon;
+            const to = item.id === 'dashboard' ? '/' : `/${item.id}`;
+            return (
+              <NavLink key={item.id} to={to} className={linkClass} onClick={() => setMobileOpen(false)}>
+                <Icon size={16} className="flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-border">
+          {currentUser && (
+            <div className="mb-3 px-2">
+              <p className="text-xs text-text-muted uppercase font-medium tracking-wider">{currentUser.fullName || 'Admin'}</p>
+              <p className="text-xs text-text-muted mt-0.5">{translateValue(currentUser.role || 'Super Admin')}</p>
+            </div>
+          )}
+          {onLogout && (
+            <button onClick={() => { setMobileOpen(false); onLogout(); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor-md transition-colors">
+              <LogOut size={16} />
+              <span>ထွက်ရန်</span>
+            </button>
+          )}
         </div>
       </div>
-
-      <nav className="flex-1 py-4 space-y-0.5 px-3 overflow-y-auto">
-        {menuItems.map((item) => {
-          if (item.requiredPermission && !hasPermission(currentUser, item.requiredPermission)) return null;
-          const Icon = item.icon;
-          const to = item.id === 'dashboard' ? '/' : `/${item.id}`;
-          return (
-            <NavLink key={item.id} to={to} className={linkClass}>
-              <Icon size={16} className="flex-shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      <div className="p-4 border-t border-border">
-        {currentUser && (
-          <div className="mb-3 px-2">
-            <p className="text-xs text-text-muted uppercase font-medium tracking-wider">{currentUser.fullName || 'Admin'}</p>
-            <p className="text-xs text-text-muted mt-0.5">{translateValue(currentUser.role || 'Super Admin')}</p>
-          </div>
-        )}
-        {onLogout && (
-          <button onClick={onLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor-md transition-colors">
-            <LogOut size={16} />
-            <span>ထွက်ရန်</span>
-          </button>
-        )}
-      </div>
-    </div>
+    </>
   );
 };
 
