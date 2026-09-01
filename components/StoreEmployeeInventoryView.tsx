@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { inventoryAPI, equipmentAPI, locationsAPI } from '../services/api';
 import { SparePart, InventoryTransaction, InventoryTxType } from '../types';
-import { Search, PackageCheck, AlertTriangle, RefreshCw, Layers, CheckCircle, FileText, Wrench, QrCode, SlidersHorizontal, Printer, ShoppingCart, Plus, Minus, Trash2, Store } from 'lucide-react';
+import { Search, PackageCheck, AlertTriangle, RefreshCw, CheckCircle, FileText, Wrench, QrCode, SlidersHorizontal, Printer, ShoppingCart, Plus, Minus, Trash2, Store } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
 
 interface StoreEmployeeInventoryViewProps {
@@ -19,7 +19,7 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
   const [equipment, setEquipment] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
   // Multi-Store & Category Filtering
   const [selectedStore, setSelectedStore] = useState<string>('ALL');

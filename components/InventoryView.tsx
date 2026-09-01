@@ -40,6 +40,7 @@ const InventoryView: React.FC = () => {
     const [filterText, setFilterText] = useState('');
     const [filterType, setFilterType] = useState<string>('ALL');
     const [masterSearchTerm, setMasterSearchTerm] = useState('');
+    const [selectedStoreLocation, setSelectedStoreLocation] = useState<string>('ALL');
 
     // New Item Form State
     const [newItemForm, setNewItemForm] = useState({
@@ -184,6 +185,7 @@ const InventoryView: React.FC = () => {
                 currentStock: Number(newItemForm.currentStock),
                 minStockLevel: Number(newItemForm.minStockLevel),
                 unit: newItemForm.unit,
+                locationId: newItemForm.locationId,
                 location: newItemForm.location,
                 averageCost: Number(newItemForm.averageCost),
                 preferredSupplierId: newItemForm.preferredSupplierId || undefined
@@ -371,10 +373,16 @@ const InventoryView: React.FC = () => {
         );
     };
 
-    // Stats
-    const totalItems = parts.length;
-    const lowStockItems = parts.filter(p => p.currentStock <= p.minStockLevel).length;
-    const totalValue = parts.reduce((acc, curr) => acc + (curr.currentStock * curr.averageCost), 0);
+    // Store-Filtered Parts Base
+    const storeFilteredPartsBase = useMemo(() => {
+        if (selectedStoreLocation === 'ALL') return parts;
+        return parts.filter(p => p.locationId === selectedStoreLocation);
+    }, [parts, selectedStoreLocation]);
+
+    // Stats calculated dynamically based on Multi-Store filter
+    const totalItems = storeFilteredPartsBase.length;
+    const lowStockItems = storeFilteredPartsBase.filter(p => p.currentStock <= p.minStockLevel).length;
+    const totalValue = storeFilteredPartsBase.reduce((acc, curr) => acc + (curr.currentStock * curr.averageCost), 0);
 
     // Analytics Data
     const loadAnalytics = useCallback(async () => {
@@ -400,15 +408,18 @@ const InventoryView: React.FC = () => {
         }
     }, [activeTab, analyticsLoading, analyticsData.length, loadAnalytics]);
 
-    // Filtered Parts (Master List)
+    // Filtered Parts (Master List) with Search and Multi-Store filter
     const filteredParts = useMemo(() => {
         const term = masterSearchTerm.toLowerCase();
-        return parts.filter(p =>
-            (p.name || '').toLowerCase().includes(term) ||
-            (p.partNumber || '').toLowerCase().includes(term) ||
-            (p.location || '').toLowerCase().includes(term)
-        );
-    }, [parts, masterSearchTerm]);
+        return parts.filter(p => {
+            const matchSearch =
+                (p.name || '').toLowerCase().includes(term) ||
+                (p.partNumber || '').toLowerCase().includes(term) ||
+                (p.location || '').toLowerCase().includes(term);
+            const matchStore = selectedStoreLocation === 'ALL' || p.locationId === selectedStoreLocation;
+            return matchSearch && matchStore;
+        });
+    }, [parts, masterSearchTerm, selectedStoreLocation]);
 
     // Filtered Transactions
     const filteredTransactions = useMemo(() => {
@@ -564,6 +575,9 @@ const InventoryView: React.FC = () => {
                         filteredParts={filteredParts}
                         masterSearchTerm={masterSearchTerm}
                         onMasterSearchTermChange={setMasterSearchTerm}
+                        selectedStoreLocation={selectedStoreLocation}
+                        onStoreLocationChange={setSelectedStoreLocation}
+                        locations={locations}
                         onTransaction={openTxModal}
                         onDelete={handleDelete}
                         getLocationName={getLocationName}

@@ -7,6 +7,9 @@ interface PartListProps {
     filteredParts: SparePart[];
     masterSearchTerm: string;
     onMasterSearchTermChange: (term: string) => void;
+    selectedStoreLocation: string;
+    onStoreLocationChange: (storeId: string) => void;
+    locations: any[];
     onTransaction: (part: SparePart) => void;
     onDelete: (id: string, partNumber: string) => void;
     getLocationName: (locationId?: string) => string;
@@ -16,16 +19,41 @@ const PartList: React.FC<PartListProps> = ({
     filteredParts,
     masterSearchTerm,
     onMasterSearchTermChange,
+    selectedStoreLocation,
+    onStoreLocationChange,
+    locations,
     onTransaction,
     onDelete,
     getLocationName
 }) => {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                    <Filter size={18} className="text-slate-400" /> Master Stock List
-                </h3>
+            <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                <div className="flex items-center gap-4">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        <Filter size={18} className="text-slate-400" /> Master Stock List
+                    </h3>
+                    {/* Multi-Store Location Filter Dropdown */}
+                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                        <label htmlFor="admin-store-location-filter" className="text-xs font-bold text-slate-500 uppercase">
+                            Store / Site:
+                        </label>
+                        <select
+                            id="admin-store-location-filter"
+                            value={selectedStoreLocation}
+                            onChange={(e) => onStoreLocationChange(e.target.value)}
+                            className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="ALL">ဂိုဒေါင် အားလုံး (All Stores)</option>
+                            {locations.map((loc) => (
+                                <option key={loc.id} value={loc.id}>
+                                    {loc.name} ({loc.code || loc.type})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
                 <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <label htmlFor="part-list-search-input" className="sr-only">ပစ္စည်းနံပါတ်၊ အမည်၊ တည်နေရာ ရှာရန်...</label>
