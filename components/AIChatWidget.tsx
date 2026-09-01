@@ -62,7 +62,7 @@ const AIChatWidget: React.FC = () => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 p-4 bg-jpmonitor-red text-white rounded-pill shadow-elevated hover:bg-jpmonitor-red-hover transition-colors z-50 flex items-center gap-2"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 p-3.5 sm:p-4 bg-jpmonitor-red text-white rounded-pill shadow-elevated hover:bg-jpmonitor-red-hover transition-colors z-50 flex items-center gap-2"
         aria-label="AI လက်ထောက် ဖွင့်ရန်"
       >
         <MessageSquare size={20} />
@@ -72,7 +72,7 @@ const AIChatWidget: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 bg-bg-surface border border-border rounded-jpa-xl shadow-elevated z-50 flex flex-col" style={{ maxHeight: "32rem" }}>
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-bg-surface border border-border rounded-jpa-xl shadow-elevated z-50 flex flex-col" style={{ maxHeight: "32rem" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-jpmonitor-red rounded-t-jpmonitor-xl">
         <div className="flex items-center gap-3">
