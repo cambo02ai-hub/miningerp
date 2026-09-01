@@ -78,8 +78,10 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
 
       {/* Mobile Backdrop Overlay */}
       {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity"
+        <button
+          type="button"
+          aria-label="ပိတ်ရန်"
+          className="lg:hidden fixed inset-0 w-full h-full bg-black/50 z-40 transition-opacity cursor-default border-none p-0"
           onClick={() => setMobileOpen(false)}
         />
       )}
