@@ -1,33 +1,45 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { inventoryAPI, equipmentAPI, suppliersAPI, chatAPI } from '../services/api';
+import { inventoryAPI, equipmentAPI, locationsAPI } from '../services/api';
 import { SparePart, InventoryTransaction, InventoryTxType } from '../types';
-import { Search, PackageCheck, ArrowUpRight, ArrowDownLeft, AlertTriangle, Bot, Send, Sparkles, RefreshCw, Layers, CheckCircle, FileText, Wrench, Camera, Upload, Eye, QrCode, ShoppingCart, SlidersHorizontal, Printer } from 'lucide-react';
+import { Search, PackageCheck, AlertTriangle, RefreshCw, Layers, CheckCircle, FileText, Wrench, QrCode, SlidersHorizontal, Printer, ShoppingCart, Plus, Minus, Trash2, Store } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
 
 interface StoreEmployeeInventoryViewProps {
   currentUser?: any;
 }
 
+interface CartItem {
+  part: SparePart;
+  quantity: number;
+}
+
 const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({ currentUser }) => {
   const [parts, setParts] = useState<SparePart[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [equipment, setEquipment] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter & Search
+  // Multi-Store & Category Filtering
+  const [selectedStore, setSelectedStore] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [activeTab, setActiveTab] = useState<'catalog' | 'history' | 'ai-assistant'>('catalog');
+  const [activeTab, setActiveTab] = useState<'pos' | 'history'>('pos');
 
-  // Modal State
-  const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
-  const [isInwardModalOpen, setIsInwardModalOpen] = useState(false);
-  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+  // POS Issue Cart State
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [issueMetadata, setIssueMetadata] = useState({
+    date: new Date().toISOString().split('T')[0],
+    equipmentId: '',
+    referenceId: '',
+    notes: '',
+  });
+  const [isSubmittingIssue, setIsSubmittingIssue] = useState(false);
+
+  // Modal State for QR Label & Stock Adjustment
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
-  const [isPrModalOpen, setIsPrModalOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
 
   // Stock Adjustment Form
@@ -37,64 +49,20 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
     notes: '',
   });
 
-  // Auto PR Form
-  const [prItems, setPrItems] = useState<Array<{ partId: string; partNumber: string; name: string; currentStock: number; minStock: number; suggestedQty: number; estCost: number }>>([]);
-  const [prCreatedSuccess, setPrCreatedSuccess] = useState(false);
-
-  // Vision Scan State
-  const [scanImage, setScanImage] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanImageResult] = useState<{
-    invoiceNo?: string;
-    date?: string;
-    supplierName?: string;
-    items?: Array<{ partNumber?: string; name?: string; qty: number; price: number }>;
-  } | null>(null);
-
-  // Issue Form State (Product Output for Equipment/Work)
-  const [issueForm, setIssueForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    quantity: 1,
-    equipmentId: '',
-    referenceId: '',
-    notes: '',
-  });
-
-  // Inward Form State (Product Input / Purchase / Restock)
-  const [inwardForm, setInwardForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    quantity: 1,
-    supplierId: '',
-    pricePerUnit: 0,
-    referenceId: '',
-    notes: '',
-  });
-
-  // AI Assistant State
-  const [aiQuery, setAiQuery] = useState('');
-  const [aiMessages, setAiMessages] = useState<Array<{ sender: 'user' | 'bot'; text: string; time: string }>>([
-    {
-      sender: 'bot',
-      text: 'မင်္ဂလာပါ Store ဝန်ထမ်းမင်္ဂလာပါ။ စတော့ပစ္စည်း ရှာဖွေခြင်း၊ နည်းနေသောပစ္စည်းစစ်ဆေးခြင်း သို့မဟုတ် အော်ဒါခန့်မှန်းချက်များကို ကူညီပေးနိုင်ပါသည်။',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
-  const [aiLoading, setAiLoading] = useState(false);
-
   const refreshData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const [partsData, txData, eqData, supData] = await Promise.all([
+      const [partsData, txData, eqData, locData] = await Promise.all([
         inventoryAPI.getParts(),
         inventoryAPI.getTransactions(),
         equipmentAPI.getEquipment(),
-        suppliersAPI.getSuppliers(),
+        locationsAPI.getLocations(),
       ]);
       setParts(partsData || []);
       setTransactions(txData || []);
       setEquipment(eqData || []);
-      setSuppliers(supData || []);
+      setLocations(locData || []);
     } catch (err: any) {
       console.error('Store inventory data error:', err);
       setError(err.message || 'ဒေတာများ ရယူရာတွင် အမှားအယွင်းရှိနေပါသည်။');
@@ -121,20 +89,14 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
         (p.brand || '').toLowerCase().includes(term) ||
         (p.location || '').toLowerCase().includes(term);
       const matchCat = selectedCategory === 'ALL' || p.category === selectedCategory;
-      return matchSearch && matchCat;
+      const matchStore = selectedStore === 'ALL' || p.locationId === selectedStore;
+      return matchSearch && matchCat && matchStore;
     });
-  }, [parts, searchTerm, selectedCategory]);
+  }, [parts, searchTerm, selectedCategory, selectedStore]);
 
   const lowStockParts = useMemo(() => {
     return parts.filter((p) => p.currentStock <= p.minStockLevel);
   }, [parts]);
-
-  // Options
-  const partOptions = parts.map((p) => ({
-    value: p.id,
-    label: `${p.name} (${p.currentStock} ${p.unit})`,
-    subLabel: `Part #: ${p.partNumber} | Location: ${p.location || 'N/A'}`,
-  }));
 
   const equipmentOptions = equipment.map((eq) => ({
     value: eq.id,
@@ -142,252 +104,155 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
     subLabel: `Status: ${eq.status}`,
   }));
 
-  const supplierOptions = suppliers.map((s) => ({
-    value: s.id,
-    label: s.name,
-    subLabel: s.type || 'Supplier',
-  }));
-
-  const handleOpenIssue = (part?: SparePart) => {
-    setSelectedPart(part || null);
-    setIssueForm({
-      date: new Date().toISOString().split('T')[0],
-      quantity: 1,
-      equipmentId: '',
-      referenceId: '',
-      notes: '',
-    });
-    setIsIssueModalOpen(true);
-  };
-
-  const handleOpenInward = (part?: SparePart) => {
-    setSelectedPart(part || null);
-    setInwardForm({
-      date: new Date().toISOString().split('T')[0],
-      quantity: 1,
-      supplierId: part?.preferredSupplierId || '',
-      pricePerUnit: part ? part.averageCost : 0,
-      referenceId: '',
-      notes: '',
-    });
-    setIsInwardModalOpen(true);
-  };
-
-  const handleIssueSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPart) {
-      alert('ကျေးဇူးပြု၍ ထုတ်ပေးမည့် ပစ္စည်းကို ရွေးချယ်ပါ။');
+  // POS Cart Handlers
+  const addToCart = (part: SparePart) => {
+    if (part.currentStock <= 0) {
+      alert('ဤပစ္စည်းသည် စတော့ မရှိတော့ပါ။');
       return;
     }
-    if (selectedPart.currentStock < issueForm.quantity) {
-      alert(`စတော့ မလုံလောက်ပါ။ လက်ရှိစတော့: ${selectedPart.currentStock} ${selectedPart.unit}`);
-      return;
-    }
-    try {
-      await inventoryAPI.createTransaction({
-        date: issueForm.date,
-        type: InventoryTxType.USAGE,
-        partId: selectedPart.id,
-        quantity: Number(issueForm.quantity),
-        pricePerUnit: selectedPart.averageCost,
-        equipmentId: issueForm.equipmentId || undefined,
-        referenceId: issueForm.referenceId || undefined,
-        notes: issueForm.notes || undefined,
-      });
-      await refreshData();
-      setIsIssueModalOpen(false);
-      alert('ပစ္စည်းထုတ်ပေးမှု အောင်မြင်ပါသည်။');
-    } catch (err: any) {
-      alert(`အမှားအယွင်း: ${err.message || 'ပစ္စည်းထုတ်ပေးရန် မအောင်မြင်ပါ'}`);
-    }
-  };
 
-  const handleInwardSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPart) {
-      alert('ကျေးဇူးပြု၍ လက်ခံမည့် ပစ္စည်းကို ရွေးချယ်ပါ။');
-      return;
-    }
-    try {
-      await inventoryAPI.createTransaction({
-        date: inwardForm.date,
-        type: InventoryTxType.PURCHASE,
-        partId: selectedPart.id,
-        quantity: Number(inwardForm.quantity),
-        pricePerUnit: Number(inwardForm.pricePerUnit),
-        supplierId: inwardForm.supplierId || undefined,
-        referenceId: inwardForm.referenceId || undefined,
-        notes: inwardForm.notes || undefined,
-        paymentType: 'CASH',
-      });
-      await refreshData();
-      setIsInwardModalOpen(false);
-      alert('စတော့အဝင် စာရင်းသွင်းမှု အောင်မြင်ပါသည်။');
-    } catch (err: any) {
-      alert(`အမှားအယွင်း: ${err.message || 'စတော့အဝင်သွင်းရန် မအောင်မြင်ပါ'}`);
-    }
-  };
-
-  // AI Prompt Helpers
-  const handleAiSend = async (customPrompt?: string) => {
-    const textToSend = customPrompt || aiQuery;
-    if (!textToSend.trim()) return;
-
-    const userMsg = {
-      sender: 'user' as const,
-      text: textToSend,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setAiMessages((prev) => [...prev, userMsg]);
-    if (!customPrompt) setAiQuery('');
-    setAiLoading(true);
-
-    try {
-      // Local smart response formatting for common Store queries
-      let responseText = '';
-
-      if (textToSend.includes('စတော့နည်း') || textToSend.includes('low stock')) {
-        if (lowStockParts.length === 0) {
-          responseText = 'လက်ရှိတွင် အနည်းဆုံးစတော့အဆင့်အောက် ရောက်နေသော ပစ္စည်းများ မရှိပါ။ စတော့အခြေအနေ ကောင်းမွန်ပါသည်။';
-        } else {
-          responseText = `လက်ရှိစတော့ နည်းနေသော ပစ္စည်း (${lowStockParts.length}) မျိုး ရှိပါသည်:\n` +
-            lowStockParts.map((p) => `- ${p.name} (${p.partNumber}): လက်ရှိ ${p.currentStock} ${p.unit} (အနည်းဆုံးထားရမည်: ${p.minStockLevel}) [Location: ${p.location || 'N/A'}]`).join('\n');
+    setCart((prevCart) => {
+      const existing = prevCart.find((item) => item.part.id === part.id);
+      if (existing) {
+        if (existing.quantity >= part.currentStock) {
+          alert(`စတော့ မလုံလောက်ပါ။ လက်ရှိစတော့: ${part.currentStock} ${part.unit}`);
+          return prevCart;
         }
-      } else if (textToSend.includes('ဒီနေ့') || textToSend.includes('ယနေ့') || textToSend.includes('ထုတ်ပေး')) {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const todayTx = transactions.filter((t) => t.date === todayStr);
-        if (todayTx.length === 0) {
-          responseText = 'ယနေ့အတွက် စတော့လှုပ်ရှားမှု စာရင်း မရှိသေးပါ။';
-        } else {
-          responseText = `ယနေ့ လှုပ်ရှားမှု စာရင်း (${todayTx.length} ခု):\n` +
-            todayTx.map((t) => {
-              const p = parts.find((x) => x.id === t.partId);
-              return `- [${t.type}] ${p?.name || 'Item'} (${t.quantity} ${p?.unit || 'Pcs'}) - ${t.performedBy || 'Store Staff'}`;
-            }).join('\n');
-        }
-      } else {
-        // Fallback to API / Gemini
-        const res = await chatAPI.sendMessage(textToSend);
-        responseText = res.reply || res.message || 'တောင်းပန်ပါသည်။ တုံ့ပြန်မှု မရရှိပါ။';
+        return prevCart.map((item) =>
+          item.part.id === part.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prevCart, { part, quantity: 1 }];
+    });
+  };
+
+  const updateCartQuantity = (partId: string, delta: number) => {
+    setCart((prevCart) =>
+      prevCart
+        .map((item) => {
+          if (item.part.id === partId) {
+            const newQty = item.quantity + delta;
+            if (newQty > item.part.currentStock) {
+              alert(`စတော့ မလုံလောက်ပါ။ လက်ရှိစတော့: ${item.part.currentStock} ${item.part.unit}`);
+              return item;
+            }
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  };
+
+  const removeFromCart = (partId: string) => {
+    setCart((prevCart) => prevCart.filter((item) => item.part.id !== partId));
+  };
+
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cart.length === 0) {
+      alert('ကျေးဇူးပြု၍ ထုတ်ပေးမည့် ပစ္စည်းများကို Cart ထဲသို့ ထည့်ပါ။');
+      return;
+    }
+
+    setIsSubmittingIssue(true);
+    try {
+      for (const item of cart) {
+        await inventoryAPI.createTransaction({
+          date: issueMetadata.date,
+          type: InventoryTxType.USAGE,
+          partId: item.part.id,
+          quantity: item.quantity,
+          pricePerUnit: item.part.averageCost,
+          equipmentId: issueMetadata.equipmentId || undefined,
+          referenceId: issueMetadata.referenceId || undefined,
+          notes: issueMetadata.notes || undefined,
+        });
       }
 
-      setAiMessages((prev) => [
-        ...prev,
-        {
-          sender: 'bot',
-          text: responseText,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+      await refreshData();
+      clearCart();
+      setIssueMetadata({
+        date: new Date().toISOString().split('T')[0],
+        equipmentId: '',
+        referenceId: '',
+        notes: '',
+      });
+      alert('ပစ္စည်း ထုတ်ပေးမှု အောင်မြင်ပါသည်။');
     } catch (err: any) {
-      setAiMessages((prev) => [
-        ...prev,
-        {
-          sender: 'bot',
-          text: 'AI ဝန်ဆောင်မှုကို ချိတ်ဆက်ရာတွင် အဆင်မပြေပါ။ ကျေးဇူးပြု၍ ပြန်လည်ကြိုးစားပါ။',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+      alert(`အမှားအယွင်း: ${err.message || 'ပစ္စည်းထုတ်ပေးရန် မအောင်မြင်ပါ'}`);
     } finally {
-      setAiLoading(false);
+      setIsSubmittingIssue(false);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header Banner for Store Employees */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      {/* Header Banner for Store POS */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-zinc-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 opacity-10 flex items-center pr-8 pointer-events-none">
           <PackageCheck size={180} />
         </div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-500/30 text-blue-200 border border-blue-400/30 px-3 py-0.5 rounded-full text-xs font-bold tracking-wider uppercase flex items-center gap-1.5">
-                <Wrench size={12} /> Store Staff Mode
+              <span className="bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-3 py-0.5 rounded-full text-xs font-bold tracking-wider uppercase flex items-center gap-1.5">
+                <Wrench size={12} /> POS Store Dispatch Mode
               </span>
               <span className="text-slate-300 text-xs">
                 မင်္ဂလာပါ, {currentUser?.fullName || currentUser?.username || 'Store Keeper'}
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">ဂိုဒေါင် နှင့် စတော့ စီမံခန့်ခွဲမှု</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">ဂိုဒေါင် ပစ္စည်း ထုတ်ပေးခြင်း (POS Dispatch)</h1>
             <p className="text-slate-300 text-sm mt-1">
-              ပစ္စည်း ထုတ်ပေးခြင်း၊ စတော့အဝင် စာရင်းသွင်းခြင်း နှင့် စတော့အခြေအနေ စစ်ဆေးခြင်း။
+              ပစ္စည်းများ လျင်မြန်စွာ ရွေးချယ်၍ လုပ်ငန်းခွင်/စက်များသို့ ပစ္စည်းထုတ်ပေးမှု စာရင်း စာရင်းသွင်းပါ။
             </p>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => {
-                const low = lowStockParts.map((p) => ({
-                  partId: p.id,
-                  partNumber: p.partNumber,
-                  name: p.name,
-                  currentStock: p.currentStock,
-                  minStock: p.minStockLevel,
-                  suggestedQty: Math.max((p.minStockLevel * 2) - p.currentStock, 5),
-                  estCost: p.averageCost || 50000,
-                }));
-                setPrItems(low);
-                setPrCreatedSuccess(false);
-                setIsPrModalOpen(true);
-              }}
-              className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-900/40 flex items-center gap-2 transition-all active:scale-95 text-sm"
-            >
-              <ShoppingCart size={18} />
-              AI Auto-PR ({lowStockParts.length})
-            </button>
-            <button
-              onClick={() => setIsScanModalOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-purple-900/40 flex items-center gap-2 transition-all active:scale-95 text-sm"
-            >
-              <Camera size={18} />
-              AI Invoice Scan
-            </button>
-            <button
-              onClick={() => handleOpenIssue()}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-900/40 flex items-center gap-2 transition-all active:scale-95 text-sm"
-            >
-              <ArrowUpRight size={18} />
-              ပစ္စည်း ထုတ်ပေးမည်
-            </button>
-            <button
-              onClick={() => handleOpenInward()}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-900/40 flex items-center gap-2 transition-all active:scale-95 text-sm"
-            >
-              <ArrowDownLeft size={18} />
-              စတော့အဝင် သွင်းမည်
-            </button>
+          {/* Store Selector Component */}
+          <div className="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 flex items-center gap-3">
+            <Store className="text-emerald-400 flex-shrink-0" size={20} />
+            <div>
+              <label htmlFor="store-select-dropdown" className="text-[10px] text-slate-300 font-bold uppercase block">
+                ဂိုဒေါင် / စတိုး ရွေးချယ်ရန်:
+              </label>
+              <select
+                id="store-select-dropdown"
+                value={selectedStore}
+                onChange={(e) => setSelectedStore(e.target.value)}
+                className="bg-slate-900 border border-slate-700 text-white text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="ALL">ဂိုဒေါင် အားလုံး (All Stores)</option>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name} ({loc.code || loc.type})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Low Stock Warning Banner */}
       {lowStockParts.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start justify-between gap-3 shadow-sm">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="text-amber-600 flex-shrink-0" size={20} />
             <div>
               <h4 className="font-bold text-amber-900 text-sm">
                 စတော့ နည်းနေသော ပစ္စည်း ({lowStockParts.length}) မျိုး ရှိနေပါသည်!
               </h4>
               <p className="text-amber-700 text-xs mt-0.5">
-                {lowStockParts.slice(0, 3).map((p) => `${p.name} (${p.currentStock} ${p.unit})`).join(', ')}
-                {lowStockParts.length > 3 ? ` နှင့် အခြား ${lowStockParts.length - 3} ခု...` : ''}
+                {lowStockParts.slice(0, 4).map((p) => `${p.name} (${p.currentStock} ${p.unit})`).join(', ')}
+                {lowStockParts.length > 4 ? ` နှင့် အခြား ${lowStockParts.length - 4} ခု...` : ''}
               </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setActiveTab('ai-assistant');
-              handleAiSend('စတော့နည်းနေသော ပစ္စည်းများ စာရင်း ပြပေးပါ။');
-            }}
-            className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors whitespace-nowrap"
-          >
-            <Sparkles size={14} /> AI ဖြင့် စစ်ဆေးမည်
-          </button>
         </div>
       )}
 
@@ -395,15 +260,15 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
       <div className="flex items-center justify-between border-b border-slate-200 pb-2">
         <div className="flex gap-2">
           <button
-            onClick={() => setActiveTab('catalog')}
+            onClick={() => setActiveTab('pos')}
             className={`px-4 py-2 font-bold text-sm rounded-lg flex items-center gap-2 transition-all ${
-              activeTab === 'catalog'
+              activeTab === 'pos'
                 ? 'bg-slate-900 text-white shadow'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Layers size={16} />
-            စတော့ ပစ္စည်းများ ({filteredParts.length})
+            <ShoppingCart size={16} />
+            POS ထုတ်ပေး မုဒ် (POS Dispatch)
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -414,18 +279,7 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
             }`}
           >
             <FileText size={16} />
-            ယနေ့ ထုတ်/သွင်း မှတ်တမ်း
-          </button>
-          <button
-            onClick={() => setActiveTab('ai-assistant')}
-            className={`px-4 py-2 font-bold text-sm rounded-lg flex items-center gap-2 transition-all ${
-              activeTab === 'ai-assistant'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
-                : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
-            }`}
-          >
-            <Bot size={16} />
-            Store AI Assistant
+            ယနေ့ ထုတ်ပေးမှု မှတ်တမ်း
           </button>
         </div>
 
@@ -438,131 +292,265 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
         </button>
       </div>
 
-      {/* Main Content Area */}
-      {activeTab === 'catalog' && (
-        <div className="space-y-4">
-          {/* Quick Search & Category Filter */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-3 justify-between items-center">
-            <div className="relative w-full md:w-96">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="ပစ္စည်းအမည်၊ Part #၊ ဘင်နေရာ ဖြင့်ရှာရန်..."
-                className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+      {/* POS DISPATCH INTERFACE */}
+      {activeTab === 'pos' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT 7 COLUMNS: Parts Catalog Grid */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Search & Filter Bar */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="ပစ္စည်းအမည်၊ Part #၊ ဘင်နေရာ ဖြင့် ရှာရန်..."
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-900"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-              <span className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">အမျိုးအစား:</span>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {cat === 'ALL' ? 'အားလုံး' : cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Simple Inventory Cards / Grid for Store Staff */}
-          {loading ? (
-            <div className="text-center py-12 text-slate-500">စတော့ဒေတာ ရယူနေပါသည်...</div>
-          ) : filteredParts.length === 0 ? (
-            <div className="bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-500">
-              ရှာဖွေမှုနှင့် ကိုက်ညီသော ပစ္စည်း မတွေ့ရှိပါ။
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredParts.map((part) => {
-                const isLow = part.currentStock <= part.minStockLevel;
-                return (
-                  <div
-                    key={part.id}
-                    className={`bg-white rounded-xl p-5 border transition-all hover:shadow-md flex flex-col justify-between ${
-                      isLow ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200'
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <span className="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Category:</span>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                      selectedCategory === cat
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
+                    {cat === 'ALL' ? 'အားလုံး' : cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Catalog Grid */}
+            {loading ? (
+              <div className="text-center py-12 text-slate-500">စတော့ဒေတာ ရယူနေပါသည်...</div>
+            ) : filteredParts.length === 0 ? (
+              <div className="bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-500">
+                ရှာဖွေမှုနှင့် ကိုက်ညီသော ပစ္စည်း မတွေ့ရှိပါ။
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredParts.map((part) => {
+                  const isLow = part.currentStock <= part.minStockLevel;
+                  const inCart = cart.find((item) => item.part.id === part.id);
+                  const storeLoc = locations.find((l) => l.id === part.locationId)?.name || part.location || 'Default Store';
+
+                  return (
+                    <div
+                      key={part.id}
+                      className={`bg-white rounded-xl p-4 border transition-all hover:shadow-md flex flex-col justify-between ${
+                        isLow ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             {part.brand || 'Generic'} • {part.category}
                           </span>
-                          <h3 className="font-bold text-slate-800 text-base leading-snug">{part.name}</h3>
-                          <p className="font-mono text-xs text-blue-700 font-semibold mt-0.5">{part.partNumber}</p>
+                          {isLow && (
+                            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <AlertTriangle size={10} /> Low
+                            </span>
+                          )}
                         </div>
-                        {isLow && (
-                          <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <AlertTriangle size={10} /> Low
-                          </span>
-                        )}
+
+                        <h3 className="font-bold text-slate-800 text-sm leading-snug">{part.name}</h3>
+                        <p className="font-mono text-xs text-blue-700 font-bold mt-0.5">{part.partNumber}</p>
+
+                        <div className="mt-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between text-xs">
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">လက်ရှိစတော့</span>
+                            <span className={`font-extrabold text-sm ${isLow ? 'text-amber-600' : 'text-slate-900'}`}>
+                              {part.currentStock} <span className="text-xs font-normal text-slate-500">{part.unit}</span>
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-slate-400 block text-[10px]">စတိုး တည်နေရာ</span>
+                            <span className="font-bold text-slate-700 text-[11px] truncate max-w-[120px] inline-block">{storeLoc}</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="my-3 bg-slate-50 p-3 rounded-lg border border-slate-100 grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-slate-400 block text-[10px]">လက်ရှိစတော့</span>
-                          <span className={`font-extrabold text-base ${isLow ? 'text-amber-600' : 'text-slate-900'}`}>
-                            {part.currentStock} <span className="text-xs font-normal text-slate-500">{part.unit}</span>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block text-[10px]">ဘင် / တည်နေရာ</span>
-                          <span className="font-bold text-slate-700">{part.location || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
+                      {/* Action Bar */}
+                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100 mt-3">
+                        <button
+                          onClick={() => addToCart(part)}
+                          disabled={part.currentStock <= 0}
+                          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                            inCart
+                              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                              : 'bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-40'
+                          }`}
+                        >
+                          <Plus size={14} />
+                          {inCart ? `ထည့်ပြီး (${inCart.quantity})` : 'Cart ထဲထည့်မည်'}
+                        </button>
 
-                    {/* Quick Action Buttons for Store Staff */}
-                    <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 mt-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleOpenIssue(part)}
-                          className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 transition-colors"
-                        >
-                          <ArrowUpRight size={14} /> ထုတ်ပေးမည်
-                        </button>
-                        <button
-                          onClick={() => handleOpenInward(part)}
-                          className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1 transition-colors"
-                        >
-                          <ArrowDownLeft size={14} /> အဝင်သွင်းမည်
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => {
                             setSelectedPart(part);
                             setIsQrModalOpen(true);
                           }}
-                          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1 px-2 rounded text-[11px] flex items-center justify-center gap-1"
+                          className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs"
+                          title="QR Label"
+                          aria-label="QR Label"
                         >
-                          <QrCode size={13} /> QR Label
+                          <QrCode size={14} />
                         </button>
+
                         <button
                           onClick={() => {
                             setSelectedPart(part);
                             setAdjustmentForm({ reason: 'PHYSICAL_COUNT_AUDIT', adjustedQty: part.currentStock, notes: '' });
                             setIsAdjustmentModalOpen(true);
                           }}
-                          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1 px-2 rounded text-[11px] flex items-center justify-center gap-1"
+                          className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs"
+                          title="Adjust Stock"
+                          aria-label="Adjust Stock"
                         >
-                          <SlidersHorizontal size={13} /> Adjust Stock
+                          <SlidersHorizontal size={14} />
                         </button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT 5 COLUMNS: POS Cart & Checkout Panel */}
+          <div className="lg:col-span-5 bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden sticky top-6">
+            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="text-emerald-400" size={20} />
+                <h3 className="font-bold text-base">ထုတ်ပေးမည့် ခြင်းတောင်း (Issue Cart)</h3>
+              </div>
+              {cart.length > 0 && (
+                <button
+                  onClick={clearCart}
+                  className="text-xs text-rose-300 hover:text-white flex items-center gap-1 bg-rose-900/40 px-2 py-1 rounded"
+                >
+                  <Trash2 size={12} /> ရှင်းထုတ်မည်
+                </button>
+              )}
             </div>
-          )}
+
+            {/* Cart Items List */}
+            <div className="p-4 space-y-3 max-h-72 overflow-y-auto border-b border-slate-200 bg-slate-50/50">
+              {cart.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs italic">
+                  ထုတ်ပေးမည့် ပစ္စည်း ကတ်ထဲသို့ မထည့်ရသေးပါ။
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <div key={item.part.id} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-800 text-xs truncate">{item.part.name}</h4>
+                      <p className="font-mono text-[10px] text-blue-700 font-semibold">{item.part.partNumber}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center border border-slate-300 rounded-lg bg-slate-50">
+                        <button
+                          onClick={() => updateCartQuantity(item.part.id, -1)}
+                          className="p-1 hover:bg-slate-200 text-slate-600 rounded-l-lg"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <span className="px-2 font-bold text-xs text-slate-900">{item.quantity}</span>
+                        <button
+                          onClick={() => updateCartQuantity(item.part.id, 1)}
+                          className="p-1 hover:bg-slate-200 text-slate-600 rounded-r-lg"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => removeFromCart(item.part.id)}
+                        className="text-slate-400 hover:text-rose-600 p-1"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Checkout Metadata Form */}
+            <form onSubmit={handleCheckout} className="p-4 space-y-4">
+              <div>
+                <label htmlFor="issue-date" className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">
+                  ထုတ်ပေးသည့် ရက်စွဲ *
+                </label>
+                <input
+                  type="date"
+                  required
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500"
+                  value={issueMetadata.date}
+                  onChange={(e) => setIssueMetadata({ ...issueMetadata, date: e.target.value })}
+                  id="issue-date"
+                />
+              </div>
+
+              <div>
+                <SearchableSelect
+                  label="ထုတ်ပေးမည့် စက်/ယာဉ် (မဖြစ်မနေ မဟုတ်ပါ)"
+                  options={equipmentOptions}
+                  value={issueMetadata.equipmentId}
+                  onChange={(val) => setIssueMetadata({ ...issueMetadata, equipmentId: val })}
+                  id="issue-equipment-select"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="issue-ref" className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">
+                  ကိုးကားနံပါတ် / Work Order #
+                </label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="e.g. WO-2026-08"
+                  value={issueMetadata.referenceId}
+                  onChange={(e) => setIssueMetadata({ ...issueMetadata, referenceId: e.target.value })}
+                  id="issue-ref"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="issue-notes" className="block text-[11px] font-bold text-slate-500 mb-1 uppercase">
+                  မှတ်ချက်
+                </label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="ထုတ်ပေးသည့် အကြောင်းအရာ..."
+                  value={issueMetadata.notes}
+                  onChange={(e) => setIssueMetadata({ ...issueMetadata, notes: e.target.value })}
+                  id="issue-notes"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  type="submit"
+                  disabled={cart.length === 0 || isSubmittingIssue}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 transition-all active:scale-95 text-sm"
+                >
+                  <CheckCircle size={18} />
+                  {isSubmittingIssue ? 'ထုတ်ပေးနေပါသည်...' : `အတည်ပြု ထုတ်ပေးမည် (${cart.reduce((a, b) => a + b.quantity, 0)} Items)`}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -570,7 +558,7 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
       {activeTab === 'history' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm">
-            မကြာသေးမီက စတော့လှုပ်ရှားမှုများ ({transactions.length})
+            မကြာသေးမီက ထုတ်ပေးမှု မှတ်တမ်းများ ({transactions.length})
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -628,386 +616,6 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
         </div>
       )}
 
-      {/* AI Assistant Tab */}
-      {activeTab === 'ai-assistant' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[600px]">
-          {/* AI Header */}
-          <div className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-500/30 border border-indigo-400/30 flex items-center justify-center">
-                <Bot className="text-indigo-300" size={24} />
-              </div>
-              <div>
-                <h3 className="font-bold text-base flex items-center gap-2">
-                  Store AI Inventory Assistant <Sparkles size={16} className="text-amber-400" />
-                </h3>
-                <p className="text-xs text-slate-300">ဂိုဒေါင်ဝန်ထမ်းများအတွက် စတော့အချက်အလက် ကူညီပေးသူ</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Prompt Chips */}
-          <div className="p-3 bg-slate-50 border-b border-slate-200 flex gap-2 overflow-x-auto">
-            <span className="text-xs font-bold text-slate-400 flex items-center gap-1 whitespace-nowrap">
-              <Sparkles size={12} /> အမြန်မေးခွန်းများ:
-            </span>
-            <button
-              onClick={() => handleAiSend('စတော့နည်းနေသော ပစ္စည်းများ စာရင်း ပြပေးပါ။')}
-              className="text-xs bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-3 py-1 rounded-full font-medium whitespace-nowrap transition-colors"
-            >
-              ⚠️ စတော့နည်းနေသော ပစ္စည်းများ
-            </button>
-            <button
-              onClick={() => handleAiSend('ယနေ့ ပစ္စည်းထုတ်ပေးမှု စာရင်း အကျဉ်းချုပ် ပြပေးပါ။')}
-              className="text-xs bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-3 py-1 rounded-full font-medium whitespace-nowrap transition-colors"
-            >
-              📋 ယနေ့ ထုတ်ပေးမှု စာရင်း
-            </button>
-            <button
-              onClick={() => handleAiSend('Filter စတော့ပစ္စည်း ရရှိနိုင်မှုကို စစ်ဆေးပေးပါ။')}
-              className="text-xs bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-3 py-1 rounded-full font-medium whitespace-nowrap transition-colors"
-            >
-              🔍 Filters စတော့ စစ်ဆေးမည်
-            </button>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50">
-            {aiMessages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl p-4 text-sm whitespace-pre-line shadow-sm ${
-                    msg.sender === 'user'
-                      ? 'bg-indigo-600 text-white rounded-br-none'
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
-                  }`}
-                >
-                  {msg.text}
-                </div>
-                <span className="text-[10px] text-slate-400 mt-1 px-1">{msg.time}</span>
-              </div>
-            ))}
-            {aiLoading && (
-              <div className="flex items-center gap-2 text-slate-400 text-xs italic p-2">
-                <Bot size={16} className="animate-spin text-indigo-600" /> AI စဉ်းစားနေပါသည်...
-              </div>
-            )}
-          </div>
-
-          {/* Input Form */}
-          <div className="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="စတော့နှင့် ပတ်သက်သည့် မေးခွန်းများ ရိုက်ထည့်ပါ..."
-              className="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAiSend()}
-            />
-            <button
-              onClick={() => handleAiSend()}
-              disabled={!aiQuery.trim() || aiLoading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl disabled:opacity-50 flex items-center gap-2 transition-colors"
-            >
-              <Send size={16} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ISSUE MODAL */}
-      {isIssueModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
-            <div className="bg-emerald-600 text-white p-4 flex justify-between items-center">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <ArrowUpRight /> ပစ္စည်း ထုတ်ပေးခြင်း (Issue Item)
-              </h3>
-              <button onClick={() => setIsIssueModalOpen(false)} className="text-white/80 hover:text-white">
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleIssueSubmit} className="p-6 space-y-4">
-              <div>
-                <SearchableSelect
-                  label="ထုတ်ပေးမည့် ပစ္စည်း"
-                  options={partOptions}
-                  value={selectedPart?.id || ''}
-                  onChange={(val) => {
-                    const p = parts.find((x) => x.id === val);
-                    setSelectedPart(p || null);
-                  }}
-                  required
-                  id="issue-select-part"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="issue-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                    ထုတ်ပေးသည့် ရက်စွဲ
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                    value={issueForm.date}
-                    onChange={(e) => setIssueForm({ ...issueForm, date: e.target.value })}
-                    id="issue-date"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="issue-qty" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                    အရေအတွက်
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
-                    value={issueForm.quantity}
-                    onChange={(e) => setIssueForm({ ...issueForm, quantity: Number(e.target.value) })}
-                    id="issue-qty"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <SearchableSelect
-                  label="ထုတ်ပေးမည့် စက်/ယာဉ် (မဖြစ်မနေ မဟုတ်ပါ)"
-                  options={equipmentOptions}
-                  value={issueForm.equipmentId}
-                  onChange={(val) => setIssueForm({ ...issueForm, equipmentId: val })}
-                  id="issue-equipment-select"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="issue-ref" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                  ကိုးကားနံပါတ် / Work Order #
-                </label>
-                <input
-                  type="text"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="e.g. WO-2026-08"
-                  value={issueForm.referenceId}
-                  onChange={(e) => setIssueForm({ ...issueForm, referenceId: e.target.value })}
-                  id="issue-ref"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="issue-notes" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                  မှတ်ချက်
-                </label>
-                <input
-                  type="text"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="ထုတ်ပေးသည့် အကြောင်းအရာ..."
-                  value={issueForm.notes}
-                  onChange={(e) => setIssueForm({ ...issueForm, notes: e.target.value })}
-                  id="issue-notes"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsIssueModalOpen(false)}
-                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg"
-                >
-                  မလုပ်တော့ပါ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-md flex items-center gap-1.5"
-                >
-                  <CheckCircle size={16} /> အတည်ပြု ထုတ်ပေးမည်
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* AI VISION INVOICE SCAN MODAL */}
-      {isScanModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in max-h-[90vh] flex flex-col">
-            <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-4 flex justify-between items-center flex-shrink-0">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <Camera size={20} /> AI Vision Invoice / Receipt Scanner <Sparkles size={16} className="text-amber-400" />
-              </h3>
-              <button
-                onClick={() => {
-                  setIsScanModalOpen(false);
-                  setScanImage(null);
-                  setScanImageResult(null);
-                }}
-                className="text-white/80 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              {!scanImage ? (
-                <div className="border-2 border-dashed border-purple-300 bg-purple-50/50 rounded-2xl p-8 text-center space-y-3">
-                  <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto">
-                    <Upload size={32} />
-                  </div>
-                  <h4 className="font-bold text-slate-800 text-base">အင်ဗွိုက် သို့မဟုတ် စတော့အဝင် ဘာောင်ချာ ဓာတ်ပုံတင်ပါ</h4>
-                  <p className="text-slate-500 text-xs max-w-md mx-auto">
-                    အင်ဗွိုက်/ဘောင်ချာ ပုံရိုက်တင်ပါက AI Vision မှ ပစ္စည်းအမည်၊ Part #၊ အရေအတွက် နှင့် စျေးနှုန်းများကို အလိုအလျောက် ဖတ်ရှု စာရင်းသွင်းပေးပါမည်။
-                  </p>
-                  <label className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-xl cursor-pointer shadow-md transition-all">
-                    <span>ပုံရွေးချယ်ပါ (Upload / Capture)</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (evt) => {
-                            setScanImage(evt.target?.result as string);
-                            // Trigger AI Vision scan simulation/extraction
-                            setIsScanning(true);
-                            setTimeout(() => {
-                              setIsScanning(false);
-                              // Auto match with existing parts or fallback
-                              const matchedPart = parts[0] || { partNumber: 'FLT-001', name: 'Fuel Filter D375', averageCost: 50000 };
-                              const matchedSupplier = suppliers[0]?.name || 'PT. Mandiri Jaya Supplier';
-                              setScanImageResult({
-                                invoiceNo: `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-                                date: new Date().toISOString().split('T')[0],
-                                supplierName: matchedSupplier,
-                                items: [
-                                  {
-                                    partNumber: matchedPart.partNumber,
-                                    name: matchedPart.name,
-                                    qty: 5,
-                                    price: matchedPart.averageCost || 50000,
-                                  },
-                                ],
-                              });
-                            }, 1200);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex gap-4 items-start bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <img src={scanImage} alt="Invoice Scan" className="w-28 h-28 object-cover rounded-lg border shadow-sm flex-shrink-0" />
-                    <div className="flex-1">
-                      {isScanning ? (
-                        <div className="py-6 text-center text-purple-700 font-bold text-sm flex items-center justify-center gap-2">
-                          <Bot size={20} className="animate-spin text-purple-600" /> AI Vision မှ အင်ဗွိုက်ဒေတာများ ဖတ်ရှုနေပါသည်...
-                        </div>
-                      ) : scanResult ? (
-                        <div className="space-y-2 text-xs">
-                          <div className="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-md inline-flex items-center gap-1.5">
-                            <CheckCircle size={14} /> AI Vision ဖတ်ရှုခြင်း အောင်မြင်ပါသည်!
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 pt-1 font-semibold text-slate-700">
-                            <div>အင်ဗွိုက် #: <span className="font-mono text-purple-700">{scanResult.invoiceNo}</span></div>
-                            <div>ရက်စွဲ: <span>{scanResult.date}</span></div>
-                            <div className="col-span-2">Supplier: <span>{scanResult.supplierName}</span></div>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {scanResult && scanResult.items && (
-                    <div className="border rounded-xl overflow-hidden">
-                      <div className="bg-purple-100 px-4 py-2 font-bold text-purple-900 text-xs uppercase">
-                        တွေ့ရှိသော ပစ္စည်း စာရင်း ({scanResult.items.length})
-                      </div>
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-100 text-slate-600 font-bold border-b">
-                          <tr>
-                            <th className="p-2">Part # / အမည်</th>
-                            <th className="p-2 text-center">အရေအတွက်</th>
-                            <th className="p-2 text-right">စျေးနှုန်း (ကျပ်)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {scanResult.items.map((item, idx) => (
-                            <tr key={idx}>
-                              <td className="p-2 font-medium">
-                                <div className="font-bold text-slate-800">{item.name}</div>
-                                <div className="font-mono text-slate-400">{item.partNumber}</div>
-                              </td>
-                              <td className="p-2 text-center font-bold text-slate-900">{item.qty} Pcs</td>
-                              <td className="p-2 text-right font-bold text-purple-700">{item.price?.toLocaleString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setScanImage(null);
-                  setScanImageResult(null);
-                }}
-                className="text-xs font-bold text-slate-500 hover:text-slate-800"
-              >
-                ပြန်လည် စကန်ဖတ်မည်
-              </button>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsScanModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg"
-                >
-                  ပိတ်မည်
-                </button>
-                <button
-                  type="button"
-                  disabled={!scanResult || isScanning}
-                  onClick={() => {
-                    if (!scanResult) return;
-                    // Auto populate inward modal
-                    const matchedPart = parts.find((p) => p.partNumber === scanResult.items?.[0]?.partNumber) || parts[0];
-                    setSelectedPart(matchedPart || null);
-                    setInwardForm({
-                      date: scanResult.date || new Date().toISOString().split('T')[0],
-                      quantity: scanResult.items?.[0]?.qty || 1,
-                      supplierId: suppliers.find((s) => s.name === scanResult.supplierName)?.id || '',
-                      pricePerUnit: scanResult.items?.[0]?.price || matchedPart?.averageCost || 0,
-                      referenceId: scanResult.invoiceNo || '',
-                      notes: 'AI Vision Invoice Scanner ဖြင့် စာရင်းသွင်းထားပါသည်။',
-                    });
-                    setIsScanModalOpen(false);
-                    setIsInwardModalOpen(true);
-                  }}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-lg shadow disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <CheckCircle size={14} /> စတော့အဝင် စာရင်းသို့ ဖြည့်မည်
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* QR LABEL MODAL */}
       {isQrModalOpen && selectedPart && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1021,7 +629,6 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
 
             <div className="border-2 border-dashed border-slate-300 p-6 rounded-xl bg-slate-50 space-y-3">
               <div className="w-32 h-32 bg-white border-2 border-slate-900 mx-auto flex items-center justify-center font-mono text-[10px] p-2 shadow-inner">
-                {/* QR Code graphic mockup */}
                 <div className="text-slate-800 font-extrabold flex flex-col items-center">
                   <div className="text-[8px] bg-slate-900 text-white px-1 py-0.5 rounded mb-1">JPM-ERP</div>
                   <div className="w-16 h-16 bg-slate-900 flex items-center justify-center text-white text-[9px] font-bold p-1 text-center">
@@ -1042,9 +649,7 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
                 ပိတ်မည်
               </button>
               <button
-                onClick={() => {
-                  window.print();
-                }}
+                onClick={() => window.print()}
                 className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg shadow hover:bg-slate-800 flex items-center gap-1.5"
               >
                 <Printer size={14} /> Label ပုံနှိပ်မည် (Print Label)
@@ -1097,8 +702,9 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">ပြင်ဆင်လိုသည့် အကြောင်းအရင်း (Reason)</label>
+                <label htmlFor="adjust-reason-select" className="block font-bold text-slate-600 mb-1">ပြင်ဆင်လိုသည့် အကြောင်းအရင်း (Reason)</label>
                 <select
+                  id="adjust-reason-select"
                   className="w-full border border-slate-300 rounded-lg p-2 outline-none"
                   value={adjustmentForm.reason}
                   onChange={(e: any) => setAdjustmentForm({ ...adjustmentForm, reason: e.target.value })}
@@ -1111,8 +717,9 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">စတော့ ပမာဏ အသစ် (Adjusted Stock Qty)</label>
+                <label htmlFor="adjust-qty-input" className="block font-bold text-slate-600 mb-1">စတော့ ပမာဏ အသစ် (Adjusted Stock Qty)</label>
                 <input
+                  id="adjust-qty-input"
                   type="number"
                   min="0"
                   required
@@ -1123,8 +730,9 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">မှတ်ချက် (Notes)</label>
+                <label htmlFor="adjust-notes-input" className="block font-bold text-slate-600 mb-1">မှတ်ချက် (Notes)</label>
                 <input
+                  id="adjust-notes-input"
                   type="text"
                   className="w-full border border-slate-300 rounded-lg p-2 outline-none"
                   placeholder="စတော့ ညှိနှိုင်းမှု မှတ်ချက်..."
@@ -1139,208 +747,6 @@ const StoreEmployeeInventoryView: React.FC<StoreEmployeeInventoryViewProps> = ({
                 </button>
                 <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg shadow hover:bg-slate-800">
                   Save Adjustment
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* AI AUTO-PR MODAL */}
-      {isPrModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in max-h-[90vh] flex flex-col">
-            <div className="bg-amber-600 text-white p-4 flex justify-between items-center">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <ShoppingCart size={20} /> AI Auto Purchase Requisition (PR)
-              </h3>
-              <button onClick={() => setIsPrModalOpen(false)} className="text-white/80 hover:text-white">✕</button>
-            </div>
-
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <p className="text-slate-600 text-xs">
-                စတော့ နည်းနေသော ပစ္စည်းများအတွက် AI မှ အလိုအလျောက် တွက်ချက်ပေးထားသော ဝယ်ယူရန် တောင်းဆိုလွှာ (PR Draft) ဖြစ်ပါသည်။
-              </p>
-
-              {prCreatedSuccess ? (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 text-center font-bold text-sm space-y-2">
-                  <CheckCircle className="mx-auto text-emerald-600" size={32} />
-                  <div>Purchase Requisition (PR) အလိုအလျောက် ဖန်တီးပြီးပါပြီ!</div>
-                  <p className="text-xs text-emerald-600 font-normal">ဝယ်ယူရေး ဌာန သို့ ပို့ဆောင်ပြီး ဖြစ်ပါသည်။</p>
-                </div>
-              ) : prItems.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 italic">စတော့ နည်းနေသော ပစ္စည်းများ မရှိပါ!</div>
-              ) : (
-                <div className="border rounded-xl overflow-hidden text-xs">
-                  <table className="w-full text-left">
-                    <thead className="bg-amber-100 text-amber-900 font-bold border-b">
-                      <tr>
-                        <th className="p-2.5">Part # / အမည်</th>
-                        <th className="p-2.5 text-center">လက်ရှိစတော့</th>
-                        <th className="p-2.5 text-center">အကြံပြု Qty</th>
-                        <th className="p-2.5 text-right">ခန့်မှန်း ကုန်ကျစရိတ်</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {prItems.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2.5 font-medium">
-                            <div className="font-bold text-slate-800">{item.name}</div>
-                            <div className="font-mono text-slate-400">{item.partNumber}</div>
-                          </td>
-                          <td className="p-2.5 text-center font-bold text-amber-700">{item.currentStock} / {item.minStock}</td>
-                          <td className="p-2.5 text-center font-extrabold text-slate-900">{item.suggestedQty} Pcs</td>
-                          <td className="p-2.5 text-right font-bold text-slate-700">{(item.suggestedQty * item.estCost).toLocaleString()} ကျပ်</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t flex justify-end gap-2">
-              <button onClick={() => setIsPrModalOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg">
-                ပိတ်မည်
-              </button>
-              {!prCreatedSuccess && prItems.length > 0 && (
-                <button
-                  onClick={() => setPrCreatedSuccess(true)}
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow flex items-center gap-1.5"
-                >
-                  <ShoppingCart size={14} /> PR တောင်းဆိုလွှာ ဖန်တီးမည်
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* INWARD MODAL */}
-      {isInwardModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
-            <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <ArrowDownLeft /> စတော့အဝင် သွင်းခြင်း (Inward Stock)
-              </h3>
-              <button onClick={() => setIsInwardModalOpen(false)} className="text-white/80 hover:text-white">
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleInwardSubmit} className="p-6 space-y-4">
-              <div>
-                <SearchableSelect
-                  label="လက်ခံမည့် ပစ္စည်း"
-                  options={partOptions}
-                  value={selectedPart?.id || ''}
-                  onChange={(val) => {
-                    const p = parts.find((x) => x.id === val);
-                    setSelectedPart(p || null);
-                    if (p) setInwardForm((prev) => ({ ...prev, pricePerUnit: p.averageCost }));
-                  }}
-                  required
-                  id="inward-select-part"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="inward-date" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                    လက်ခံသည့် ရက်စွဲ
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    value={inwardForm.date}
-                    onChange={(e) => setInwardForm({ ...inwardForm, date: e.target.value })}
-                    id="inward-date"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="inward-qty" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                    အရေအတွက်
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
-                    value={inwardForm.quantity}
-                    onChange={(e) => setInwardForm({ ...inwardForm, quantity: Number(e.target.value) })}
-                    id="inward-qty"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <SearchableSelect
-                  label="ရောင်းချသူ / ပေးပို့သူ Supplier"
-                  options={supplierOptions}
-                  value={inwardForm.supplierId}
-                  onChange={(val) => setInwardForm({ ...inwardForm, supplierId: val })}
-                  id="inward-supplier-select"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="inward-price" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                    တစ်ယူနစ် စျေးနှုန်း (ကျပ်)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    value={inwardForm.pricePerUnit}
-                    onChange={(e) => setInwardForm({ ...inwardForm, pricePerUnit: Number(e.target.value) })}
-                    id="inward-price"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="inward-ref" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                    PO / DO / Invoice #
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. PO-9988"
-                    value={inwardForm.referenceId}
-                    onChange={(e) => setInwardForm({ ...inwardForm, referenceId: e.target.value })}
-                    id="inward-ref"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="inward-notes" className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                  မှတ်ချက်
-                </label>
-                <input
-                  type="text"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="စတော့အဝင် မှတ်ချက်..."
-                  value={inwardForm.notes}
-                  onChange={(e) => setInwardForm({ ...inwardForm, notes: e.target.value })}
-                  id="inward-notes"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsInwardModalOpen(false)}
-                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg"
-                >
-                  မလုပ်တော့ပါ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md flex items-center gap-1.5"
-                >
-                  <CheckCircle size={16} /> အတည်ပြု အဝင်သွင်းမည်
                 </button>
               </div>
             </form>
