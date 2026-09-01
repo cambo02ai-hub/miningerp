@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import StoreEmployeeInventoryView from '../components/StoreEmployeeInventoryView';
-import { inventoryAPI, equipmentAPI, suppliersAPI, chatAPI } from '../services/api';
+import { inventoryAPI, equipmentAPI, locationsAPI } from '../services/api';
 
 vi.mock('../services/api', () => ({
   inventoryAPI: {
@@ -14,11 +14,8 @@ vi.mock('../services/api', () => ({
   equipmentAPI: {
     getEquipment: vi.fn(),
   },
-  suppliersAPI: {
-    getSuppliers: vi.fn(),
-  },
-  chatAPI: {
-    sendMessage: vi.fn(),
+  locationsAPI: {
+    getLocations: vi.fn(),
   },
 }));
 
@@ -55,14 +52,16 @@ describe('StoreEmployeeInventoryView Component', () => {
     (inventoryAPI.getParts as any).mockResolvedValue(mockParts);
     (inventoryAPI.getTransactions as any).mockResolvedValue([]);
     (equipmentAPI.getEquipment as any).mockResolvedValue([]);
-    (suppliersAPI.getSuppliers as any).mockResolvedValue([]);
+    (locationsAPI.getLocations as any).mockResolvedValue([
+      { id: 'loc-1', name: 'Main Store Workshop', code: 'MSW' },
+    ]);
   });
 
   it('renders store employee header and parts catalog', async () => {
     render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw', role: 'OPERATOR' }} />);
 
     await waitFor(() => {
-      expect(screen.getByText('ဂိုဒေါင် နှင့် စတော့ စီမံခန့်ခွဲမှု')).toBeInTheDocument();
+      expect(screen.getByText('ဂိုဒေါင် ပစ္စည်း ထုတ်ပေးခြင်း (POS Dispatch)')).toBeInTheDocument();
       expect(screen.getByText('Fuel Filter D375')).toBeInTheDocument();
       expect(screen.getByText('Hydraulic Hose 1/2')).toBeInTheDocument();
     });
@@ -76,50 +75,16 @@ describe('StoreEmployeeInventoryView Component', () => {
     });
   });
 
-  it('opens issue item modal when issue button is clicked', async () => {
+  it('adds item to issue cart when Add button is clicked', async () => {
     render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw' }} />);
 
     await waitFor(() => {
       expect(screen.getByText('Fuel Filter D375')).toBeInTheDocument();
     });
 
-    const issueBtns = screen.getAllByText('ထုတ်ပေးမည်');
-    fireEvent.click(issueBtns[0]);
+    const addBtns = screen.getAllByText('Cart ထဲထည့်မည်');
+    fireEvent.click(addBtns[0]);
 
-    expect(screen.getByText('ပစ္စည်း ထုတ်ပေးခြင်း (Issue Item)')).toBeInTheDocument();
-  });
-
-  it('switches to Store AI Assistant tab and sends prompt', async () => {
-    (chatAPI.sendMessage as any).mockResolvedValue({ reply: 'Filter stock is ready.' });
-
-    render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw' }} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Store AI Assistant')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Store AI Assistant'));
-
-    expect(screen.getByText('Store AI Inventory Assistant')).toBeInTheDocument();
-
-    const lowStockChip = screen.getByText('⚠️ စတော့နည်းနေသော ပစ္စည်းများ');
-    fireEvent.click(lowStockChip);
-
-    await waitFor(() => {
-      expect(screen.getByText(/လက်ရှိစတော့ နည်းနေသော ပစ္စည်း/i)).toBeInTheDocument();
-    });
-  });
-
-  it('opens AI Vision Invoice Scan modal when scanner button is clicked', async () => {
-    render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw' }} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('AI Invoice Scan')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('AI Invoice Scan'));
-
-    expect(screen.getByText('AI Vision Invoice / Receipt Scanner')).toBeInTheDocument();
-    expect(screen.getByText('အင်ဗွိုက် သို့မဟုတ် စတော့အဝင် ဘာောင်ချာ ဓာတ်ပုံတင်ပါ')).toBeInTheDocument();
+    expect(screen.getByText('ထည့်ပြီး (1)')).toBeInTheDocument();
   });
 });
