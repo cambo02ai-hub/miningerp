@@ -7,6 +7,7 @@ import com.jpmonitor.domains.hse.dto.IncidentDTO;
 import com.jpmonitor.domains.hse.entity.Incident;
 import com.jpmonitor.domains.hse.repository.IncidentRepository;
 import com.jpmonitor.domains.hse.service.IncidentService;
+import com.jpmonitor.domains.notification.service.TelegramNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final LocationRepository locationRepository;
     private final ProjectRepository projectRepository;
     private final EmployeeRepository employeeRepository;
+    private final TelegramNotificationService telegramNotificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -39,7 +41,18 @@ public class IncidentServiceImpl implements IncidentService {
     public IncidentDTO createIncident(IncidentDTO dto) {
         Incident incident = new Incident();
         updateEntity(incident, dto);
-        return mapToDTO(incidentRepository.save(incident));
+        Incident saved = incidentRepository.save(incident);
+        checkAndTriggerCriticalIncidentAlert(saved);
+        return mapToDTO(saved);
+    }
+
+    private void checkAndTriggerCriticalIncidentAlert(Incident incident) {
+        if (incident != null && incident.getSeverity() != null) {
+            String severity = incident.getSeverity().toUpperCase();
+            if ("HIGH".equals(severity) || "CRITICAL".equals(severity) || "FATALITY".equals(severity) || "MAJOR".equals(severity)) {
+                telegramNotificationService.sendCriticalIncidentAlert(incident);
+            }
+        }
     }
 
     @Override

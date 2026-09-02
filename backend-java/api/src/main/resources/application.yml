@@ -75,6 +75,13 @@ comet:
     key: ${COMET_API_KEY:}
     model: ${COMET_API_MODEL:gemini-3.5-flash}
 
+# Telegram Notification Bot Configuration
+telegram:
+  bot:
+    token: ${TELEGRAM_BOT_TOKEN:}
+    chat-id: ${TELEGRAM_CHAT_ID:}
+    enabled: ${TELEGRAM_NOTIFICATIONS_ENABLED:true}
+
 # Actuator (health checks)
 management:
   endpoints:
