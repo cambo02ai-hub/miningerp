@@ -7,6 +7,7 @@ import com.jpmonitor.domains.inventory.entity.SparePart;
 import com.jpmonitor.domains.inventory.repository.InventoryTransactionRepository;
 import com.jpmonitor.domains.inventory.repository.SparePartRepository;
 import com.jpmonitor.domains.inventory.service.InventoryService;
+import com.jpmonitor.domains.notification.service.TelegramNotificationService;
 import com.jpmonitor.platform.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     private final SparePartRepository sparePartRepository;
     private final InventoryTransactionRepository transactionRepository;
+    private final TelegramNotificationService telegramNotificationService;
 
     // ==================== PARTS ====================
 
@@ -58,6 +60,7 @@ public class InventoryServiceImpl implements InventoryService {
         SparePart part = new SparePart();
         updatePartFromDTO(part, dto);
         SparePart saved = sparePartRepository.save(part);
+        checkAndTriggerLowStockAlert(saved, "Part Creation/Update");
         return mapPartToDTO(saved);
     }
 
@@ -67,6 +70,7 @@ public class InventoryServiceImpl implements InventoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Spare Part", id));
         updatePartFromDTO(part, dto);
         SparePart saved = sparePartRepository.save(part);
+        checkAndTriggerLowStockAlert(saved, "Part Update");
         return mapPartToDTO(saved);
     }
 
@@ -130,9 +134,16 @@ public class InventoryServiceImpl implements InventoryService {
             part.setCurrentStock(part.getCurrentStock() + dto.quantity());
         }
         sparePartRepository.save(part);
+        checkAndTriggerLowStockAlert(part, "Inventory Transaction (" + dto.type() + ")");
 
         InventoryTransaction saved = transactionRepository.save(tx);
         return mapTxToDTO(saved);
+    }
+
+    private void checkAndTriggerLowStockAlert(SparePart part, String triggerContext) {
+        if (part != null && part.getCurrentStock() <= part.getMinStockLevel()) {
+            telegramNotificationService.sendLowStockAlert(part, triggerContext);
+        }
     }
 
     @Override
