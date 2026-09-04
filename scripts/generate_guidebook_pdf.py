@@ -423,7 +423,8 @@ def generate_pdf():
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-        page.set_content(html_content)
+        page.set_content(html_content, wait_until="networkidle")
+        page.evaluate("document.fonts.ready")
         page.pdf(path=pdf_path, format="A4", print_background=True)
         browser.close()
     print(f"Guidebook generated successfully at: {os.path.abspath(pdf_path)}")
