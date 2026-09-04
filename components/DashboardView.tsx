@@ -13,16 +13,16 @@ const meToStats = (data: any) => {
 
   // Adapt stats for Gold Mining context:
   // Gold production in Kyat/Grams (calculated or mapped from production stats)
-  const totalGoldGrams = data?.production?.totalGoldGrams ?? (rawCoal > 0 ? Math.round(rawCoal * 1.5) : 185.5);
-  const totalGoldKyats = data?.production?.totalGoldKyats ?? Number((totalGoldGrams / 16.6).toFixed(2));
-  const totalGoldOreTons = data?.production?.totalGoldOreTons ?? (rawOB > 0 ? rawOB : 850000);
-  const avgGoldGradeGperT = data?.production?.avgGoldGrade ?? 2.85;
-  const recoveryRate = data?.production?.recoveryRate ?? 92.4;
+  const totalGoldGrams = data?.production?.totalGoldGrams ?? (rawCoal > 0 ? Math.round(rawCoal * 1.5) : 0);
+  const totalGoldKyats = data?.production?.totalGoldKyats ?? (totalGoldGrams > 0 ? Number((totalGoldGrams / 16.6).toFixed(2)) : 0);
+  const totalGoldOreTons = data?.production?.totalGoldOreTons ?? rawOB;
+  const avgGoldGradeGperT = data?.production?.avgGoldGrade ?? 0;
+  const recoveryRate = data?.production?.recoveryRate ?? 0;
 
   const chartData = (data?.production?.chartData || []).map((c: any) => ({
     date: c.date,
-    GoldGrams: c.GoldGrams ?? Math.round((c.Coal || 10000) * 0.015),
-    OreTons: c.OreTons ?? c.OB ?? 50000
+    GoldGrams: c.GoldGrams ?? (c.Coal ? Math.round(c.Coal * 0.015) : 0),
+    OreTons: c.OreTons ?? c.OB ?? 0
   }));
 
   return {
@@ -33,13 +33,7 @@ const meToStats = (data: any) => {
       totalGoldOreTons,
       avgGoldGradeGperT,
       recoveryRate,
-      chartData: chartData.length > 0 ? chartData : [
-        { date: '2025-01', GoldGrams: 420, OreTons: 140000 },
-        { date: '2025-02', GoldGrams: 480, OreTons: 155000 },
-        { date: '2025-03', GoldGrams: 510, OreTons: 170000 },
-        { date: '2025-04', GoldGrams: 490, OreTons: 165000 },
-        { date: '2025-05', GoldGrams: 550, OreTons: 180000 }
-      ]
+      chartData
     }
   };
 };
@@ -108,7 +102,7 @@ const DashboardView: React.FC = () => {
           label="စုစုပေါင်း ရွှေထွက်ရှိမှု (က်ပ္ / g)"
           value={`${formatNumber(goldMining.totalGoldKyats || 0, 2)} ကျပ် (${formatNumber(goldMining.totalGoldGrams || 0, 0)} g)`}
           icon={<Coins size={20} className="text-amber-500" />}
-          trend={{ value: 5.2, positive: true }}
+          trend={stats?.production?.goldTrend ? { value: stats.production.goldTrend, positive: stats.production.goldTrend >= 0 } : undefined}
         />
         <StatCard
           label="ရွှေရိုင်း တူးဖော်မှု (Tonnes)"
@@ -117,12 +111,12 @@ const DashboardView: React.FC = () => {
         />
         <StatCard
           label="ပျမ်းမျှ ရွှေပါဝင်မှုနှုန်း (g/t)"
-          value={`${goldMining.avgGoldGradeGperT || 2.85} g/t`}
+          value={`${goldMining.avgGoldGradeGperT || 0} g/t`}
           icon={<Sparkles size={20} className="text-yellow-500" />}
         />
         <StatCard
           label="ရွှေပြန်လည်ရရှိမှုနှုန်း (%)"
-          value={`${goldMining.recoveryRate || 92.4}%`}
+          value={`${goldMining.recoveryRate || 0}%`}
           icon={<Percent size={20} className="text-emerald-500" />}
         />
       </div>
@@ -137,7 +131,7 @@ const DashboardView: React.FC = () => {
         />
         <StatCard
           label="ပျမ်းမျှ မြေသားအချိုး (Strip Ratio)"
-          value={avgSR > 0 ? avgSR : "4.2"}
+          value={formatNumber(avgSR, 1)}
           icon={<AlertTriangle size={20} />}
         />
       </div>
