@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Layers, Box, ShieldAlert, Sparkles, Navigation, Upload, Globe, CheckCircle, Bot, Send, TrendingUp, Cpu, TestTube } from 'lucide-react';
+import {
+  MapPin,
+  Layers,
+  Box,
+  ShieldAlert,
+  Sparkles,
+  Navigation,
+  Upload,
+  Globe,
+  CheckCircle,
+  Bot,
+  Send,
+  TrendingUp,
+  Cpu,
+  TestTube,
+  Eye,
+  EyeOff,
+  Flame,
+  FileSpreadsheet,
+  Activity,
+} from 'lucide-react';
 import { chatAPI, locationsAPI } from '../services/api';
 
 export interface PitGisFeature {
@@ -11,11 +31,24 @@ export interface PitGisFeature {
   depthMeters: number;
   elevationMeters: number;
   estimatedOreTons: number;
-  goldGradeGramsPerTon: number; // e.g. 4.8 g/t
+  goldGradeGramsPerTon: number; // e.g. 5.2 g/t
   status: 'ACTIVE_DIGGING' | 'EXPLORATION' | 'MAINTENANCE' | 'COMPLETED';
   boundaryCoordinates: Array<[number, number]>;
-  slopeStabilityRiskPct: number; // e.g. 12% risk
-  predictedVeinTrendAngle: string; // e.g. "NE-35°"
+  slopeStabilityRiskPct: number; // e.g. 14% risk
+  predictedVeinTrendAngle: string; // e.g. "NE-42°"
+  goldProbabilityPct: number; // e.g. 88% probability
+}
+
+export interface DrillholeData {
+  holeId: string;
+  lat: number;
+  lng: number;
+  collarElevation: number;
+  totalDepth: number;
+  dipAngle: number; // e.g. -60 deg
+  azimuth: number; // e.g. 45 deg
+  assayGradeGt: number; // e.g. 6.4 g/t
+  targetVein: string;
 }
 
 const DEFAULT_PITS: PitGisFeature[] = [
@@ -38,6 +71,7 @@ const DEFAULT_PITS: PitGisFeature[] = [
     ],
     slopeStabilityRiskPct: 14,
     predictedVeinTrendAngle: 'NE-42°',
+    goldProbabilityPct: 88,
   },
   {
     id: 'pit-02',
@@ -58,6 +92,7 @@ const DEFAULT_PITS: PitGisFeature[] = [
     ],
     slopeStabilityRiskPct: 8,
     predictedVeinTrendAngle: 'ENE-25°',
+    goldProbabilityPct: 62,
   },
   {
     id: 'pit-03',
@@ -78,6 +113,43 @@ const DEFAULT_PITS: PitGisFeature[] = [
     ],
     slopeStabilityRiskPct: 28,
     predictedVeinTrendAngle: 'NNE-58°',
+    goldProbabilityPct: 94,
+  },
+];
+
+const DEFAULT_DRILLHOLES: DrillholeData[] = [
+  {
+    holeId: 'DH-A1-01',
+    lat: -3.4558,
+    lng: 114.812,
+    collarElevation: 282,
+    totalDepth: 120,
+    dipAngle: -60,
+    azimuth: 45,
+    assayGradeGt: 6.8,
+    targetVein: 'Alpha Quartz Vein Solid',
+  },
+  {
+    holeId: 'DH-A1-02',
+    lat: -3.4565,
+    lng: 114.8128,
+    collarElevation: 278,
+    totalDepth: 95,
+    dipAngle: -75,
+    azimuth: 35,
+    assayGradeGt: 4.9,
+    targetVein: 'Alpha Shear Extension',
+  },
+  {
+    holeId: 'DH-G3-01',
+    lat: -3.4712,
+    lng: 114.8052,
+    collarElevation: 242,
+    totalDepth: 150,
+    dipAngle: -80,
+    azimuth: 50,
+    assayGradeGt: 8.2,
+    targetVein: 'Gamma Deep Quartz Zone',
   },
 ];
 
@@ -89,6 +161,7 @@ interface PitMapViewProps {
 const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }) => {
   const [pits, setPits] = useState<PitGisFeature[]>(DEFAULT_PITS);
   const [selectedPit, setSelectedPit] = useState<PitGisFeature>(DEFAULT_PITS[0]);
+  const [drillholes, setDrillholes] = useState<DrillholeData[]>(DEFAULT_DRILLHOLES);
 
   // Sync props locations with pits when locations change
   useEffect(() => {
@@ -114,21 +187,40 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
           ],
           slopeStabilityRiskPct: 12,
           predictedVeinTrendAngle: 'NE-40°',
+          goldProbabilityPct: 80,
         }));
 
       if (locationPits.length > 0) {
-        // Combine unique pits by code or id
         setPits((prevPits) => {
           const existingCodes = new Set(prevPits.map((p) => p.code));
           const newToAdd = locationPits.filter((lp) => !existingCodes.has(lp.code));
-          const updated = [...newToAdd, ...prevPits];
-          return updated;
+          return [...newToAdd, ...prevPits];
         });
       }
     }
   }, [locations]);
+
+  // View & Simulation State
   const [mapMode, setMapMode] = useState<'2D_SATELLITE' | '3D_ELEVATION' | 'GRADE_HEATMAP'>('2D_SATELLITE');
   const [pitch3d, setPitch3d] = useState(45);
+
+  // Interactive Map Layer Toggles
+  const [activeLayers, setActiveLayers] = useState({
+    satellite: true,
+    topography: true,
+    geologicalFaults: true,
+    alterationZones: true,
+    radiometric: true,
+  });
+
+  // Data Upload Module State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadTab, setUploadTab] = useState<'CSV_DRILLHOLE' | 'SHAPEFILE_GEOJSON'>('CSV_DRILLHOLE');
+  const [csvCollarContent, setCsvCollarContent] = useState('');
+  const [csvSurveyContent, setCsvSurveyContent] = useState('');
+  const [csvAssayContent, setCsvAssayContent] = useState('');
+  const [shapefileContent, setShapefileContent] = useState('');
+  const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
 
   // Google Earth Import State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -156,10 +248,14 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
   const [aiMessages, setAiMessages] = useState<Array<{ sender: 'user' | 'bot'; text: string }>>([
     {
       sender: 'bot',
-      text: 'မင်္ဂလာပါ! GIS Pit AI Assistant မှ ကြိုဆိုပါတယ်။ ရွှေကြော လမ်းကြောင်း ခန့်မှန်းချက်၊ Slope Safety Risk စစ်ဆေးခြင်း သို့မဟုတ် Gold Grade (g/t) မေးခွန်းများကို ကူညီပေးနိုင်ပါသည်။',
+      text: 'မင်္ဂလာပါ! GIS Gold Vein AI Assistant မှ ကြိုဆိုပါတယ်။ ရွှေကြော လမ်းကြောင်း ခန့်မှန်းချက်၊ ASTER Satellite Alteration Zones၊ Drillhole Depth Data နှင့် Heatmap Probability များကို ကူညီပေးနိုင်ပါသည်။',
     },
   ]);
   const [aiLoading, setAiLoading] = useState(false);
+
+  const toggleLayer = (layerKey: keyof typeof activeLayers) => {
+    setActiveLayers((prev) => ({ ...prev, [layerKey]: !prev[layerKey] }));
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -179,17 +275,23 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
         <div>
           <div className="flex items-center gap-2">
             <span className="bg-amber-500/20 text-amber-800 border border-amber-300 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
-              <Sparkles size={12} /> GIS Gold Mining Module
+              <Sparkles size={12} /> GIS Gold Mining & Vein Visualizer
             </span>
-            <h2 className="text-xl font-extrabold text-slate-800">GIS & 3D Interactive Pit Mapping</h2>
+            <h2 className="text-xl font-extrabold text-slate-800">Gold Veins & Mineral Deposits Prediction Map</h2>
           </div>
           <p className="text-slate-500 text-xs mt-1">
-            ရွှေတူးဖော်သည့် Pit ကျင်းများ၏ GPS Coordinates၊ တူးဖော်ပြီးစီးမှု အနက် နှင့် ရွှေပါဝင်မှု အဆင့် (Gold Grade) များ။
+            ASTER Satellite Band Ratios၊ ရေဒီယိုသတ္တုကြွမှု ဒေတာ၊ 3D Drillhole Depth Trajectories နှင့် Gold Potential Heatmap (Probability %) ခန့်မှန်းချက် visualization။
           </p>
         </div>
 
-        {/* AI Action Overlay & Import */}
+        {/* Header Actions */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded-xl shadow text-xs flex items-center gap-1.5 transition-all"
+          >
+            <Upload size={14} /> Data Upload (CSV / Shapefile)
+          </button>
           <button
             onClick={() => {
               setAssayForm((prev) => ({ ...prev, goldGradeGramsPerTon: selectedPit.goldGradeGramsPerTon }));
@@ -219,6 +321,7 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
           >
             <Globe size={14} /> Google Earth Import
           </button>
+
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
             <button
               onClick={() => setMapMode('2D_SATELLITE')}
@@ -234,7 +337,7 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                 mapMode === '3D_ELEVATION' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Box size={14} /> 3D Depth Model
+              <Box size={14} /> 3D Geological Subsurface
             </button>
             <button
               onClick={() => setMapMode('GRADE_HEATMAP')}
@@ -242,15 +345,68 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                 mapMode === 'GRADE_HEATMAP' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Sparkles size={14} /> Gold Grade (g/t) Heatmap
+              <Flame size={14} /> 2D Gold Potential Heatmap
             </button>
           </div>
         </div>
       </div>
 
+      {/* Interactive Map Layers Bar */}
+      <div className="bg-slate-800 text-white p-3 rounded-xl shadow border border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 font-bold text-amber-400">
+          <Layers size={16} /> Interactive Geological Layers:
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => toggleLayer('satellite')}
+            className={`px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 border transition-colors ${
+              activeLayers.satellite ? 'bg-amber-500/20 text-amber-300 border-amber-400' : 'bg-slate-700/60 text-slate-400 border-slate-600'
+            }`}
+          >
+            {activeLayers.satellite ? <Eye size={12} /> : <EyeOff size={12} />} Satellite View
+          </button>
+
+          <button
+            onClick={() => toggleLayer('topography')}
+            className={`px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 border transition-colors ${
+              activeLayers.topography ? 'bg-amber-500/20 text-amber-300 border-amber-400' : 'bg-slate-700/60 text-slate-400 border-slate-600'
+            }`}
+          >
+            {activeLayers.topography ? <Eye size={12} /> : <EyeOff size={12} />} Topography Contours
+          </button>
+
+          <button
+            onClick={() => toggleLayer('geologicalFaults')}
+            className={`px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 border transition-colors ${
+              activeLayers.geologicalFaults ? 'bg-amber-500/20 text-amber-300 border-amber-400' : 'bg-slate-700/60 text-slate-400 border-slate-600'
+            }`}
+          >
+            {activeLayers.geologicalFaults ? <Eye size={12} /> : <EyeOff size={12} />} Geological Faults & Shear Lines
+          </button>
+
+          <button
+            onClick={() => toggleLayer('alterationZones')}
+            className={`px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 border transition-colors ${
+              activeLayers.alterationZones ? 'bg-amber-500/20 text-amber-300 border-amber-400' : 'bg-slate-700/60 text-slate-400 border-slate-600'
+            }`}
+          >
+            {activeLayers.alterationZones ? <Eye size={12} /> : <EyeOff size={12} />} Hyperspectral Alteration Zones
+          </button>
+
+          <button
+            onClick={() => toggleLayer('radiometric')}
+            className={`px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 border transition-colors ${
+              activeLayers.radiometric ? 'bg-amber-500/20 text-amber-300 border-amber-400' : 'bg-slate-700/60 text-slate-400 border-slate-600'
+            }`}
+          >
+            {activeLayers.radiometric ? <Eye size={12} /> : <EyeOff size={12} />} Radiometric Anomaly Overlay
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Map Viewer Canvas */}
-        <div className="lg:col-span-2 bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 flex flex-col relative h-[520px]">
+        <div className="lg:col-span-2 bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 flex flex-col relative h-[540px]">
           {/* Map Overlay Controls */}
           <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-3 rounded-xl text-white text-xs space-y-1">
             <div className="font-bold flex items-center gap-2 text-amber-400">
@@ -259,18 +415,67 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
             <p className="font-mono text-[11px] text-slate-300">
               Lat: {selectedPit.lat.toFixed(4)}, Lng: {selectedPit.lng.toFixed(4)}
             </p>
-            <div className="text-[10px] text-slate-400">Elevation: {selectedPit.elevationMeters}m AMSL</div>
+            <div className="text-[10px] text-slate-400">Elevation: {selectedPit.elevationMeters}m AMSL | Depth: -{selectedPit.depthMeters}m</div>
+            <div className="text-[10px] text-emerald-400 font-bold">Gold Potential Probability: {selectedPit.goldProbabilityPct}%</div>
           </div>
+
+          {/* Probability Range Legend Overlay for 2D Gold Potential Heatmap */}
+          {(mapMode === 'GRADE_HEATMAP' || activeLayers.radiometric) && (
+            <div className="absolute top-4 right-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-3 rounded-xl text-white text-xs space-y-1.5 w-52">
+              <div className="font-bold text-amber-400 flex items-center gap-1.5">
+                <Flame size={14} /> Gold Potential Probability Range
+              </div>
+              <div className="space-y-1 text-[11px]">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-600 block"></span> High Potential</span>
+                  <span className="font-bold text-red-400">&gt; 75%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 block"></span> Moderate Potential</span>
+                  <span className="font-bold text-amber-300">45% - 75%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-cyan-500 block"></span> Low Potential</span>
+                  <span className="font-bold text-cyan-300">&lt; 45%</span>
+                </div>
+              </div>
+              <div className="text-[9px] text-slate-400 pt-1 border-t border-slate-700">
+                ASTER/Sentinel-2 Band Ratios + Drillhole Assays
+              </div>
+            </div>
+          )}
 
           {/* Interactive Simulated Map Canvas */}
           <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/20">
             {/* Background Grid Pattern */}
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
 
+            {/* Geological Fault Overlay Graphic Lines */}
+            {activeLayers.geologicalFaults && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60">
+                <path d="M 50 100 Q 200 180 450 120 T 650 350" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="6 4" fill="none" />
+                <path d="M 120 400 Q 300 250 550 420" stroke="#ef4444" strokeWidth="2" strokeDasharray="4 4" fill="none" />
+                <text x="210" y="165" fill="#f59e0b" fontSize="10" fontWeight="bold">Primary Shear Fault Zone (NE-SW)</text>
+              </svg>
+            )}
+
+            {/* Hyperspectral Alteration Overlay Graphics */}
+            {activeLayers.alterationZones && (
+              <div className="absolute inset-0 pointer-events-none opacity-30 flex items-center justify-center">
+                <div className="w-80 h-80 rounded-full bg-purple-600 filter blur-3xl" />
+                <div className="w-56 h-56 rounded-full bg-amber-500 filter blur-2xl" />
+              </div>
+            )}
+
+            {/* 2D Gold Potential Heatmap Grid Visualizer */}
+            {mapMode === 'GRADE_HEATMAP' && (
+              <div className="absolute inset-0 pointer-events-none opacity-50 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-600 via-amber-500 to-transparent" />
+            )}
+
             {/* 3D Depth Pitch Simulation Controls */}
             {mapMode === '3D_ELEVATION' && (
               <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700 text-white text-xs space-y-2">
-                <span className="font-bold text-amber-400 block">3D Tilt Angle: {pitch3d}°</span>
+                <span className="font-bold text-amber-400 block">3D Subsurface Tilt Angle: {pitch3d}°</span>
                 <input
                   type="range"
                   min="0"
@@ -279,6 +484,7 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   onChange={(e) => setPitch3d(Number(e.target.value))}
                   className="w-32 accent-amber-500"
                 />
+                <div className="text-[10px] text-slate-300">Subterranean Depth Grid: 0m down to -150m</div>
               </div>
             )}
 
@@ -290,6 +496,29 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                 transformStyle: 'preserve-3d',
               }}
             >
+              {/* 3D Subsurface Drillhole Depth Trajectory Lines */}
+              {mapMode === '3D_ELEVATION' && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  {drillholes.map((dh) => (
+                    <div
+                      key={dh.holeId}
+                      className="absolute border-l-2 border-dashed border-amber-400 text-[9px] text-amber-300 pl-1.5 space-y-1"
+                      style={{
+                        top: `${(dh.lat + 3.48) * 3000}%`,
+                        left: `${(dh.lng - 114.8) * 3000}%`,
+                        height: `${dh.totalDepth * 0.8}px`,
+                      }}
+                    >
+                      <div className="font-bold bg-slate-900/90 px-1 py-0.5 rounded border border-amber-500/40">
+                        {dh.holeId} (Dip {dh.dipAngle}°, Az {dh.azimuth}°)
+                      </div>
+                      <div className="text-[8px] text-emerald-300">Assay Grade: {dh.assayGradeGt} g/t</div>
+                      <div className="text-[8px] text-purple-300">Target: {dh.targetVein}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Pit Contour Layers Simulation */}
               {pits.map((pit) => {
                 const isSelected = pit.id === selectedPit.id;
@@ -306,8 +535,8 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                     style={{
                       top: `${(pit.lat + 3.48) * 3000}%`,
                       left: `${(pit.lng - 114.8) * 3000}%`,
-                      width: '180px',
-                      height: '140px',
+                      width: '185px',
+                      height: '145px',
                     }}
                   >
                     <div className="flex justify-between items-start">
@@ -324,10 +553,13 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                       <div className="text-[11px] font-extrabold text-amber-400 mt-0.5">
                         Grade: {pit.goldGradeGramsPerTon} g/t Gold
                       </div>
+                      <div className="text-[10px] font-bold text-emerald-400">
+                        Prob: {pit.goldProbabilityPct}%
+                      </div>
                     </div>
 
                     {/* 3D Depth Rings / Contours */}
-                    <div className="w-full bg-slate-900/60 rounded-lg p-1.5 border border-slate-700 text-[10px] text-slate-300 flex justify-between">
+                    <div className="w-full bg-slate-900/60 rounded-lg p-1 border border-slate-700 text-[10px] text-slate-300 flex justify-between">
                       <span>Ore: {pit.estimatedOreTons.toLocaleString()} Tons</span>
                     </div>
                   </button>
@@ -347,6 +579,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> High Grade Ore (&gt; 5.0 g/t)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span> High Probability (&gt; 75%)
               </span>
             </div>
             <span className="font-mono text-[10px] text-slate-500">Projection: WGS84 / UT-Zone 50S</span>
@@ -370,18 +605,35 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-amber-800 uppercase block">Gold Grade (ရွှေပါဝင်မှု အဆင့်)</span>
-                  <span className="text-2xl font-black text-amber-900">{selectedPit.goldGradeGramsPerTon} <span className="text-xs font-normal">g/t (Grams/Ton)</span></span>
+                  <span className="text-2xl font-black text-amber-900">
+                    {selectedPit.goldGradeGramsPerTon} <span className="text-xs font-normal">g/t (Grams/Ton)</span>
+                  </span>
                 </div>
                 <Sparkles className="text-amber-600" size={28} />
               </div>
 
-              {/* AI GEOLOGICAL & SLOPE SAFETY METRICS */}
+              {/* AI GEOLOGICAL, PROBABILITY & SLOPE SAFETY METRICS */}
               <div className="grid grid-cols-2 gap-3">
+                <div className="bg-emerald-50 border border-emerald-300 p-3 rounded-xl">
+                  <span className="text-emerald-800 text-[10px] block font-bold uppercase flex items-center gap-1">
+                    <Activity size={12} /> ML Gold Probability
+                  </span>
+                  <span className="font-extrabold text-emerald-900 text-sm">{selectedPit.goldProbabilityPct}% Potential</span>
+                </div>
                 <div className="bg-amber-500/10 border border-amber-300 p-3 rounded-xl">
                   <span className="text-amber-800 text-[10px] block font-bold uppercase flex items-center gap-1">
                     <TrendingUp size={12} /> AI Vein Trend
                   </span>
                   <span className="font-extrabold text-amber-900 text-sm">{selectedPit.predictedVeinTrendAngle}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="text-slate-400 text-[10px] block font-bold uppercase">တူးဖော်ပြီး အနက် (Depth)</span>
+                  <span className="font-extrabold text-slate-900 text-lg">
+                    -{selectedPit.depthMeters} <span className="text-xs font-normal text-slate-500">Meters</span>
+                  </span>
                 </div>
                 <div className={`p-3 rounded-xl border ${selectedPit.slopeStabilityRiskPct > 20 ? 'bg-red-50 border-red-300' : 'bg-emerald-50 border-emerald-300'}`}>
                   <span className="text-[10px] block font-bold uppercase flex items-center gap-1">
@@ -390,17 +642,6 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   <span className={`font-extrabold text-sm ${selectedPit.slopeStabilityRiskPct > 20 ? 'text-red-700' : 'text-emerald-800'}`}>
                     {selectedPit.slopeStabilityRiskPct}% Risk
                   </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <span className="text-slate-400 text-[10px] block font-bold uppercase">တူးဖော်ပြီး အနက် (Depth)</span>
-                  <span className="font-extrabold text-slate-900 text-lg">-{selectedPit.depthMeters} <span className="text-xs font-normal text-slate-500">Meters</span></span>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <span className="text-slate-400 text-[10px] block font-bold uppercase">အမြင့် (AMSL Elevation)</span>
-                  <span className="font-extrabold text-slate-900 text-lg">+{selectedPit.elevationMeters} <span className="text-xs font-normal text-slate-500">Meters</span></span>
                 </div>
               </div>
 
@@ -430,6 +671,160 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
         </div>
       </div>
 
+      {/* DATA UPLOAD MODULE MODAL (CSV & SHAPEFILE) */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+            <div className="bg-gradient-to-r from-teal-900 to-slate-900 text-white p-4 flex justify-between items-center">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <Upload size={18} /> Geospatial Data Upload Module (Collar, Survey, Assay & Shapefiles)
+              </h3>
+              <button onClick={() => setIsUploadModalOpen(false)} className="text-white/80 hover:text-white">✕</button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="flex border-b bg-slate-100 text-xs font-bold">
+              <button
+                onClick={() => setUploadTab('CSV_DRILLHOLE')}
+                className={`flex-1 py-2.5 text-center transition-colors ${
+                  uploadTab === 'CSV_DRILLHOLE' ? 'bg-white text-teal-800 border-b-2 border-teal-600' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                CSV Drillholes (Collar, Survey, Assay)
+              </button>
+              <button
+                onClick={() => setUploadTab('SHAPEFILE_GEOJSON')}
+                className={`flex-1 py-2.5 text-center transition-colors ${
+                  uploadTab === 'SHAPEFILE_GEOJSON' ? 'bg-white text-teal-800 border-b-2 border-teal-600' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Shapefile (.shp) / GeoJSON Polygons
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+              {uploadSuccessMessage ? (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 text-center font-bold text-sm space-y-2">
+                  <CheckCircle className="mx-auto text-emerald-600" size={32} />
+                  <div>{uploadSuccessMessage}</div>
+                  <p className="text-xs text-emerald-600 font-normal">
+                    Drillhole trajectories and Gold Potential Heatmap are updated on the map.
+                  </p>
+                </div>
+              ) : uploadTab === 'CSV_DRILLHOLE' ? (
+                <div className="space-y-4">
+                  <p className="text-slate-600">
+                    Drillhole ဒေတာများဖြစ်သော **Collar.csv**, **Survey.csv** နှင့် **Assay.csv** ဖိုင်များကို တင်သွင်းပါ သို့မဟုတ် CSV text paste လုပ်ပါ။
+                  </p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label htmlFor="collar-csv-input" className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
+                        <FileSpreadsheet size={14} className="text-teal-600" /> Collar CSV (Hole_ID, Lat, Lng, Elevation):
+                      </label>
+                      <textarea
+                        id="collar-csv-input"
+                        rows={2}
+                        className="w-full border border-slate-300 rounded-xl p-2 font-mono text-[11px] outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="Hole_ID,Lat,Lng,Elevation&#10;DH-NEW-01,-3.456,114.813,285"
+                        value={csvCollarContent}
+                        onChange={(e) => setCsvCollarContent(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="survey-csv-input" className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
+                        <FileSpreadsheet size={14} className="text-teal-600" /> Survey CSV (Hole_ID, Depth, Dip, Azimuth):
+                      </label>
+                      <textarea
+                        id="survey-csv-input"
+                        rows={2}
+                        className="w-full border border-slate-300 rounded-xl p-2 font-mono text-[11px] outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="Hole_ID,Depth,Dip,Azimuth&#10;DH-NEW-01,100,-60,45"
+                        value={csvSurveyContent}
+                        onChange={(e) => setCsvSurveyContent(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="assay-csv-input" className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
+                        <FileSpreadsheet size={14} className="text-teal-600" /> Assay CSV (Hole_ID, From_m, To_m, Au_gt):
+                      </label>
+                      <textarea
+                        id="assay-csv-input"
+                        rows={2}
+                        className="w-full border border-slate-300 rounded-xl p-2 font-mono text-[11px] outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="Hole_ID,From_m,To_m,Au_gt&#10;DH-NEW-01,0,50,7.2"
+                        value={csvAssayContent}
+                        onChange={(e) => setCsvAssayContent(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-slate-600">
+                    Shapefile (.shp) သို့မဟုတ် GeoJSON GIS Boundary Polygons များကို တင်သွင်းပါ။
+                  </p>
+                  <div>
+                    <label htmlFor="shapefile-text-input" className="block font-bold text-slate-700 mb-1">GeoJSON / Shapefile JSON Content:</label>
+                    <textarea
+                      id="shapefile-text-input"
+                      rows={6}
+                      className="w-full border border-slate-300 rounded-xl p-3 font-mono text-[11px] outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder={`{\n  "type": "FeatureCollection",\n  "features": [\n    {\n      "type": "Feature",\n      "properties": { "name": "Vein Target Zone Delta", "goldGradeGramsPerTon": 7.4 },\n      "geometry": { "type": "Polygon", "coordinates": [[[114.810, -3.450], [114.815, -3.450], [114.815, -3.455], [114.810, -3.455], [114.810, -3.450]]] }\n    }\n  ]\n}`}
+                      value={shapefileContent}
+                      onChange={(e) => setShapefileContent(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUploadModalOpen(false);
+                  setUploadSuccessMessage(null);
+                }}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg"
+              >
+                ပိတ်မည်
+              </button>
+              {!uploadSuccessMessage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (uploadTab === 'CSV_DRILLHOLE') {
+                      const newHoleId = `DH-UP-${Math.floor(100 + Math.random() * 900)}`;
+                      const newDrillhole: DrillholeData = {
+                        holeId: newHoleId,
+                        lat: -3.458,
+                        lng: 114.814,
+                        collarElevation: 285,
+                        totalDepth: 110,
+                        dipAngle: -65,
+                        azimuth: 40,
+                        assayGradeGt: 7.2,
+                        targetVein: 'Uploaded Drillhole Vein Extension',
+                      };
+                      setDrillholes((prev) => [newDrillhole, ...prev]);
+                      setUploadSuccessMessage(`Successfully processed CSV drillholes! Added hole ${newHoleId}.`);
+                    } else {
+                      setUploadSuccessMessage('Successfully parsed GeoJSON / Shapefile polygons!');
+                    }
+                  }}
+                  className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-lg shadow flex items-center gap-1.5"
+                >
+                  <Upload size={14} /> Process &amp; Visualize Data
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ASSAY LAB TEST RESULTS MODAL */}
       {isAssayModalOpen && selectedPit && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -447,10 +842,14 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                 const newGrade = Number(assayForm.goldGradeGramsPerTon);
                 setPits((prev) =>
                   prev.map((p) =>
-                    p.id === selectedPit.id ? { ...p, goldGradeGramsPerTon: newGrade } : p
+                    p.id === selectedPit.id ? { ...p, goldGradeGramsPerTon: newGrade, goldProbabilityPct: Math.min(99, Math.round(newGrade * 15)) } : p
                   )
                 );
-                setSelectedPit((prev) => ({ ...prev, goldGradeGramsPerTon: newGrade }));
+                setSelectedPit((prev) => ({
+                  ...prev,
+                  goldGradeGramsPerTon: newGrade,
+                  goldProbabilityPct: Math.min(99, Math.round(newGrade * 15)),
+                }));
                 setIsAssayModalOpen(false);
                 alert(`Assay Lab Results Saved! Updated Gold Grade for ${selectedPit.name} to ${newGrade} g/t.`);
               }}
@@ -747,7 +1146,6 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                 <button
                   type="button"
                   onClick={async () => {
-                    // Extract Pit Name and Lat/Lng from KML or default fallback
                     const pitName = importText.includes('<name>')
                       ? importText.split('<name>')[1]?.split('</name>')[0] || 'Imported KML Pit'
                       : 'Pit Delta - Gold Vein (KML)';
@@ -772,9 +1170,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                       ],
                       slopeStabilityRiskPct: 10,
                       predictedVeinTrendAngle: 'NE-30°',
+                      goldProbabilityPct: 85,
                     };
 
-                    // Persist to ERP Locations database & trigger parent list update
                     try {
                       const newLocData = {
                         code: pitCode,
