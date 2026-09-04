@@ -220,7 +220,7 @@ html_content = """<!DOCTYPE html>
     ဤလမ်းညွှန်စာအုပ်သည် ရွှေတူးဖော်ရေးနှင့် စက်ယန္တရားများအတွက် Multi-Store (စတို တည်နေရာမျိုးစုံ) နှင့် Inventory (အပိုပစ္စည်းစတော့) စီမံခန့်ခွဲမှုကို Super Admin (စနစ်အကြီးအကဲ/ပိုင်ရှင်)၊ Manager (စတော့မန်နေဂျာ) နှင့် Store Employees (စတိုဝန်ထမ်းများ) တို့ အဆင့်ဆင့် စနစ်တကျ ပူးပေါင်းဆောင်ရွက်နိုင်ရန် ရေးဆွဲထားခြင်း ဖြစ်သည်။
   </p>
   <p>
-    Multi-Store စနစ်၏ အဓိက ရည်ရွယ်ချက်မှာ ဗဟိုစတို (Yangon Central Warehouse)၊ လုပ်ငန်းခွင်စတိုများ (Site Mine Stores) နှင့် ပြုပြင်ထိန်းသိမ်းရေးစတိုများ (Workshop Stores) အကြား ပစ္စည်းလွှဲပြောင်းမှု၊ စတော့လက်ကျန် စစ်ဆေးမှုနှင့် ပစ္စည်းထုတ်ပေးမှုများကို တိကျမှန်ကန်စွာ မှတ်တမ်းတင်နိုင်ရန် ဖြစ်သည်။
+    Multi-Store စနစ်၏ အဓိက ရည်ရွယ်ချက်မှာ ဗဟိုစတို (Mandalay Central Warehouse)၊ လုပ်ငန်းခွင်စတိုများ (Site Mine Stores) နှင့် ပြုပြင်ထိန်းသိမ်းရေးစတိုများ (Workshop Stores) အကြား ပစ္စည်းလွှဲပြောင်းမှု၊ စတော့လက်ကျန် စစ်ဆေးမှုနှင့် ပစ္စည်းထုတ်ပေးမှုများကို တိကျမှန်ကန်စွာ မှတ်တမ်းတင်နိုင်ရန် ဖြစ်သည်။
   </p>
 
   <!-- Role Responsibilities -->
@@ -275,7 +275,7 @@ html_content = """<!DOCTYPE html>
       <li><strong>လုပ်ဆောင်ချက်:</strong> <code>Location Management</code> မီနူးသို့ သွားရောက်၍ စတို တည်နေရာအသစ်များ ဖန်တီးပါ။</li>
       <li><strong>နမူနာ တည်နေရာများ:</strong>
         <ul>
-          <li><strong>Central Store:</strong> ရန်ကုန် ဗဟိုစတို (Source Main Store)</li>
+          <li><strong>Central Store:</strong> Mandalay ဗဟိုစတို (Source Main Store)</li>
           <li><strong>Site Store 1:</strong> ရွှေတူးဖော်ရေး စိုက်ခင်း ၁ စတို (Mine Site Store)</li>
           <li><strong>Workshop Store:</strong> စက်ပြင် အလုပ်ရုံ စတို (Heavy Equipment Workshop)</li>
         </ul>
