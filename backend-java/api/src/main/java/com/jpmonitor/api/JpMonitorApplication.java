@@ -171,9 +171,10 @@ public class JpMonitorApplication {
             roleRepository.save(role);
             log.info("Seeded role: {}", code);
         } else {
-            // Update permissions if existing role has incorrect wildcard or missing permissions
             Role existing = existingOpt.get();
-            if (!code.equalsIgnoreCase("ROLE_SUPER_ADMIN") && "[\"*\"]".equals(existing.getPermissions() != null ? existing.getPermissions().toString() : "")) {
+            if (!code.equalsIgnoreCase("ROLE_SUPER_ADMIN")) {
+                existing.setName(name);
+                existing.setDescription(description);
                 existing.setPermissions(permissionsJson);
                 roleRepository.save(existing);
                 log.info("Updated permissions for existing role: {}", code);
