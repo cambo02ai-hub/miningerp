@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Edit3, KeyRound, Lock, Plus, Search, ShieldCheck, Trash2, UserRound, UsersRound, X } from 'lucide-react';
 import { authAPI } from '../services/api';
+import { setAuthData } from '../services/authStorage';
 import { formatDateTime } from '../utils/locale';
 import {
   AccountStatus,
@@ -206,6 +207,20 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         : [nextUser, ...users];
       saveManagedUsers(nextUsers);
       setUsers(nextUsers);
+
+      if (currentUser?.username && currentUser.username.toLowerCase() === nextUser.username.toLowerCase()) {
+        const updatedCurrent = {
+          ...currentUser,
+          fullName: nextUser.fullName,
+          email: nextUser.email,
+          role: nextUser.role,
+          status: nextUser.status,
+          permissionOverrides: nextUser.permissionOverrides,
+        };
+        const token = localStorage.getItem('auth_token') || 'session-token';
+        setAuthData(token, updatedCurrent);
+      }
+
       recordRBACAudit(editingUser ? 'USER_UPDATED' : 'USER_CREATED', nextUser.username, `${ROLE_LABELS[nextUser.role]} / ${statusLabels[nextUser.status]}`, currentUser);
       setNotice({ type: 'success', text: editingUser ? 'Account အချက်အလက်များကို ပြင်ဆင်ပြီးပါပြီ။' : 'Account အသစ် ဖန်တီးပြီးပါပြီ။' });
       setIsModalOpen(false);

@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  ManagedUser,
   PERMISSION_CATALOG,
   ROLE_DEFINITIONS,
   getEffectivePermissions,
   hasPermission,
+  loadManagedUsers,
   normalizeRole,
+  saveManagedUsers,
 } from '../services/rbac';
 
 describe('RBAC permission model', () => {
@@ -58,6 +61,36 @@ describe('RBAC permission model', () => {
     };
     expect(hasPermission(user, 'inventory.create')).toBe(false);
     expect(hasPermission(user, 'inventory.delete')).toBe(true);
+  });
+
+  it('persists and restores created user with permission overrides', () => {
+    const newUser: ManagedUser = {
+      id: 'user-test-123',
+      fullName: 'Operator With Delete Rights',
+      username: 'op_custom',
+      email: 'op_custom@jpmonitor.com',
+      employeeId: 'EMP-99',
+      department: 'Operations',
+      site: 'Satui',
+      role: 'OPERATOR',
+      status: 'ACTIVE',
+      permissionOverrides: [
+        { permission: 'inventory.delete', effect: 'ALLOW' },
+        { permission: 'production.create', effect: 'DENY' },
+      ],
+      createdAt: new Date().toISOString(),
+      createdBy: 'myohlaingoo',
+    };
+
+    saveManagedUsers([newUser]);
+    const loaded = loadManagedUsers();
+    expect(loaded.length).toBe(1);
+    expect(loaded[0].username).toBe('op_custom');
+    expect(loaded[0].permissionOverrides).toEqual(newUser.permissionOverrides);
+
+    const effectiveUser = loaded[0];
+    expect(hasPermission(effectiveUser, 'inventory.delete')).toBe(true);
+    expect(hasPermission(effectiveUser, 'production.create')).toBe(false);
   });
 
   it('keeps role definitions internally consistent', () => {

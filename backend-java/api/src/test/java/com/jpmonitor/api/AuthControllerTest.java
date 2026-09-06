@@ -3,6 +3,7 @@ package com.jpmonitor.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpmonitor.api.controller.AuthController;
 import com.jpmonitor.domains.core.dto.LoginRequest;
+import com.jpmonitor.domains.core.dto.PermissionOverrideDTO;
 import com.jpmonitor.domains.core.dto.RegisterRequest;
 import com.jpmonitor.domains.core.dto.UserDTO;
 import com.jpmonitor.domains.core.entity.Role;
@@ -247,6 +248,55 @@ class AuthControllerTest {
         verify(userRepository).findByUsernameIgnoreCase("newuser");
         verify(passwordEncoder).encode("password123");
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/register with permissionOverrides returns overrides in DTO")
+    void testRegisterWithPermissionOverrides() throws Exception {
+        PermissionOverrideDTO override = new PermissionOverrideDTO("inventory.delete", "ALLOW");
+
+        RegisterRequest registerRequest = new RegisterRequest(
+                "operator_custom",
+                "password123",
+                "Custom Operator",
+                "operator_custom@jpmonitor.com",
+                "EMP-002",
+                "Operations",
+                "Satui Mine",
+                "OPERATOR",
+                "ACTIVE",
+                List.of("dashboard.view"),
+                List.of(override)
+        );
+
+        Role operatorRole = new Role();
+        operatorRole.setId(UUID.randomUUID());
+        operatorRole.setCode("ROLE_OPERATOR");
+        operatorRole.setName("Operator");
+        operatorRole.setPermissions("[\"dashboard.view\"]");
+
+        when(userRepository.findByUsernameIgnoreCase("operator_custom")).thenReturn(Optional.empty());
+        when(roleRepository.findByCodeIgnoreCase("ROLE_OPERATOR")).thenReturn(Optional.of(operatorRole));
+        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword123");
+
+        User savedUser = new User();
+        savedUser.setId(UUID.randomUUID());
+        savedUser.setUsername("operator_custom");
+        savedUser.setEmail("operator_custom@jpmonitor.com");
+        savedUser.setFullName("Custom Operator");
+        savedUser.setPasswordHash("encodedPassword123");
+        savedUser.setRole(operatorRole);
+        savedUser.setIsActive(true);
+
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.username").value("operator_custom"))
+                .andExpect(jsonPath("$.permissionOverrides[0].permission").value("inventory.delete"))
+                .andExpect(jsonPath("$.permissionOverrides[0].effect").value("ALLOW"));
     }
 
     @Test

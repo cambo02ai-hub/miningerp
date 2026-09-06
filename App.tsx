@@ -21,7 +21,7 @@ import LoginPage from './components/LoginPage';
 import AIChatWidget from './components/AIChatWidget';
 import { getAuthToken, getCurrentUser, setAuthData, clearAuthData } from './services/authStorage';
 import { authAPI } from './services/api';
-import { hasPermission } from './services/rbac';
+import { hasPermission, loadManagedUsers } from './services/rbac';
 import { WifiOff } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -50,7 +50,23 @@ const App: React.FC = () => {
         let resolvedUser = cachedUser;
         try {
           const remoteUser = await authAPI.getMe();
-          resolvedUser = { ...cachedUser, ...(remoteUser?.user || remoteUser) };
+          const managedUsers = loadManagedUsers();
+          const cleanName = (remoteUser?.username || remoteUser?.user?.username || cachedUser.username || '').trim().toLowerCase();
+          const managed = managedUsers.find((u) => u.username.trim().toLowerCase() === cleanName);
+
+          const remoteOverrides = remoteUser?.permissionOverrides || remoteUser?.user?.permissionOverrides;
+          const remotePerms = remoteUser?.permissions || remoteUser?.user?.permissions;
+
+          resolvedUser = {
+            ...cachedUser,
+            ...(remoteUser?.user || remoteUser),
+            permissions: remotePerms || cachedUser.permissions || managed?.permissions,
+            permissionOverrides: (remoteOverrides && remoteOverrides.length > 0)
+              ? remoteOverrides
+              : (cachedUser.permissionOverrides && cachedUser.permissionOverrides.length > 0)
+                ? cachedUser.permissionOverrides
+                : managed?.permissionOverrides || [],
+          };
           const token = getAuthToken();
           if (token) setAuthData(token, resolvedUser);
         } catch {

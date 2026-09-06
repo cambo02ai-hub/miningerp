@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -124,7 +125,8 @@ public class AuthController {
                     savedUser.getEmail(),
                     savedUser.getFullName(),
                     savedUser.getRole().getCode(),
-                    savedUser.getRole().getPermissions()
+                    savedUser.getRole().getPermissions(),
+                    request.permissionOverrides() != null ? request.permissionOverrides() : Collections.emptyList()
             );
 
             log.info("User registered successfully: {} with role: {}", savedUser.getUsername(), savedUser.getRole().getCode());
