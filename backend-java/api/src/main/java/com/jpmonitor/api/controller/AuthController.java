@@ -40,13 +40,19 @@ public class AuthController {
     @PostMapping("/login")
     @Transactional(readOnly = true)
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        if (request == null || request.username() == null || request.username().isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthErrorResponse("Invalid username or password"));
+        }
+        String cleanUsername = request.username().trim();
         try {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
-            if (!passwordEncoder.matches(request.password(), userDetails.getPassword())) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(cleanUsername);
+            if (request.password() == null || !passwordEncoder.matches(request.password(), userDetails.getPassword())) {
                 throw new BadCredentialsException("Invalid username or password");
             }
 
-            User user = userRepository.findByUsername(request.username())
+            User user = userRepository.findByUsernameIgnoreCase(cleanUsername)
+                    .or(() -> userRepository.findByUsername(cleanUsername))
                     .orElseThrow(() -> new IllegalStateException("User not found after authentication"));
 
             String token = jwtUtils.generateToken(userDetails);
@@ -57,12 +63,12 @@ public class AuthController {
 
             log.info("User logged in successfully: {}", user.getUsername());
             return ResponseEntity.ok(new AuthResponse(token, userDTO));
-        } catch (BadCredentialsException e) {
-            log.warn("Failed login attempt for user: {}", request.username());
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            log.warn("Failed login attempt for user: {}", cleanUsername);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthErrorResponse("Invalid username or password"));
         } catch (Exception e) {
-            log.error("Login error for user: {}", request.username(), e);
+            log.error("Login error for user: {}", cleanUsername, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new AuthErrorResponse("An error occurred during login"));
         }
@@ -78,7 +84,7 @@ public class AuthController {
             if (request.password() == null || request.password().length() < 8) {
                 return ResponseEntity.badRequest().body(new AuthErrorResponse("Password must be at least 8 characters"));
             }
-            if (userRepository.findByUsername(request.username().trim()).isPresent()) {
+            if (userRepository.findByUsernameIgnoreCase(request.username().trim()).isPresent()) {
                 return ResponseEntity.badRequest().body(new AuthErrorResponse("Username is already taken"));
             }
 

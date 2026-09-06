@@ -172,7 +172,30 @@ describe('fetchJson', () => {
     vi.restoreAllMocks()
   })
 
-  it('throws parsed error message on non-OK response', async () => {
+  it('handles 401 on /auth/login without redirecting window.location', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      status: 401,
+      ok: false,
+      json: () => Promise.resolve({ message: 'Invalid username or password' }),
+    })
+
+    delete (window as any).location
+    window.location = { href: '' } as any
+
+    let caught: Error | null = null
+    try {
+      await fetchJson('/auth/login', { method: 'POST', body: JSON.stringify({ username: 'myohlaingoo', password: 'wrong' }) })
+    } catch (e: any) {
+      caught = e
+    }
+
+    expect(caught).not.toBeNull()
+    expect(caught!.message).toBe('Invalid username or password')
+    expect(clearAuthData).not.toHaveBeenCalled()
+    expect(window.location.href).toBe('')
+  })
+
+  it('throws parsed error message from message or error on non-OK response', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       status: 400,
       ok: false,

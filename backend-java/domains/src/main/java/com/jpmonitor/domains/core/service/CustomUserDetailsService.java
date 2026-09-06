@@ -24,7 +24,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        if (username == null || username.isBlank()) {
+            throw new UsernameNotFoundException("Username cannot be empty");
+        }
+        String cleanUsername = username.trim();
+        User user = userRepository.findByUsernameIgnoreCase(cleanUsername)
+                .or(() -> userRepository.findByUsername(cleanUsername))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         String roleCode = user.getRole().getCode();
