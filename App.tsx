@@ -13,6 +13,7 @@ const MutationView = React.lazy(() => import('./components/MutationView'))
 const EmployeeView = React.lazy(() => import('./components/EmployeeView'))
 const SupplierView = React.lazy(() => import('./components/SupplierView'))
 const LocationView = React.lazy(() => import('./components/LocationView'))
+const PitMapView = React.lazy(() => import('./components/PitMapView'))
 const TimesheetView = React.lazy(() => import('./components/TimesheetView'))
 const DebtView = React.lazy(() => import('./components/DebtView'))
 const UserManagementView = React.lazy(() => import('./components/UserManagementView'))
@@ -141,6 +142,7 @@ const App: React.FC = () => {
               <Route path="/supplier" element={<ErrorBoundary><SupplierView /></ErrorBoundary>} />
               <Route path="/debt" element={<ErrorBoundary><DebtView /></ErrorBoundary>} />
               <Route path="/location" element={<ErrorBoundary><LocationView /></ErrorBoundary>} />
+              <Route path="/gis-prediction" element={<ErrorBoundary><PitMapView /></ErrorBoundary>} />
               <Route path="/hse" element={<ErrorBoundary><HSEView /></ErrorBoundary>} />
               <Route path="/audit" element={<ErrorBoundary><AuditLogView /></ErrorBoundary>} />
               <Route path="/user-management" element={hasPermission(currentUser, 'user_management.manage') ? <ErrorBoundary><UserManagementView currentUser={currentUser} /></ErrorBoundary> : <Navigate to="/" replace />} />
