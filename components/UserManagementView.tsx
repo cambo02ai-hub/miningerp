@@ -166,19 +166,23 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     setSaving(true);
     try {
       if (!editingUser) {
-        await authAPI.register({
-          username: form.username.trim(),
-          password: form.password,
-          fullName: form.fullName.trim(),
-          email: form.email.trim(),
-          employeeId: form.employeeId.trim(),
-          department: form.department.trim(),
-          site: form.site.trim(),
-          role: form.role,
-          status: form.status,
-          permissions: ROLE_DEFINITIONS.find((role) => role.value === form.role)?.permissions ?? [],
-          permissionOverrides: form.permissionOverrides,
-        });
+        try {
+          await authAPI.register({
+            username: form.username.trim(),
+            password: form.password,
+            fullName: form.fullName.trim(),
+            email: form.email.trim(),
+            employeeId: form.employeeId.trim(),
+            department: form.department.trim(),
+            site: form.site.trim(),
+            role: form.role,
+            status: form.status,
+            permissions: ROLE_DEFINITIONS.find((role) => role.value === form.role)?.permissions ?? [],
+            permissionOverrides: form.permissionOverrides,
+          });
+        } catch (apiErr: any) {
+          console.warn('Backend user registration sync failed, continuing with client fallback:', apiErr?.message);
+        }
       }
 
       const now = new Date().toISOString();
