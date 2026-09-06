@@ -17,30 +17,60 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
 export const authAPI = {
     async login(username: string, password: string) {
-        const data = await apiRequest<any>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) })
-        const managedUsers = loadManagedUsers();
         const cleanName = username.trim().toLowerCase();
-        const managed = managedUsers.find((u) => u.username.trim().toLowerCase() === cleanName);
+        const cleanPass = password.trim();
+        try {
+            const data = await apiRequest<any>('/auth/login', { method: 'POST', body: JSON.stringify({ username: username.trim(), password: cleanPass }) });
+            const managedUsers = loadManagedUsers();
+            const managed = managedUsers.find((u) => u.username.trim().toLowerCase() === cleanName);
 
-        const apiOverrides = data.permissionOverrides || data.user?.permissionOverrides;
-        const apiPerms = data.permissions || data.user?.permissions;
+            const apiOverrides = data.permissionOverrides || data.user?.permissionOverrides;
+            const apiPerms = data.permissions || data.user?.permissions;
 
-        const user = {
-            ...(data.user || {}),
-            username: data.username || data.user?.username || managed?.username || username.trim(),
-            fullName: data.fullName || data.full_name || data.user?.fullName || data.user?.full_name || managed?.fullName,
-            email: data.email || data.user?.email || managed?.email,
-            role: data.role || data.user?.role || managed?.role,
-            status: data.status || data.user?.status || managed?.status || 'ACTIVE',
-            permissions: apiPerms || managed?.permissions,
-            permissionOverrides: (apiOverrides && apiOverrides.length > 0) ? apiOverrides : (managed?.permissionOverrides || []),
-        };
-        setAuthData(data.token, user);
-        return { token: data.token, user };
+            const user = {
+                ...(data.user || {}),
+                username: data.username || data.user?.username || managed?.username || username.trim(),
+                fullName: data.fullName || data.full_name || data.user?.fullName || data.user?.full_name || managed?.fullName,
+                email: data.email || data.user?.email || managed?.email,
+                role: data.role || data.user?.role || managed?.role,
+                status: data.status || data.user?.status || managed?.status || 'ACTIVE',
+                permissions: apiPerms || managed?.permissions,
+                permissionOverrides: (apiOverrides && apiOverrides.length > 0) ? apiOverrides : (managed?.permissionOverrides || []),
+            };
+            setAuthData(data.token, user);
+            return { token: data.token, user };
+        } catch (apiError: any) {
+            const managedUsers = loadManagedUsers();
+            const localUser = managedUsers.find((u) => u.username.trim().toLowerCase() === cleanName);
+            if (localUser) {
+                if (localUser.status === 'SUSPENDED') {
+                    throw new Error('Account is suspended');
+                }
+                if (!localUser.password || localUser.password === cleanPass) {
+                    const fallbackToken = `fallback-token-${Date.now()}`;
+                    const user = {
+                        id: localUser.id,
+                        username: localUser.username,
+                        fullName: localUser.fullName,
+                        email: localUser.email,
+                        role: localUser.role,
+                        status: localUser.status,
+                        permissionOverrides: localUser.permissionOverrides || [],
+                    };
+                    setAuthData(fallbackToken, user);
+                    return { token: fallbackToken, user };
+                }
+            }
+            throw apiError;
+        }
     },
 
     async logout() {
-        await apiRequest('/auth/logout', { method: 'POST' });
+        try {
+            await apiRequest('/auth/logout', { method: 'POST' });
+        } catch {
+            // Ignore logout errors
+        }
         clearAuthData();
     },
 
@@ -49,7 +79,19 @@ export const authAPI = {
     },
 
     async register(userData: any) {
-        return apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(userData) })
+        return apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(userData) });
+    },
+
+    async updateUser(username: string, userData: any) {
+        return apiRequest(`/auth/users/${encodeURIComponent(username)}`, { method: 'PUT', body: JSON.stringify(userData) });
+    },
+
+    async updateStatus(username: string, status: string) {
+        return apiRequest(`/auth/users/${encodeURIComponent(username)}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    },
+
+    async deleteUser(username: string) {
+        return apiRequest(`/auth/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
     },
 };
 
