@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -55,6 +56,11 @@ public class AuthController {
             User user = userRepository.findByUsernameIgnoreCase(cleanUsername)
                     .or(() -> userRepository.findByUsername(cleanUsername))
                     .orElseThrow(() -> new IllegalStateException("User not found after authentication"));
+
+            if (user.getIsActive() != null && !user.getIsActive()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new AuthErrorResponse("Account is suspended"));
+            }
 
             String token = jwtUtils.generateToken(userDetails);
 
@@ -109,10 +115,15 @@ public class AuthController {
                         return roleRepository.save(defaultRole);
                     });
 
+            String emailToSet = (request.email() != null && !request.email().isBlank()) ? request.email().trim() : request.username().trim() + "@jpmonitor.com";
+            if (userRepository.findByEmailIgnoreCase(emailToSet).isPresent()) {
+                emailToSet = request.username().trim() + "." + System.currentTimeMillis() + "@jpmonitor.com";
+            }
+
             User user = new User();
             user.setUsername(request.username().trim());
             user.setFullName(request.fullName() != null && !request.fullName().isBlank() ? request.fullName().trim() : request.username().trim());
-            user.setEmail(request.email() != null && !request.email().isBlank() ? request.email().trim() : request.username().trim() + "@jpmonitor.com");
+            user.setEmail(emailToSet);
             user.setPasswordHash(passwordEncoder.encode(request.password()));
             user.setRole(role);
             user.setIsActive(request.status() == null || !request.status().equalsIgnoreCase("SUSPENDED"));
@@ -135,6 +146,126 @@ public class AuthController {
             log.error("Registration error for user: {}", request.username(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new AuthErrorResponse("Account registration failed: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/users/{username}")
+    @Transactional
+    public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody RegisterRequest request) {
+        try {
+            User user = userRepository.findByUsernameIgnoreCase(username.trim())
+                    .or(() -> userRepository.findByUsername(username.trim()))
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+
+            if (request.fullName() != null && !request.fullName().isBlank()) {
+                user.setFullName(request.fullName().trim());
+            }
+            if (request.email() != null && !request.email().isBlank()) {
+                String requestedEmail = request.email().trim();
+                user.setEmail(requestedEmail);
+            }
+            if (request.password() != null && !request.password().isBlank()) {
+                if (request.password().length() < 8) {
+                    return ResponseEntity.badRequest().body(new AuthErrorResponse("Password must be at least 8 characters"));
+                }
+                user.setPasswordHash(passwordEncoder.encode(request.password()));
+            }
+
+            if (request.role() != null && !request.role().isBlank()) {
+                String targetRoleCode = request.role().trim().toUpperCase();
+                String prefixedCode = targetRoleCode.startsWith("ROLE_") ? targetRoleCode : "ROLE_" + targetRoleCode;
+                String rawCode = targetRoleCode.startsWith("ROLE_") ? targetRoleCode.substring(5) : targetRoleCode;
+
+                Role role = roleRepository.findByCodeIgnoreCase(prefixedCode)
+                        .or(() -> roleRepository.findByCodeIgnoreCase(targetRoleCode))
+                        .or(() -> roleRepository.findByCodeIgnoreCase(rawCode))
+                        .orElseGet(() -> {
+                            Role defaultRole = new Role();
+                            defaultRole.setCode(prefixedCode);
+                            defaultRole.setName(formatRoleName(rawCode));
+                            defaultRole.setDescription(rawCode + " Role");
+                            defaultRole.setPermissions("[]");
+                            Role saved = roleRepository.save(defaultRole);
+                            return saved != null ? saved : defaultRole;
+                        });
+                if (role != null) {
+                    user.setRole(role);
+                }
+            }
+
+            if (request.status() != null) {
+                user.setIsActive(!request.status().equalsIgnoreCase("SUSPENDED"));
+            }
+
+            User savedUser = userRepository.save(user);
+
+            UserDTO userDTO = new UserDTO(
+                    savedUser.getId(),
+                    savedUser.getUsername(),
+                    savedUser.getEmail(),
+                    savedUser.getFullName(),
+                    savedUser.getRole() != null ? savedUser.getRole().getCode() : "OPERATOR",
+                    savedUser.getRole() != null ? savedUser.getRole().getPermissions() : Collections.emptyList(),
+                    request.permissionOverrides() != null ? request.permissionOverrides() : Collections.emptyList()
+            );
+
+            log.info("User updated successfully: {}", savedUser.getUsername());
+            return ResponseEntity.ok(userDTO);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new AuthErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Update error for user: {}", username, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AuthErrorResponse("Account update failed: " + e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/users/{username}/status")
+    @Transactional
+    public ResponseEntity<?> updateUserStatus(@PathVariable String username, @RequestBody Map<String, String> body) {
+        try {
+            User user = userRepository.findByUsernameIgnoreCase(username.trim())
+                    .or(() -> userRepository.findByUsername(username.trim()))
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+
+            String status = body.get("status");
+            if (status != null) {
+                user.setIsActive(!status.equalsIgnoreCase("SUSPENDED"));
+                userRepository.save(user);
+            }
+
+            log.info("User status updated successfully for: {} to {}", user.getUsername(), status);
+            return ResponseEntity.ok(Map.of("message", "Status updated successfully", "username", username, "isActive", user.getIsActive()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new AuthErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Status update error for user: {}", username, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AuthErrorResponse("Status update failed: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/users/{username}")
+    @Transactional
+    public ResponseEntity<?> deleteUser(@PathVariable String username) {
+        try {
+            User user = userRepository.findByUsernameIgnoreCase(username.trim())
+                    .or(() -> userRepository.findByUsername(username.trim()))
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+
+            if ("myohlaingoo".equalsIgnoreCase(user.getUsername()) || (user.getRole() != null && "ROLE_SUPER_ADMIN".equalsIgnoreCase(user.getRole().getCode()))) {
+                return ResponseEntity.badRequest().body(new AuthErrorResponse("Super Admin account cannot be deleted"));
+            }
+
+            userRepository.delete(user);
+            log.info("User deleted successfully: {}", username);
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully", "username", username));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new AuthErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Delete error for user: {}", username, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AuthErrorResponse("User deletion failed: " + e.getMessage()));
         }
     }
 

@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -322,6 +323,63 @@ class AuthControllerTest {
 
         verify(userRepository).findByUsernameIgnoreCase(TEST_USERNAME);
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("PUT /api/auth/users/{username} updates user details successfully")
+    void testUpdateUser() throws Exception {
+        RegisterRequest updateRequest = new RegisterRequest(
+                TEST_USERNAME,
+                "newpassword123",
+                "Updated Admin Name",
+                "updated_admin@jpmonitor.com",
+                "", "", "", "ADMIN", "ACTIVE", List.of()
+        );
+
+        when(userRepository.findByUsernameIgnoreCase(TEST_USERNAME)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.encode("newpassword123")).thenReturn("encodedNewPassword");
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        mockMvc.perform(put("/api/auth/users/" + TEST_USERNAME)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(TEST_USERNAME));
+
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/auth/users/{username}/status toggles user active status")
+    void testUpdateUserStatus() throws Exception {
+        when(userRepository.findByUsernameIgnoreCase(TEST_USERNAME)).thenReturn(Optional.of(testUser));
+
+        mockMvc.perform(patch("/api/auth/users/" + TEST_USERNAME + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "SUSPENDED"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isActive").value(false));
+
+        verify(userRepository).save(testUser);
+    }
+
+    @Test
+    @DisplayName("DELETE /api/auth/users/{username} deletes user successfully")
+    void testDeleteUser() throws Exception {
+        User regularUser = new User();
+        regularUser.setId(UUID.randomUUID());
+        regularUser.setUsername("regularuser");
+        Role regRole = new Role();
+        regRole.setCode("ROLE_OPERATOR");
+        regularUser.setRole(regRole);
+
+        when(userRepository.findByUsernameIgnoreCase("regularuser")).thenReturn(Optional.of(regularUser));
+
+        mockMvc.perform(delete("/api/auth/users/regularuser"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("regularuser"));
+
+        verify(userRepository).delete(regularUser);
     }
 
     @Test

@@ -158,6 +158,10 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
       setNotice({ type: 'error', text: 'Account အသစ်အတွက် စကားဝှက်သည် အနည်းဆုံး ၈ လုံးရှိရမည်။' });
       return;
     }
+    if (editingUser && form.password && form.password.length < 8) {
+      setNotice({ type: 'error', text: 'စကားဝှက်အသစ်သည် အနည်းဆုံး ၈ လုံးရှိရမည်။' });
+      return;
+    }
     const duplicate = users.some((user) => user.username.toLowerCase() === form.username.trim().toLowerCase() && user.id !== editingUser?.id);
     if (duplicate) {
       setNotice({ type: 'error', text: 'ဤ Username ကို အသုံးပြုပြီးသား ဖြစ်ပါသည်။' });
@@ -166,23 +170,37 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
 
     setSaving(true);
     try {
+      const payload = {
+        username: form.username.trim(),
+        password: form.password || undefined,
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        employeeId: form.employeeId.trim(),
+        department: form.department.trim(),
+        site: form.site.trim(),
+        role: form.role,
+        status: form.status,
+        permissions: ROLE_DEFINITIONS.find((role) => role.value === form.role)?.permissions ?? [],
+        permissionOverrides: form.permissionOverrides,
+      };
+
       if (!editingUser) {
         try {
-          await authAPI.register({
-            username: form.username.trim(),
-            password: form.password,
-            fullName: form.fullName.trim(),
-            email: form.email.trim(),
-            employeeId: form.employeeId.trim(),
-            department: form.department.trim(),
-            site: form.site.trim(),
-            role: form.role,
-            status: form.status,
-            permissions: ROLE_DEFINITIONS.find((role) => role.value === form.role)?.permissions ?? [],
-            permissionOverrides: form.permissionOverrides,
-          });
+          await authAPI.register(payload);
         } catch (apiErr: any) {
-          console.warn('Backend user registration sync failed, continuing with client fallback:', apiErr?.message);
+          if (navigator.onLine && apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
+            throw new Error(apiErr.message || 'Backend user registration failed');
+          }
+          console.warn('Backend user registration offline/sync warning, saving local fallback profile:', apiErr?.message);
+        }
+      } else {
+        try {
+          await authAPI.updateUser(editingUser.username, payload);
+        } catch (apiErr: any) {
+          if (navigator.onLine && apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
+            throw new Error(apiErr.message || 'Backend user update failed');
+          }
+          console.warn('Backend user update offline/sync warning, updating local profile:', apiErr?.message);
         }
       }
 
@@ -201,6 +219,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         createdAt: editingUser?.createdAt || now,
         createdBy: editingUser?.createdBy || currentUser?.username || 'စနစ်အကြီးအကဲ',
         lastLoginAt: editingUser?.lastLoginAt,
+        password: form.password ? form.password : (editingUser?.password || undefined),
       };
       const nextUsers = editingUser
         ? users.map((user) => (user.id === editingUser.id ? nextUser : user))
@@ -225,18 +244,23 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
       setNotice({ type: 'success', text: editingUser ? 'Account အချက်အလက်များကို ပြင်ဆင်ပြီးပါပြီ။' : 'Account အသစ် ဖန်တီးပြီးပါပြီ။' });
       setIsModalOpen(false);
     } catch (error: any) {
-      setNotice({ type: 'error', text: error?.message || 'Account ဖန်တီးရာတွင် အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်။' });
+      setNotice({ type: 'error', text: error?.message || 'Account ဖန်တီး/ပြင်ဆင်ရာတွင် အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်။' });
     } finally {
       setSaving(false);
     }
   };
 
-  const toggleStatus = (user: ManagedUser) => {
+  const toggleStatus = async (user: ManagedUser) => {
     if (user.username === currentUser?.username) {
       setNotice({ type: 'error', text: 'လက်ရှိ Super Admin account ကို ကိုယ်တိုင်ပိတ်၍ မရပါ။' });
       return;
     }
     const nextStatus: AccountStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    try {
+      await authAPI.updateStatus(user.username, nextStatus);
+    } catch (apiErr: any) {
+      console.warn('Backend status update warning:', apiErr?.message);
+    }
     const nextUsers = users.map((item) => (item.id === user.id ? { ...item, status: nextStatus } : item));
     saveManagedUsers(nextUsers);
     setUsers(nextUsers);
@@ -244,12 +268,17 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     setNotice({ type: 'success', text: `${user.username} account ကို ${statusLabels[nextStatus]} အဖြစ် ပြောင်းပြီးပါပြီ။` });
   };
 
-  const deleteUser = (user: ManagedUser) => {
+  const deleteUser = async (user: ManagedUser) => {
     if (user.username === currentUser?.username || user.role === 'SUPER_ADMIN') {
       setNotice({ type: 'error', text: 'Super Admin account ကို ဖျက်၍မရပါ။ လုံခြုံရေးအတွက် Suspend ကိုသာ အသုံးပြုပါ။' });
       return;
     }
     if (!window.confirm(`${user.username} account ကို ဖျက်ရန် သေချာပါသလား။`)) return;
+    try {
+      await authAPI.deleteUser(user.username);
+    } catch (apiErr: any) {
+      console.warn('Backend user delete warning:', apiErr?.message);
+    }
     const nextUsers = users.filter((item) => item.id !== user.id);
     saveManagedUsers(nextUsers);
     setUsers(nextUsers);
@@ -383,7 +412,22 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">လုပ်ငန်းခွင် / Site</span><input value={form.site} onChange={(event) => updateField('site', event.target.value)} placeholder="ဥပမာ - Satui သတ္တုတွင်း" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">Role</span><select value={form.role} onChange={(event) => updateField('role', event.target.value as AppRole)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red">{ROLE_DEFINITIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">Account အခြေအနေ</span><select value={form.status} onChange={(event) => updateField('status', event.target.value as AccountStatus)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red">{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                {!editingUser && <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-text-secondary">ယာယီစကားဝှက် * (အနည်းဆုံး ၈ လုံး)</span><input required minLength={8} type="password" value={form.password} onChange={(event) => updateField('password', event.target.value)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /><span className="text-[11px] text-text-muted">Account ဖန်တီးပြီးနောက် user ကို ပထမဆုံး login ဝင်ချိန်တွင် စကားဝှက်ပြောင်းရန် သတ်မှတ်သင့်ပါသည်။</span></label>}
+                <label className="space-y-1.5 md:col-span-2">
+                  <span className="text-xs font-medium text-text-secondary">
+                    {editingUser ? 'စကားဝှက်အသစ် ပြောင်းရန် (မပြောင်းလိုပါက ချန်ထားခဲ့ပါ)' : 'ယာယီစကားဝှက် * (အနည်းဆုံး ၈ လုံး)'}
+                  </span>
+                  <input
+                    required={!editingUser}
+                    minLength={8}
+                    type="password"
+                    value={form.password}
+                    onChange={(event) => updateField('password', event.target.value)}
+                    className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red"
+                  />
+                  <span className="text-[11px] text-text-muted">
+                    {editingUser ? 'စကားဝှက်အသစ် ထည့်သွင်းပါက ယခင်စကားဝှက်အစား အသစ်ပြောင်းလဲမည်ဖြစ်ပါသည်။' : 'Account ဖန်တီးပြီးနောက် user ကို ပထမဆုံး login ဝင်ချိန်တွင် စကားဝှက်ပြောင်းရန် သတ်မှတ်သင့်ပါသည်။'}
+                  </span>
+                </label>
               </div>
 
               <div className="border border-border rounded-jpmonitor-lg overflow-hidden"><div className="p-4 bg-bg-elevated border-b border-border flex items-center justify-between gap-3"><div><h4 className="font-semibold text-text-primary">Individual Permission Override</h4><p className="text-xs text-text-muted mt-1">Role ၏ default ခွင့်များကို ထပ်တိုး သို့မဟုတ် ကန့်သတ်ရန် checkbox ကို အသုံးပြုပါ။</p></div><span className="text-xs text-text-muted">{form.permissionOverrides.length} override</span></div><div className="max-h-64 overflow-y-auto divide-y divide-border">{PERMISSION_CATALOG.map((permission) => <label key={permission.key} aria-label={`${permission.moduleLabel} ${permission.actionLabel}`} className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-bg-elevated cursor-pointer"><div><p className="text-sm text-text-primary">{permission.moduleLabel} · {permission.actionLabel}</p><p className="text-xs text-text-muted font-mono">{permission.key}</p></div><input type="checkbox" checked={isPermissionChecked(permission.key)} onChange={() => togglePermissionOverride(permission.key)} className="w-4 h-4 accent-red-600" /></label>)}</div></div>

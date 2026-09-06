@@ -48,6 +48,7 @@ export interface ManagedUser {
   createdAt: string;
   createdBy: string;
   lastLoginAt?: string;
+  password?: string;
 }
 
 export interface RBACAuditEntry {
