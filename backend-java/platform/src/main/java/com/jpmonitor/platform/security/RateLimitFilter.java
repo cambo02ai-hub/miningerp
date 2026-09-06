@@ -77,8 +77,12 @@ public class RateLimitFilter implements Filter {
     @PostConstruct
     public void init() {
         if (jwtSecret != null && jwtSecret.length() >= 32) {
-            byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
-            this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+            try {
+                byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
+                this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+            } catch (Exception e) {
+                this.signingKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+            }
         } else {
             log.warn("JWT secret not configured or too short — falling back to IP-only keying for all endpoints");
             this.signingKey = null;
