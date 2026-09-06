@@ -189,13 +189,17 @@ export const ROLE_LABELS: Record<AppRole, string> = Object.fromEntries(
 ) as Record<AppRole, string>;
 
 export const normalizeRole = (role?: string | null): AppRole => {
-  const normalized = String(role ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
-  if (normalized === 'SUPER_ADMIN' || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMINISTRATOR') return 'SUPER_ADMIN';
-  if (normalized === 'ADMIN' || normalized === 'ADMINISTRATOR' || normalized === 'SYSTEM_ADMIN') return 'ADMIN';
-  if (normalized === 'STOCK_MANAGER' || normalized === 'STOCKMANAGER') return 'STOCK_MANAGER';
-  if (normalized === 'MANAGER') return 'MANAGER';
-  if (normalized === 'SUPERVISOR') return 'SUPERVISOR';
-  if (normalized === 'OPERATOR') return 'OPERATOR';
+  let normalized = String(role ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (normalized.startsWith('ROLE_')) {
+    normalized = normalized.substring(5);
+  }
+  if (normalized === 'SUPER_ADMIN' || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMINISTRATOR' || normalized === 'SUPER_ADMINISTRATOR') return 'SUPER_ADMIN';
+  if (normalized === 'ADMIN' || normalized === 'ADMINISTRATOR' || normalized === 'SYSTEM_ADMIN' || normalized === 'SYSTEM_ADMINISTRATOR') return 'ADMIN';
+  if (normalized === 'STOCK_MANAGER' || normalized === 'STOCKMANAGER' || normalized === 'STOCK_MANAGER') return 'STOCK_MANAGER';
+  if (normalized === 'MANAGER' || normalized === 'OPERATIONAL_MANAGER') return 'MANAGER';
+  if (normalized === 'SUPERVISOR' || normalized === 'SITE_SUPERVISOR') return 'SUPERVISOR';
+  if (normalized === 'OPERATOR' || normalized === 'OPERATIONAL_INPUT') return 'OPERATOR';
+  if (normalized === 'VIEWER' || normalized === 'STAFF' || normalized === 'READ_ONLY_ACCESS') return 'VIEWER';
   return 'VIEWER';
 };
 

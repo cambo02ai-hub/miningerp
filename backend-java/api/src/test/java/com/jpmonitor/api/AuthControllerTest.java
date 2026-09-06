@@ -109,7 +109,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.user.username").value(TEST_USERNAME))
                 .andExpect(jsonPath("$.user.email").value("admin@jpmonitor.com"))
                 .andExpect(jsonPath("$.user.fullName").value("Admin User"))
-                .andExpect(jsonPath("$.user.role").value("Administrator"));
+                .andExpect(jsonPath("$.user.role").value("ADMIN"));
 
         verify(userDetailsService).loadUserByUsername(TEST_USERNAME);
         verify(passwordEncoder).matches(TEST_PASSWORD, "hash");
@@ -150,13 +150,19 @@ class AuthControllerTest {
                 "EMP-001",
                 "Mining Operations",
                 "Satui Mine",
-                "OPERATOR",
+                "MANAGER",
                 "ACTIVE",
                 List.of("daily_logs.read", "daily_logs.write")
         );
 
+        Role managerRole = new Role();
+        managerRole.setId(UUID.randomUUID());
+        managerRole.setCode("ROLE_MANAGER");
+        managerRole.setName("Manager");
+        managerRole.setPermissions("[\"*\"]");
+
         when(userRepository.findByUsername("newuser")).thenReturn(Optional.empty());
-        when(roleRepository.findByCode("OPERATOR")).thenReturn(Optional.of(testRole));
+        when(roleRepository.findByCodeIgnoreCase("ROLE_MANAGER")).thenReturn(Optional.of(managerRole));
         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword123");
 
         User savedUser = new User();
@@ -165,7 +171,7 @@ class AuthControllerTest {
         savedUser.setEmail("newuser@jpmonitor.com");
         savedUser.setFullName("New User");
         savedUser.setPasswordHash("encodedPassword123");
-        savedUser.setRole(testRole);
+        savedUser.setRole(managerRole);
         savedUser.setIsActive(true);
 
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
@@ -177,7 +183,8 @@ class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("newuser"))
                 .andExpect(jsonPath("$.email").value("newuser@jpmonitor.com"))
-                .andExpect(jsonPath("$.fullName").value("New User"));
+                .andExpect(jsonPath("$.fullName").value("New User"))
+                .andExpect(jsonPath("$.role").value("ROLE_MANAGER"));
 
         verify(userRepository).findByUsername("newuser");
         verify(passwordEncoder).encode("password123");
@@ -225,7 +232,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.username").value(TEST_USERNAME))
                 .andExpect(jsonPath("$.email").value("admin@jpmonitor.com"))
                 .andExpect(jsonPath("$.fullName").value("Admin User"))
-                .andExpect(jsonPath("$.role").value("Administrator"));
+                .andExpect(jsonPath("$.role").value("ADMIN"));
 
         verify(userRepository).findByUsername(TEST_USERNAME);
     }
