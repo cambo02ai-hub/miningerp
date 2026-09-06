@@ -2,6 +2,8 @@ package com.jpmonitor.domains.core.entity;
 
 import com.jpmonitor.platform.common.BaseEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -23,6 +25,7 @@ public class Role extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSONB DEFAULT '[]'::jsonb")
     private String permissions;
 
