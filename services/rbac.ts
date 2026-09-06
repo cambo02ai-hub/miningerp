@@ -43,6 +43,7 @@ export interface ManagedUser {
   site: string;
   role: AppRole;
   status: AccountStatus;
+  permissions?: PermissionKey[];
   permissionOverrides: PermissionOverride[];
   createdAt: string;
   createdBy: string;
@@ -209,9 +210,14 @@ export const getRolePermissions = (role?: string | null): PermissionKey[] => {
 };
 
 export const getEffectivePermissions = (user?: RBACUserLike | null): Set<PermissionKey> => {
-  const effective = new Set<PermissionKey>(
-    user?.permissions?.length ? user.permissions : getRolePermissions(user?.role),
-  );
+  const rolePerms = getRolePermissions(user?.role);
+  const basePerms = user?.permissions?.length ? user.permissions : rolePerms;
+  const effective = new Set<PermissionKey>(basePerms);
+
+  if (user?.role && user?.permissions?.length) {
+    rolePerms.forEach((p) => effective.add(p));
+  }
+
   const overrides = user?.permissionOverrides ?? [];
   overrides.filter((override) => override.effect === 'DENY').forEach((override) => effective.delete(override.permission));
   overrides.filter((override) => override.effect === 'ALLOW').forEach((override) => effective.add(override.permission));
