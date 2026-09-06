@@ -53,7 +53,7 @@ public class AuthController {
 
             UserDTO userDTO = new UserDTO(
                     user.getId(), user.getUsername(), user.getEmail(), user.getFullName(),
-                    user.getRole().getName(), user.getRole().getPermissions());
+                    user.getRole().getCode(), user.getRole().getPermissions());
 
             log.info("User logged in successfully: {}", user.getUsername());
             return ResponseEntity.ok(new AuthResponse(token, userDTO));
@@ -82,18 +82,23 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(new AuthErrorResponse("Username is already taken"));
             }
 
-            String targetRoleCode = (request.role() != null && !request.role().isBlank()) ? request.role().trim() : "OPERATOR";
-            Role role = roleRepository.findByCode(targetRoleCode)
-                    .or(() -> roleRepository.findByCode(targetRoleCode.toUpperCase()))
+            String targetRoleCode = (request.role() != null && !request.role().isBlank()) ? request.role().trim().toUpperCase() : "OPERATOR";
+            String prefixedCode = targetRoleCode.startsWith("ROLE_") ? targetRoleCode : "ROLE_" + targetRoleCode;
+            String rawCode = targetRoleCode.startsWith("ROLE_") ? targetRoleCode.substring(5) : targetRoleCode;
+
+            Role role = roleRepository.findByCodeIgnoreCase(prefixedCode)
+                    .or(() -> roleRepository.findByCodeIgnoreCase(targetRoleCode))
+                    .or(() -> roleRepository.findByCodeIgnoreCase(rawCode))
                     .orElseGet(() -> {
-                        List<Role> roles = roleRepository.findAll();
-                        if (!roles.isEmpty()) {
-                            return roles.get(0);
-                        }
                         Role defaultRole = new Role();
-                        defaultRole.setCode(targetRoleCode);
-                        defaultRole.setName(targetRoleCode);
-                        defaultRole.setPermissions("[\"*\"]");
+                        defaultRole.setCode(prefixedCode);
+                        defaultRole.setName(formatRoleName(rawCode));
+                        defaultRole.setDescription(rawCode + " Role");
+                        if (request.permissions() != null && !request.permissions().isEmpty()) {
+                            defaultRole.setPermissions(formatPermissionsJson(request.permissions()));
+                        } else {
+                            defaultRole.setPermissions("[]");
+                        }
                         return roleRepository.save(defaultRole);
                     });
 
@@ -112,11 +117,11 @@ public class AuthController {
                     savedUser.getUsername(),
                     savedUser.getEmail(),
                     savedUser.getFullName(),
-                    savedUser.getRole().getName(),
+                    savedUser.getRole().getCode(),
                     savedUser.getRole().getPermissions()
             );
 
-            log.info("User registered successfully: {}", savedUser.getUsername());
+            log.info("User registered successfully: {} with role: {}", savedUser.getUsername(), savedUser.getRole().getCode());
             return ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
         } catch (Exception e) {
             log.error("Registration error for user: {}", request.username(), e);
@@ -133,8 +138,31 @@ public class AuthController {
 
         UserDTO userDTO = new UserDTO(
                 user.getId(), user.getUsername(), user.getEmail(), user.getFullName(),
-                user.getRole().getName(), user.getRole().getPermissions());
+                user.getRole().getCode(), user.getRole().getPermissions());
         return ResponseEntity.ok(userDTO);
+    }
+
+    private String formatRoleName(String rawCode) {
+        if (rawCode == null || rawCode.isBlank()) return "User";
+        String[] parts = rawCode.split("_");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (part.isBlank()) continue;
+            if (!sb.isEmpty()) sb.append(" ");
+            sb.append(part.substring(0, 1).toUpperCase()).append(part.substring(1).toLowerCase());
+        }
+        return sb.toString();
+    }
+
+    private String formatPermissionsJson(List<String> permissions) {
+        if (permissions == null || permissions.isEmpty()) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < permissions.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append("\"").append(permissions.get(i).replace("\"", "")).append("\"");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     private record AuthErrorResponse(String message) {}

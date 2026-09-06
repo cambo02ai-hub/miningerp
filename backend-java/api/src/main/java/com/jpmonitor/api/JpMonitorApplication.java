@@ -44,19 +44,17 @@ public class JpMonitorApplication {
     @Bean
     public CommandLineRunner initData() {
         return args -> {
-            // Ensure roles exist
-            Optional<Role> adminRoleOpt = roleRepository.findByCode("ROLE_SUPER_ADMIN");
-            Role adminRole;
-            if (adminRoleOpt.isEmpty()) {
-                adminRole = new Role();
-                adminRole.setCode("ROLE_SUPER_ADMIN");
-                adminRole.setName("Super Administrator");
-                adminRole.setDescription("Full System Access");
-                adminRole = roleRepository.save(adminRole);
-                log.info("Seeded ROLE_SUPER_ADMIN");
-            } else {
-                adminRole = adminRoleOpt.get();
-            }
+            // Seed standard roles with role-appropriate permissions
+            seedRole("ROLE_SUPER_ADMIN", "Super Administrator", "Full System Access", "[\"*\"]");
+            seedRole("ROLE_ADMIN", "Administrator", "System Administrator", "[\"dashboard.view\",\"production.view\",\"production.create\",\"production.edit\",\"production.approve\",\"production.export\",\"fleet.view\",\"fleet.create\",\"fleet.edit\",\"fleet.delete\",\"fleet.approve\",\"fleet.export\",\"mutation.view\",\"mutation.create\",\"mutation.edit\",\"mutation.delete\",\"mutation.approve\",\"mutation.export\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.delete\",\"inventory.approve\",\"inventory.export\",\"maintenance.view\",\"maintenance.create\",\"maintenance.edit\",\"maintenance.delete\",\"maintenance.approve\",\"maintenance.export\",\"employee.view\",\"employee.create\",\"employee.edit\",\"employee.delete\",\"employee.export\",\"supplier.view\",\"supplier.create\",\"supplier.edit\",\"supplier.delete\",\"supplier.export\",\"debt.view\",\"debt.create\",\"debt.edit\",\"debt.approve\",\"debt.export\",\"location.view\",\"location.create\",\"location.edit\",\"location.delete\",\"hse.view\",\"hse.create\",\"hse.edit\",\"hse.approve\",\"hse.export\",\"timesheet.view\",\"timesheet.create\",\"timesheet.edit\",\"timesheet.approve\",\"timesheet.export\",\"audit.view\",\"audit.export\",\"user_management.view\",\"user_management.create\",\"user_management.edit\",\"user_management.delete\",\"user_management.manage\"]");
+            seedRole("ROLE_MANAGER", "Manager", "Operational Manager", "[\"dashboard.view\",\"production.view\",\"production.create\",\"production.edit\",\"production.approve\",\"production.export\",\"fleet.view\",\"fleet.approve\",\"fleet.export\",\"mutation.view\",\"mutation.approve\",\"mutation.export\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.approve\",\"inventory.export\",\"maintenance.view\",\"maintenance.approve\",\"maintenance.export\",\"employee.view\",\"employee.export\",\"supplier.view\",\"supplier.export\",\"debt.view\",\"debt.approve\",\"debt.export\",\"location.view\",\"hse.view\",\"hse.approve\",\"hse.export\",\"timesheet.view\",\"timesheet.approve\",\"timesheet.export\",\"audit.view\",\"audit.export\"]");
+            seedRole("ROLE_STOCK_MANAGER", "Stock Manager", "Inventory & Stock Data Manager", "[\"dashboard.view\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.export\"]");
+            seedRole("ROLE_SUPERVISOR", "Supervisor", "Site & Operations Supervisor", "[\"dashboard.view\",\"production.view\",\"production.create\",\"production.edit\",\"production.export\",\"fleet.view\",\"fleet.create\",\"fleet.edit\",\"mutation.view\",\"mutation.create\",\"mutation.edit\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.export\",\"maintenance.view\",\"maintenance.create\",\"maintenance.edit\",\"maintenance.export\",\"employee.view\",\"supplier.view\",\"supplier.create\",\"debt.view\",\"location.view\",\"hse.view\",\"hse.create\",\"hse.edit\",\"timesheet.view\",\"timesheet.create\",\"timesheet.edit\",\"audit.view\"]");
+            seedRole("ROLE_OPERATOR", "Operator", "Daily Operations Input", "[\"dashboard.view\",\"production.view\",\"production.create\",\"fleet.view\",\"mutation.view\",\"mutation.create\",\"inventory.view\",\"inventory.create\",\"maintenance.view\",\"maintenance.create\",\"hse.view\",\"hse.create\",\"timesheet.view\",\"timesheet.create\"]");
+            seedRole("ROLE_VIEWER", "Viewer", "Read-Only Access", "[\"dashboard.view\",\"production.view\",\"fleet.view\",\"mutation.view\",\"inventory.view\",\"maintenance.view\",\"employee.view\",\"supplier.view\",\"debt.view\",\"location.view\",\"hse.view\",\"timesheet.view\",\"audit.view\"]");
+
+            Role adminRole = roleRepository.findByCodeIgnoreCase("ROLE_SUPER_ADMIN")
+                    .orElseThrow(() -> new IllegalStateException("ROLE_SUPER_ADMIN not found"));
 
             // Ensure admin user exists with secure password
             Optional<User> adminUserOpt = userRepository.findByUsername("admin");
@@ -99,8 +97,6 @@ public class JpMonitorApplication {
             }
 
             // Optional one-time administrator account supplied through deployment secrets.
-            // The password is never persisted in source control and is only used when the
-            // requested username does not already exist.
             String extraAdminUsername = System.getenv("ADMIN_ACCOUNT_USERNAME");
             String extraAdminEmail = System.getenv("ADMIN_ACCOUNT_EMAIL");
             String extraAdminPassword = System.getenv("ADMIN_ACCOUNT_PASSWORD");
@@ -125,5 +121,26 @@ public class JpMonitorApplication {
                 log.warn("Requested administrator seeding skipped: ADMIN_ACCOUNT_USERNAME, ADMIN_ACCOUNT_EMAIL, and ADMIN_ACCOUNT_PASSWORD must all be set");
             }
         };
+    }
+
+    private void seedRole(String code, String name, String description, String permissionsJson) {
+        Optional<Role> existingOpt = roleRepository.findByCodeIgnoreCase(code);
+        if (existingOpt.isEmpty()) {
+            Role role = new Role();
+            role.setCode(code);
+            role.setName(name);
+            role.setDescription(description);
+            role.setPermissions(permissionsJson);
+            roleRepository.save(role);
+            log.info("Seeded role: {}", code);
+        } else {
+            // Update permissions if existing role has incorrect wildcard or missing permissions
+            Role existing = existingOpt.get();
+            if (!code.equalsIgnoreCase("ROLE_SUPER_ADMIN") && "[\"*\"]".equals(existing.getPermissions() != null ? existing.getPermissions().toString() : "")) {
+                existing.setPermissions(permissionsJson);
+                roleRepository.save(existing);
+                log.info("Updated permissions for existing role: {}", code);
+            }
+        }
     }
 }
