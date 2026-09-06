@@ -95,7 +95,7 @@ class AuthControllerTest {
 
         when(userDetailsService.loadUserByUsername(TEST_USERNAME)).thenReturn(userDetails);
         when(passwordEncoder.matches(TEST_PASSWORD, "hash")).thenReturn(true);
-        when(userRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsernameIgnoreCase(TEST_USERNAME)).thenReturn(Optional.of(testUser));
         when(jwtUtils.generateToken(userDetails)).thenReturn(TEST_TOKEN);
 
         LoginRequest loginRequest = new LoginRequest(TEST_USERNAME, TEST_PASSWORD);
@@ -113,8 +113,66 @@ class AuthControllerTest {
 
         verify(userDetailsService).loadUserByUsername(TEST_USERNAME);
         verify(passwordEncoder).matches(TEST_PASSWORD, "hash");
-        verify(userRepository).findByUsername(TEST_USERNAME);
+        verify(userRepository).findByUsernameIgnoreCase(TEST_USERNAME);
         verify(jwtUtils).generateToken(userDetails);
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/login with username myohlaingoo returns 200 and Super Admin DTO")
+    void testLoginWithMyoHlaingOo() throws Exception {
+        // Given
+        Role superAdminRole = new Role();
+        superAdminRole.setId(UUID.randomUUID());
+        superAdminRole.setCode("ROLE_SUPER_ADMIN");
+        superAdminRole.setName("Super Administrator");
+        superAdminRole.setPermissions("[\"*\"]");
+
+        User myoUser = new User();
+        myoUser.setId(UUID.randomUUID());
+        myoUser.setUsername("myohlaingoo");
+        myoUser.setEmail("myohlaingoo@jpmonitor.com");
+        myoUser.setFullName("Myo Hlaing Oo");
+        myoUser.setPasswordHash("hash");
+        myoUser.setRole(superAdminRole);
+        myoUser.setIsActive(true);
+
+        UserDetails userDetails = mock(UserDetails.class);
+        when(userDetails.getPassword()).thenReturn("hash");
+
+        when(userDetailsService.loadUserByUsername("myohlaingoo")).thenReturn(userDetails);
+        when(passwordEncoder.matches("admin123", "hash")).thenReturn(true);
+        when(userRepository.findByUsernameIgnoreCase("myohlaingoo")).thenReturn(Optional.of(myoUser));
+        when(jwtUtils.generateToken(userDetails)).thenReturn(TEST_TOKEN);
+
+        LoginRequest loginRequest = new LoginRequest("myohlaingoo", "admin123");
+
+        // When/Then
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value(TEST_TOKEN))
+                .andExpect(jsonPath("$.user.username").value("myohlaingoo"))
+                .andExpect(jsonPath("$.user.role").value("ROLE_SUPER_ADMIN"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/login with non-existent user returns 401 instead of 500")
+    void testLoginWithNonExistentUserReturns401() throws Exception {
+        // Given
+        when(userDetailsService.loadUserByUsername("unknownuser"))
+                .thenThrow(new org.springframework.security.core.userdetails.UsernameNotFoundException("User not found"));
+
+        LoginRequest loginRequest = new LoginRequest("unknownuser", "password");
+
+        // When/Then
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Invalid username or password"));
+
+        verifyNoInteractions(jwtUtils);
     }
 
     @Test
@@ -161,7 +219,7 @@ class AuthControllerTest {
         managerRole.setName("Manager");
         managerRole.setPermissions("[\"*\"]");
 
-        when(userRepository.findByUsername("newuser")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("newuser")).thenReturn(Optional.empty());
         when(roleRepository.findByCodeIgnoreCase("ROLE_MANAGER")).thenReturn(Optional.of(managerRole));
         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword123");
 
@@ -186,7 +244,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.fullName").value("New User"))
                 .andExpect(jsonPath("$.role").value("ROLE_MANAGER"));
 
-        verify(userRepository).findByUsername("newuser");
+        verify(userRepository).findByUsernameIgnoreCase("newuser");
         verify(passwordEncoder).encode("password123");
         verify(userRepository).save(any(User.class));
     }
@@ -203,7 +261,7 @@ class AuthControllerTest {
                 "", "", "", "OPERATOR", "ACTIVE", List.of()
         );
 
-        when(userRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsernameIgnoreCase(TEST_USERNAME)).thenReturn(Optional.of(testUser));
 
         // When/Then
         mockMvc.perform(post("/api/auth/register")
@@ -212,7 +270,7 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Username is already taken"));
 
-        verify(userRepository).findByUsername(TEST_USERNAME);
+        verify(userRepository).findByUsernameIgnoreCase(TEST_USERNAME);
         verify(userRepository, never()).save(any(User.class));
     }
 

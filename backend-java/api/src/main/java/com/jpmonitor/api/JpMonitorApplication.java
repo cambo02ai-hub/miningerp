@@ -96,6 +96,43 @@ public class JpMonitorApplication {
                 log.info("Seeded admin user. Password must be changed on first login.");
             }
 
+            // Ensure myohlaingoo Super Administrator account exists
+            Optional<User> myohlaingooOpt = userRepository.findByUsernameIgnoreCase("myohlaingoo");
+            if (myohlaingooOpt.isEmpty()) {
+                String myohlaingooPassword = System.getenv("MYOHLAINGOO_PASSWORD");
+                if (myohlaingooPassword == null || myohlaingooPassword.isBlank()) {
+                    myohlaingooPassword = System.getenv("ADMIN_PASSWORD");
+                }
+                if (myohlaingooPassword == null || myohlaingooPassword.isBlank()) {
+                    myohlaingooPassword = "admin123";
+                }
+
+                User myohlaingooUser = new User();
+                myohlaingooUser.setUsername("myohlaingoo");
+                myohlaingooUser.setEmail("myohlaingoo@jpmonitor.com");
+                myohlaingooUser.setFullName("Myo Hlaing Oo");
+                myohlaingooUser.setIsActive(true);
+                myohlaingooUser.setRole(adminRole);
+                myohlaingooUser.setPasswordHash(passwordEncoder.encode(myohlaingooPassword));
+                userRepository.save(myohlaingooUser);
+                log.info("Seeded super admin user: myohlaingoo");
+            } else {
+                User myohlaingooUser = myohlaingooOpt.get();
+                boolean updated = false;
+                if (!myohlaingooUser.getRole().getId().equals(adminRole.getId())) {
+                    myohlaingooUser.setRole(adminRole);
+                    updated = true;
+                }
+                if (Boolean.FALSE.equals(myohlaingooUser.getIsActive())) {
+                    myohlaingooUser.setIsActive(true);
+                    updated = true;
+                }
+                if (updated) {
+                    userRepository.save(myohlaingooUser);
+                    log.info("Updated existing myohlaingoo user to ROLE_SUPER_ADMIN and active status");
+                }
+            }
+
             // Optional one-time administrator account supplied through deployment secrets.
             String extraAdminUsername = System.getenv("ADMIN_ACCOUNT_USERNAME");
             String extraAdminEmail = System.getenv("ADMIN_ACCOUNT_EMAIL");

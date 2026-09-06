@@ -39,7 +39,9 @@ export async function fetchJson<T>(endpoint: string, options: Options = {}): Pro
     throw e
   }
 
-  if (res.status === 401 || res.status === 403) {
+  const isAuthEndpoint = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/register')
+
+  if ((res.status === 401 || res.status === 403) && !isAuthEndpoint) {
     clearAuthData()
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
@@ -54,7 +56,7 @@ export async function fetchJson<T>(endpoint: string, options: Options = {}): Pro
     } catch {
       data = null
     }
-    throw new Error(data?.error || `HTTP ${res.status}`)
+    throw new Error(data?.message || data?.error || `HTTP ${res.status}`)
   }
 
   return res.json() as Promise<T>
