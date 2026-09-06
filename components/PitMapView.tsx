@@ -211,7 +211,6 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
   const [globeZoom, setGlobeZoom] = useState(1.1);
   const [isDraggingGlobe, setIsDraggingGlobe] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; rotX: number; rotY: number }>({ x: 0, y: 0, rotX: 15, rotY: -115 });
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Interactive Map Layer Toggles
   const [activeLayers, setActiveLayers] = useState({
@@ -469,8 +468,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
 
             {mapMode === '3D_GLOBE' ? (
               /* 3D GLOBE SPHERE PROJECTION CANVAS */
+              /* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions */
               <div
-                className="relative w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+                className="relative w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing select-none outline-none"
                 onMouseDown={(e) => {
                   setIsDraggingGlobe(true);
                   dragStartRef.current = {
@@ -528,7 +528,8 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                     const offsetX = (idx - 1) * 60;
                     const offsetY = (idx - 1) * 35;
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={pit.id}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -551,7 +552,7 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                           {pit.goldGradeGramsPerTon} g/t Au ({pit.goldProbabilityPct}%)
                         </div>
                         <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -561,6 +562,7 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   <div className="font-bold text-amber-400 flex items-center justify-between gap-2">
                     <span className="flex items-center gap-1"><Compass size={14} /> 3D Globe Controls</span>
                     <button
+                      type="button"
                       onClick={() => {
                         setGlobeRotation({ rotX: 15, rotY: -115 });
                         setGlobeZoom(1.1);
@@ -574,12 +576,14 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-slate-300">Zoom:</span>
                     <button
+                      type="button"
                       onClick={() => setGlobeZoom((prev) => Math.min(1.8, prev + 0.15))}
                       className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 py-0.5 rounded text-xs border border-slate-600"
                     >
                       +
                     </button>
                     <button
+                      type="button"
                       onClick={() => setGlobeZoom((prev) => Math.max(0.7, prev - 0.15))}
                       className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 py-0.5 rounded text-xs border border-slate-600"
                     >
