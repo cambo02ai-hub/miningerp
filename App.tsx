@@ -22,7 +22,7 @@ import LoginPage from './components/LoginPage';
 import AIChatWidget from './components/AIChatWidget';
 import { getAuthToken, getCurrentUser, setAuthData, clearAuthData } from './services/authStorage';
 import { authAPI } from './services/api';
-import { hasPermission, loadManagedUsers } from './services/rbac';
+import { hasPermission, loadManagedUsers, normalizeRole } from './services/rbac';
 import { WifiOff } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -87,6 +87,9 @@ const App: React.FC = () => {
     const user = getCurrentUser();
     setCurrentUser(user);
     setIsAuthenticated(true);
+    if (normalizeRole(user?.role) === 'STOCK_MANAGER') {
+      navigate('/inventory');
+    }
   };
 
   const handleLogout = () => {
@@ -129,25 +132,32 @@ const App: React.FC = () => {
       <main className="flex-1 ml-0 lg:ml-64 pt-20 lg:pt-8 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <div className="max-w-7xl mx-auto animate-fade-in">
           <React.Suspense fallback={<div className="text-center py-20 text-text-muted">တင်နေပါသည်...</div>}>
-            <Routes>
-              <Route path="/" element={<ErrorBoundary><DashboardView /></ErrorBoundary>} />
-              <Route path="/fleet" element={<ErrorBoundary><FleetView /></ErrorBoundary>} />
-              <Route path="/mutation" element={<ErrorBoundary><MutationView /></ErrorBoundary>} />
-              <Route path="/inventory" element={<ErrorBoundary><InventoryView /></ErrorBoundary>} />
-              <Route path="/store-inventory" element={<ErrorBoundary><StoreEmployeeInventoryView currentUser={currentUser} /></ErrorBoundary>} />
-              <Route path="/production" element={<ErrorBoundary><ProductionView /></ErrorBoundary>} />
-              <Route path="/contractor-mining" element={<ErrorBoundary><ContractorMiningView /></ErrorBoundary>} />
-              <Route path="/timesheet" element={<ErrorBoundary><TimesheetView /></ErrorBoundary>} />
-              <Route path="/employee" element={<ErrorBoundary><EmployeeView /></ErrorBoundary>} />
-              <Route path="/supplier" element={<ErrorBoundary><SupplierView /></ErrorBoundary>} />
-              <Route path="/debt" element={<ErrorBoundary><DebtView /></ErrorBoundary>} />
-              <Route path="/location" element={<ErrorBoundary><LocationView /></ErrorBoundary>} />
-              <Route path="/gis-prediction" element={<ErrorBoundary><PitMapView /></ErrorBoundary>} />
-              <Route path="/hse" element={<ErrorBoundary><HSEView /></ErrorBoundary>} />
-              <Route path="/audit" element={<ErrorBoundary><AuditLogView /></ErrorBoundary>} />
-              <Route path="/user-management" element={hasPermission(currentUser, 'user_management.manage') ? <ErrorBoundary><UserManagementView currentUser={currentUser} /></ErrorBoundary> : <Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            {normalizeRole(currentUser?.role) === 'STOCK_MANAGER' ? (
+              <Routes>
+                <Route path="/inventory" element={<ErrorBoundary><InventoryView /></ErrorBoundary>} />
+                <Route path="*" element={<Navigate to="/inventory" replace />} />
+              </Routes>
+            ) : (
+              <Routes>
+                <Route path="/" element={<ErrorBoundary><DashboardView /></ErrorBoundary>} />
+                <Route path="/fleet" element={<ErrorBoundary><FleetView /></ErrorBoundary>} />
+                <Route path="/mutation" element={<ErrorBoundary><MutationView /></ErrorBoundary>} />
+                <Route path="/inventory" element={<ErrorBoundary><InventoryView /></ErrorBoundary>} />
+                <Route path="/store-inventory" element={<ErrorBoundary><StoreEmployeeInventoryView currentUser={currentUser} /></ErrorBoundary>} />
+                <Route path="/production" element={<ErrorBoundary><ProductionView /></ErrorBoundary>} />
+                <Route path="/contractor-mining" element={<ErrorBoundary><ContractorMiningView /></ErrorBoundary>} />
+                <Route path="/timesheet" element={<ErrorBoundary><TimesheetView /></ErrorBoundary>} />
+                <Route path="/employee" element={<ErrorBoundary><EmployeeView /></ErrorBoundary>} />
+                <Route path="/supplier" element={<ErrorBoundary><SupplierView /></ErrorBoundary>} />
+                <Route path="/debt" element={<ErrorBoundary><DebtView /></ErrorBoundary>} />
+                <Route path="/location" element={<ErrorBoundary><LocationView /></ErrorBoundary>} />
+                <Route path="/gis-prediction" element={<ErrorBoundary><PitMapView /></ErrorBoundary>} />
+                <Route path="/hse" element={<ErrorBoundary><HSEView /></ErrorBoundary>} />
+                <Route path="/audit" element={<ErrorBoundary><AuditLogView /></ErrorBoundary>} />
+                <Route path="/user-management" element={hasPermission(currentUser, 'user_management.manage') ? <ErrorBoundary><UserManagementView currentUser={currentUser} /></ErrorBoundary> : <Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            )}
           </React.Suspense>
         </div>
       </main>

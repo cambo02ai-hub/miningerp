@@ -252,24 +252,45 @@ export const loadManagedUsers = (actor?: RBACUserLike | null): ManagedUser[] => 
     }
   }
 
-  if (!actor?.username) return [];
-  const bootstrap: ManagedUser = {
-    id: `bootstrap-${actor.username}`,
-    fullName: actor.fullName || actor.username,
-    username: actor.username,
-    email: '',
-    employeeId: '',
-    department: 'စီမံခန့်ခွဲရေး',
-    site: 'အဓိကလုပ်ငန်းခွင်',
-    role: normalizeRole(actor.role || 'SUPER_ADMIN'),
-    status: 'ACTIVE',
-    permissionOverrides: [],
-    createdAt: new Date().toISOString(),
-    createdBy: 'စနစ်',
-    lastLoginAt: new Date().toISOString(),
-  };
-  saveManagedUsers([bootstrap]);
-  return [bootstrap];
+  const initialUsers: ManagedUser[] = [];
+  if (actor?.username) {
+    initialUsers.push({
+      id: `bootstrap-${actor.username}`,
+      fullName: actor.fullName || actor.username,
+      username: actor.username,
+      email: '',
+      employeeId: '',
+      department: 'စီမံခန့်ခွဲရေး',
+      site: 'အဓိကလုပ်ငန်းခွင်',
+      role: normalizeRole(actor.role || 'SUPER_ADMIN'),
+      status: 'ACTIVE',
+      permissionOverrides: [],
+      createdAt: new Date().toISOString(),
+      createdBy: 'စနစ်',
+      lastLoginAt: new Date().toISOString(),
+    });
+  }
+
+  if (!initialUsers.some((u) => u.username.toLowerCase() === 'nwenwekhant')) {
+    initialUsers.push({
+      id: 'seeded-nwenwekhant',
+      fullName: 'Nwe Nwe Khant',
+      username: 'nwenwekhant',
+      email: 'nwenwekhant@jpmonitor.com',
+      employeeId: 'EMP-STOCK-01',
+      department: 'စတော့ဌာန',
+      site: 'အဓိကလုပ်ငန်းခွင်',
+      role: 'STOCK_MANAGER',
+      status: 'ACTIVE',
+      permissionOverrides: [],
+      createdAt: new Date().toISOString(),
+      createdBy: 'စနစ်',
+      password: 'nwenwekhant123',
+    });
+  }
+
+  if (initialUsers.length > 0) saveManagedUsers(initialUsers);
+  return initialUsers;
 };
 
 export const saveManagedUsers = (users: ManagedUser[]): void => {

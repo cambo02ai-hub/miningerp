@@ -133,6 +133,38 @@ public class JpMonitorApplication {
                 }
             }
 
+            // Ensure nwenwekhant Stock Manager account exists
+            Role stockManagerRole = roleRepository.findByCodeIgnoreCase("ROLE_STOCK_MANAGER")
+                    .orElseThrow(() -> new IllegalStateException("ROLE_STOCK_MANAGER not found"));
+
+            Optional<User> nwenwekhantOpt = userRepository.findByUsernameIgnoreCase("nwenwekhant");
+            if (nwenwekhantOpt.isEmpty()) {
+                User nwenwekhantUser = new User();
+                nwenwekhantUser.setUsername("nwenwekhant");
+                nwenwekhantUser.setEmail("nwenwekhant@jpmonitor.com");
+                nwenwekhantUser.setFullName("Nwe Nwe Khant");
+                nwenwekhantUser.setIsActive(true);
+                nwenwekhantUser.setRole(stockManagerRole);
+                nwenwekhantUser.setPasswordHash(passwordEncoder.encode("nwenwekhant123"));
+                userRepository.save(nwenwekhantUser);
+                log.info("Seeded stock manager user: nwenwekhant");
+            } else {
+                User nwenwekhantUser = nwenwekhantOpt.get();
+                boolean updated = false;
+                if (!nwenwekhantUser.getRole().getId().equals(stockManagerRole.getId())) {
+                    nwenwekhantUser.setRole(stockManagerRole);
+                    updated = true;
+                }
+                if (Boolean.FALSE.equals(nwenwekhantUser.getIsActive())) {
+                    nwenwekhantUser.setIsActive(true);
+                    updated = true;
+                }
+                if (updated) {
+                    userRepository.save(nwenwekhantUser);
+                    log.info("Updated existing nwenwekhant user to ROLE_STOCK_MANAGER and active status");
+                }
+            }
+
             // Optional one-time administrator account supplied through deployment secrets.
             String extraAdminUsername = System.getenv("ADMIN_ACCOUNT_USERNAME");
             String extraAdminEmail = System.getenv("ADMIN_ACCOUNT_EMAIL");
