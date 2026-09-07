@@ -196,7 +196,8 @@ export const equipmentAPI = {
 
     async createEquipment(data: {
         code: string;
-        model: string;
+        name?: string;
+        model?: string;
         type: string;
         manufactureYear?: number;
         status?: string;

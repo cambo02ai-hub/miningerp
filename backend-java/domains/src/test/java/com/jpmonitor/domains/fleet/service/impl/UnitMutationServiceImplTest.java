@@ -1,15 +1,24 @@
 package com.jpmonitor.domains.fleet.service.impl;
 
+import com.jpmonitor.domains.core.repository.LocationRepository;
+import com.jpmonitor.domains.fleet.dto.UnitMutationDTO;
+import com.jpmonitor.domains.fleet.entity.Equipment;
+import com.jpmonitor.domains.fleet.repository.EquipmentRepository;
+import com.jpmonitor.domains.fleet.repository.UnitMutationRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-
+import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 /**
  * Simplified Unit tests for UnitMutationServiceImpl
@@ -18,6 +27,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UnitMutation Service Tests - Simplified")
 class UnitMutationServiceImplTest {
+
+        @Mock
+        private UnitMutationRepository mutationRepository;
+
+        @Mock
+        private EquipmentRepository equipmentRepository;
+
+        @Mock
+        private LocationRepository locationRepository;
+
+        @InjectMocks
+        private UnitMutationServiceImpl mutationService;
 
         @Test
         @DisplayName("Should calculate hour meter difference correctly")
@@ -59,6 +80,46 @@ class UnitMutationServiceImplTest {
 
                 // Then: Should be invalid
                 assertThat(isValid).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should assign a required name when acquisition creates fallback equipment")
+        void testAcquisitionFallbackEquipmentHasName() {
+                String equipmentCode = "EX-2005";
+                when(equipmentRepository.findByCode(equipmentCode)).thenReturn(Optional.empty());
+                when(equipmentRepository.save(any(Equipment.class)))
+                                .thenAnswer(invocation -> invocation.getArgument(0));
+                when(mutationRepository.save(any()))
+                                .thenAnswer(invocation -> invocation.getArgument(0));
+
+                UnitMutationDTO request = new UnitMutationDTO(
+                                null,
+                                null,
+                                "ACQUISITION",
+                                null,
+                                equipmentCode,
+                                null,
+                                null,
+                                null,
+                                null,
+                                "2026-09-07",
+                                null,
+                                BigDecimal.ZERO,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null);
+
+                mutationService.createMutation(request);
+
+                org.mockito.ArgumentCaptor<Equipment> equipmentCaptor =
+                                org.mockito.ArgumentCaptor.forClass(Equipment.class);
+                org.mockito.Mockito.verify(equipmentRepository).save(equipmentCaptor.capture());
+                assertThat(equipmentCaptor.getValue().getName()).isEqualTo(equipmentCode);
         }
 
         @Test

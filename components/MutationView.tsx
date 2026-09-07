@@ -207,6 +207,7 @@ const MutationView: React.FC = () => {
                 try {
                     const createdEq = await equipmentAPI.createEquipment({
                         code: formData.newCode,
+                        name: formData.newModel || formData.newCode,
                         model: formData.newModel || formData.newCode,
                         type: formData.newType || 'Excavator',
                         manufactureYear: Number(formData.newManufactureYear) || new Date().getFullYear(),
@@ -231,7 +232,7 @@ const MutationView: React.FC = () => {
                 type: modalType,
                 equipmentId: targetEqId || undefined,
                 equipmentCode: eqCode,
-                sourceLocationId: eq ? (eq.location_id || eq.locationId || '') : 'VENDOR',
+                sourceLocationId: eq ? (eq.location_id || eq.locationId || undefined) : undefined,
                 targetLocationId: modalType === 'DISPOSAL' ? 'SOLD/SCRAPPED' : formData.targetLocationId,
                 referenceDocument: formData.referenceDocument,
                 value: Number(formData.value),
