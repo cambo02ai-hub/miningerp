@@ -294,7 +294,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
       if (cesiumViewerRef.current) {
         try {
           cesiumViewerRef.current.destroy();
-        } catch {}
+        } catch (err) {
+          // Ignore viewer cleanup errors during unmount
+        }
         cesiumViewerRef.current = null;
       }
     };
