@@ -76,6 +76,7 @@ public class UnitMutationServiceImpl implements UnitMutationService {
             com.jpmonitor.domains.fleet.entity.Equipment eq = equipmentRepository.findByCode(dto.equipmentCode().trim()).orElseGet(() -> {
                 com.jpmonitor.domains.fleet.entity.Equipment newEq = new com.jpmonitor.domains.fleet.entity.Equipment();
                 newEq.setCode(dto.equipmentCode().trim());
+                newEq.setName(dto.equipmentCode().trim());
                 newEq.setModel(dto.equipmentCode().trim());
                 newEq.setType("Excavator");
                 newEq.setStatus("Operational");
