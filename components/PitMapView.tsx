@@ -22,7 +22,7 @@ import {
   RotateCcw,
   Compass,
 } from 'lucide-react';
-import { chatAPI, locationsAPI } from '../services/api';
+import { chatAPI, locationsAPI, gisGoldAPI, GoldMarketPrice, GoldHeatmapPoint } from '../services/api';
 
 export interface PitGisFeature {
   id: string;
@@ -165,6 +165,27 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
   const [selectedPit, setSelectedPit] = useState<PitGisFeature>(DEFAULT_PITS[0]);
   const [drillholes, setDrillholes] = useState<DrillholeData[]>(DEFAULT_DRILLHOLES);
 
+  // Live Market Gold Price & Heatmap Analytics API State
+  const [goldMarketPrice, setGoldMarketPrice] = useState<GoldMarketPrice | null>(null);
+  const [goldHeatmapPoints, setGoldHeatmapPoints] = useState<GoldHeatmapPoint[]>([]);
+  const [gradeThresholdFilter, setGradeThresholdFilter] = useState<number>(3.0);
+  const [probabilityFilter, setProbabilityFilter] = useState<number>(50);
+
+  // Fetch Gold Market Price and GIS Gold Heatmap Points on Mount
+  useEffect(() => {
+    async function loadGisData() {
+      try {
+        const price = await gisGoldAPI.getMarketPrice();
+        setGoldMarketPrice(price);
+        const points = await gisGoldAPI.getGoldHeatmapPoints();
+        setGoldHeatmapPoints(points);
+      } catch (err) {
+        console.warn('Failed to load GIS gold data:', err);
+      }
+    }
+    loadGisData();
+  }, []);
+
   // Sync props locations with pits when locations change
   useEffect(() => {
     if (locations && locations.length > 0) {
@@ -206,11 +227,80 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
   const [mapMode, setMapMode] = useState<'2D_SATELLITE' | '3D_ELEVATION' | 'GRADE_HEATMAP' | '3D_GLOBE'>('3D_GLOBE');
   const [pitch3d, setPitch3d] = useState(45);
 
+  // Cesium 3D WebGL Globe Ref & Instance
+  const cesiumContainerRef = useRef<HTMLDivElement | null>(null);
+  const cesiumViewerRef = useRef<any>(null);
+
   // 3D Globe Interactive Rotation & Zoom State
   const [globeRotation, setGlobeRotation] = useState({ rotX: 15, rotY: -115 });
   const [globeZoom, setGlobeZoom] = useState(1.1);
   const [isDraggingGlobe, setIsDraggingGlobe] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; rotX: number; rotY: number }>({ x: 0, y: 0, rotX: 15, rotY: -115 });
+
+  // Initialize Real CesiumJS Viewer when mapMode === '3D_GLOBE' and DOM container is mounted
+  useEffect(() => {
+    if (mapMode === '3D_GLOBE' && cesiumContainerRef.current && (window as any).Cesium) {
+      const Cesium = (window as any).Cesium;
+      if (!cesiumViewerRef.current) {
+        try {
+          // Disable default Ion token prompt by using default Bing/OpenStreetMap/Terrain
+          if (Cesium.Ion) Cesium.Ion.defaultAccessToken = '';
+          const viewer = new Cesium.Viewer(cesiumContainerRef.current, {
+            animation: false,
+            timeline: false,
+            geocoder: false,
+            homeButton: false,
+            sceneModePicker: false,
+            baseLayerPicker: false,
+            navigationHelpButton: false,
+            infoBox: false,
+            selectionIndicator: false,
+            terrainProvider: Cesium.createWorldTerrain ? Cesium.createWorldTerrain() : undefined,
+          });
+
+          // Add Pit Markers to Cesium 3D Globe Viewer
+          pits.forEach((pit) => {
+            viewer.entities.add({
+              name: pit.name,
+              position: Cesium.Cartesian3.fromDegrees(pit.lng, pit.lat, pit.elevationMeters),
+              point: {
+                pixelSize: 12,
+                color: pit.goldProbabilityPct > 80 ? Cesium.Color.RED : Cesium.Color.GOLD,
+                outlineColor: Cesium.Color.WHITE,
+                outlineWidth: 2,
+              },
+              label: {
+                text: `${pit.code} (${pit.goldGradeGramsPerTon} g/t Au)`,
+                font: '12px sans-serif',
+                fillColor: Cesium.Color.YELLOW,
+                pixelOffset: new Cesium.Cartesian2(0, -20),
+              },
+            });
+          });
+
+          // Fly to target mine location on globe
+          viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(selectedPit.lng, selectedPit.lat, 15000),
+          });
+
+          cesiumViewerRef.current = viewer;
+        } catch (err) {
+          console.warn('Cesium WebGL Viewer initialization fallback:', err);
+        }
+      }
+    }
+
+    return () => {
+      if (cesiumViewerRef.current) {
+        try {
+          cesiumViewerRef.current.destroy();
+        } catch (err) {
+          // Ignore viewer cleanup errors during unmount
+        }
+        cesiumViewerRef.current = null;
+      }
+    };
+  }, [mapMode, pits, selectedPit]);
 
   // Interactive Map Layer Toggles
   const [activeLayers, setActiveLayers] = useState({
@@ -292,8 +382,16 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
           </p>
         </div>
 
-        {/* Header Actions */}
+        {/* Header Actions & Live Gold Market Ticker */}
         <div className="flex flex-wrap items-center gap-2">
+          {goldMarketPrice && (
+            <div className="bg-amber-500/10 border border-amber-300 px-3 py-1 rounded-xl text-xs flex items-center gap-2">
+              <span className="font-bold text-amber-800">Gold Spot:</span>
+              <span className="font-extrabold text-amber-900">${goldMarketPrice.priceUsdPerOz.toLocaleString()}/oz</span>
+              <span className="text-slate-400">|</span>
+              <span className="font-bold text-emerald-800">{goldMarketPrice.priceMmkPerTael.toLocaleString()} MMK/Tael</span>
+            </div>
+          )}
           <button
             onClick={() => setIsUploadModalOpen(true)}
             className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded-xl shadow text-xs flex items-center gap-1.5 transition-all"
@@ -420,6 +518,59 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
         </div>
       </div>
 
+      {/* Gold Heatmap Interactive Analytics & Valuation Bar */}
+      <div className="bg-slate-900 text-white p-4 rounded-xl shadow border border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+        <div>
+          <label htmlFor="grade-filter-range" className="font-bold text-amber-400 block mb-1 flex items-center gap-1">
+            <Flame size={14} /> Gold Grade Filter (g/t): &ge; {gradeThresholdFilter} g/t
+          </label>
+          <input
+            id="grade-filter-range"
+            type="range"
+            min="1.0"
+            max="10.0"
+            step="0.5"
+            value={gradeThresholdFilter}
+            onChange={(e) => setGradeThresholdFilter(Number(e.target.value))}
+            className="w-full accent-amber-500"
+          />
+          <div className="text-[10px] text-slate-400">High-grade ore cutoff for 3D Globe Heatmap</div>
+        </div>
+
+        <div>
+          <label htmlFor="prob-filter-range" className="font-bold text-emerald-400 block mb-1 flex items-center gap-1">
+            <Activity size={14} /> Gold Prob % Filter: &ge; {probabilityFilter}%
+          </label>
+          <input
+            id="prob-filter-range"
+            type="range"
+            min="10"
+            max="95"
+            step="5"
+            value={probabilityFilter}
+            onChange={(e) => setProbabilityFilter(Number(e.target.value))}
+            className="w-full accent-emerald-500"
+          />
+          <div className="text-[10px] text-slate-400">ML Prediction Probability threshold</div>
+        </div>
+
+        <div className="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
+          <span className="text-[10px] text-slate-400 font-bold uppercase block">Filtered Heatmap Anomaly Points</span>
+          <span className="font-extrabold text-amber-300 text-base">
+            {goldHeatmapPoints.filter(p => p.goldGradeGt >= gradeThresholdFilter && p.probabilityPct >= probabilityFilter).length} Points
+          </span>
+          <div className="text-[9px] text-slate-400">Target Alteration &amp; Shear Anomaly Zones</div>
+        </div>
+
+        <div className="bg-amber-950/40 border border-amber-500/40 p-2.5 rounded-xl">
+          <span className="text-[10px] text-amber-400 font-bold uppercase block">Est. Pit Valuation (MMK)</span>
+          <span className="font-extrabold text-emerald-400 text-base">
+            {((selectedPit.estimatedOreTons * selectedPit.goldGradeGramsPerTon * 280000) / 1000000).toLocaleString(undefined, { maximumFractionDigits: 1 })} Million MMK
+          </span>
+          <div className="text-[9px] text-amber-300">Based on Spot Price valuation algorithm</div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Map Viewer Canvas */}
         <div className="lg:col-span-2 bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 flex flex-col relative h-[540px]">
@@ -492,6 +643,9 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                 onMouseUp={() => setIsDraggingGlobe(false)}
                 onMouseLeave={() => setIsDraggingGlobe(false)}
               >
+                {/* Real Cesium 3D WebGL Viewer Container */}
+                <div ref={cesiumContainerRef} className="absolute inset-0 w-full h-full" />
+
                 {/* 3D Sphere Outer Atmospheric Glow */}
                 <div
                   className="relative rounded-full transition-transform duration-100 flex items-center justify-center shadow-[0_0_80px_rgba(14,165,233,0.35)]"

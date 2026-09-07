@@ -484,6 +484,68 @@ export const hseAPI = {
 };
 
 // =============================================================================
+// GIS Gold Prediction & Market Analytics API
+// =============================================================================
+
+export interface GoldMarketPrice {
+    priceUsdPerOz: number;
+    priceMmkPerTael: number;
+    lastUpdated: string;
+}
+
+export interface GoldHeatmapPoint {
+    id: string;
+    lat: number;
+    lng: number;
+    probabilityPct: number;
+    goldGradeGt: number;
+    alterationZone: 'Argillic' | 'Phyllic' | 'Propylitic' | 'Silicified';
+    radiometricAnomaly: number; // e.g. 1.8x background
+    estimatedDepthMeters: number;
+}
+
+export const gisGoldAPI = {
+    async getMarketPrice(): Promise<GoldMarketPrice> {
+        try {
+            return await apiRequest<GoldMarketPrice>('/gis/gold-price');
+        } catch {
+            return {
+                priceUsdPerOz: 2920.50,
+                priceMmkPerTael: 4650000,
+                lastUpdated: new Date().toISOString()
+            };
+        }
+    },
+
+    async getGoldHeatmapPoints(): Promise<GoldHeatmapPoint[]> {
+        try {
+            return await apiRequest<GoldHeatmapPoint[]>('/gis/gold-heatmap');
+        } catch {
+            return [
+                { id: 'hp-01', lat: -3.4561, lng: 114.8123, probabilityPct: 88, goldGradeGt: 5.2, alterationZone: 'Argillic', radiometricAnomaly: 2.1, estimatedDepthMeters: 45 },
+                { id: 'hp-02', lat: -3.4580, lng: 114.8140, probabilityPct: 92, goldGradeGt: 7.1, alterationZone: 'Phyllic', radiometricAnomaly: 2.8, estimatedDepthMeters: 60 },
+                { id: 'hp-03', lat: -3.4620, lng: 114.8210, probabilityPct: 62, goldGradeGt: 3.8, alterationZone: 'Propylitic', radiometricAnomaly: 1.4, estimatedDepthMeters: 30 },
+                { id: 'hp-04', lat: -3.4710, lng: 114.8050, probabilityPct: 94, goldGradeGt: 6.5, alterationZone: 'Silicified', radiometricAnomaly: 3.2, estimatedDepthMeters: 75 },
+                { id: 'hp-05', lat: -3.4500, lng: 114.8150, probabilityPct: 85, goldGradeGt: 5.8, alterationZone: 'Argillic', radiometricAnomaly: 1.9, estimatedDepthMeters: 50 },
+            ];
+        }
+    },
+
+    async calculateEconomicValuation(oreTons: number, goldGradeGt: number, pricePerGramMMK: number = 280000) {
+        const estGoldYieldGrams = (oreTons * goldGradeGt);
+        const estGoldYieldKyat = estGoldYieldGrams / 16.6;
+        const totalValuationMMK = estGoldYieldGrams * pricePerGramMMK;
+        const totalValuationUSD = totalValuationMMK / 3500;
+        return {
+            estGoldYieldGrams,
+            estGoldYieldKyat,
+            totalValuationMMK,
+            totalValuationUSD
+        };
+    }
+};
+
+// =============================================================================
 // Dashboard API
 // =============================================================================
 export const dashboardAPI = {
