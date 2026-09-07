@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   MapPin,
   Layers,
@@ -19,6 +19,8 @@ import {
   Flame,
   FileSpreadsheet,
   Activity,
+  RotateCcw,
+  Compass,
 } from 'lucide-react';
 import { chatAPI, locationsAPI } from '../services/api';
 
@@ -201,8 +203,14 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
   }, [locations]);
 
   // View & Simulation State
-  const [mapMode, setMapMode] = useState<'2D_SATELLITE' | '3D_ELEVATION' | 'GRADE_HEATMAP'>('2D_SATELLITE');
+  const [mapMode, setMapMode] = useState<'2D_SATELLITE' | '3D_ELEVATION' | 'GRADE_HEATMAP' | '3D_GLOBE'>('3D_GLOBE');
   const [pitch3d, setPitch3d] = useState(45);
+
+  // 3D Globe Interactive Rotation & Zoom State
+  const [globeRotation, setGlobeRotation] = useState({ rotX: 15, rotY: -115 });
+  const [globeZoom, setGlobeZoom] = useState(1.1);
+  const [isDraggingGlobe, setIsDraggingGlobe] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; rotX: number; rotY: number }>({ x: 0, y: 0, rotX: 15, rotY: -115 });
 
   // Interactive Map Layer Toggles
   const [activeLayers, setActiveLayers] = useState({
@@ -323,6 +331,14 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
           </button>
 
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <button
+              onClick={() => setMapMode('3D_GLOBE')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                mapMode === '3D_GLOBE' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Globe size={14} /> 3D Globe Visualizer
+            </button>
             <button
               onClick={() => setMapMode('2D_SATELLITE')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
@@ -445,127 +461,262 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
             </div>
           )}
 
-          {/* Interactive Simulated Map Canvas */}
+          {/* Interactive Simulated Map Canvas / 3D Globe Visualizer Container */}
           <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/20">
             {/* Background Grid Pattern */}
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
 
-            {/* Geological Fault Overlay Graphic Lines */}
-            {activeLayers.geologicalFaults && (
-              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60">
-                <path d="M 50 100 Q 200 180 450 120 T 650 350" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="6 4" fill="none" />
-                <path d="M 120 400 Q 300 250 550 420" stroke="#ef4444" strokeWidth="2" strokeDasharray="4 4" fill="none" />
-                <text x="210" y="165" fill="#f59e0b" fontSize="10" fontWeight="bold">Primary Shear Fault Zone (NE-SW)</text>
-              </svg>
-            )}
+            {mapMode === '3D_GLOBE' ? (
+              /* 3D GLOBE SPHERE PROJECTION CANVAS */
+              /* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions */
+              <div
+                className="relative w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing select-none outline-none"
+                onMouseDown={(e) => {
+                  setIsDraggingGlobe(true);
+                  dragStartRef.current = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    rotX: globeRotation.rotX,
+                    rotY: globeRotation.rotY,
+                  };
+                }}
+                onMouseMove={(e) => {
+                  if (!isDraggingGlobe) return;
+                  const deltaX = e.clientX - dragStartRef.current.x;
+                  const deltaY = e.clientY - dragStartRef.current.y;
+                  setGlobeRotation({
+                    rotX: Math.max(-80, Math.min(80, dragStartRef.current.rotX - deltaY * 0.4)),
+                    rotY: dragStartRef.current.rotY + deltaX * 0.4,
+                  });
+                }}
+                onMouseUp={() => setIsDraggingGlobe(false)}
+                onMouseLeave={() => setIsDraggingGlobe(false)}
+              >
+                {/* 3D Sphere Outer Atmospheric Glow */}
+                <div
+                  className="relative rounded-full transition-transform duration-100 flex items-center justify-center shadow-[0_0_80px_rgba(14,165,233,0.35)]"
+                  style={{
+                    width: `${280 * globeZoom}px`,
+                    height: `${280 * globeZoom}px`,
+                    transform: `rotateX(${globeRotation.rotX}deg) rotateY(${globeRotation.rotY}deg)`,
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
+                  {/* Sphere Surface Gradient Base */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-900 via-slate-900 to-blue-950 border-2 border-cyan-500/40 opacity-90 overflow-hidden shadow-inner">
+                    {/* Continental Map Outline Overlay Simulation */}
+                    <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_30%_30%,_var(--tw-gradient-stops))] from-amber-500 via-emerald-600 to-transparent" />
 
-            {/* Hyperspectral Alteration Overlay Graphics */}
-            {activeLayers.alterationZones && (
-              <div className="absolute inset-0 pointer-events-none opacity-30 flex items-center justify-center">
-                <div className="w-80 h-80 rounded-full bg-purple-600 filter blur-3xl" />
-                <div className="w-56 h-56 rounded-full bg-amber-500 filter blur-2xl" />
-              </div>
-            )}
+                    {/* Graticule Latitude / Longitude Grid Lines */}
+                    <svg className="absolute inset-0 w-full h-full opacity-40">
+                      <ellipse cx="50%" cy="50%" rx="48%" ry="20%" stroke="#0284c7" strokeWidth="1" fill="none" />
+                      <ellipse cx="50%" cy="50%" rx="48%" ry="38%" stroke="#0284c7" strokeWidth="1" fill="none" fillOpacity="0" />
+                      <line x1="50%" y1="0%" x2="50%" y2="100%" stroke="#0284c7" strokeWidth="1" strokeDasharray="3 3" />
+                      <line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#38bdf8" strokeWidth="1.5" />
+                    </svg>
 
-            {/* 2D Gold Potential Heatmap Grid Visualizer */}
-            {mapMode === 'GRADE_HEATMAP' && (
-              <div className="absolute inset-0 pointer-events-none opacity-50 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-600 via-amber-500 to-transparent" />
-            )}
+                    {/* Hyperspectral Alteration Overlay on Sphere Surface */}
+                    {activeLayers.alterationZones && (
+                      <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_60%_60%,_var(--tw-gradient-stops))] from-purple-500 via-amber-400 to-transparent" />
+                    )}
+                  </div>
 
-            {/* 3D Depth Pitch Simulation Controls */}
-            {mapMode === '3D_ELEVATION' && (
-              <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700 text-white text-xs space-y-2">
-                <span className="font-bold text-amber-400 block">3D Subsurface Tilt Angle: {pitch3d}°</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="75"
-                  value={pitch3d}
-                  onChange={(e) => setPitch3d(Number(e.target.value))}
-                  className="w-32 accent-amber-500"
-                />
-                <div className="text-[10px] text-slate-300">Subterranean Depth Grid: 0m down to -150m</div>
-              </div>
-            )}
-
-            {/* Map Canvas Graphic */}
-            <div
-              className="relative w-full h-full max-w-xl max-h-96 flex items-center justify-center transition-all duration-500"
-              style={{
-                transform: mapMode === '3D_ELEVATION' ? `rotateX(${pitch3d}deg) rotateZ(-15deg)` : 'none',
-                transformStyle: 'preserve-3d',
-              }}
-            >
-              {/* 3D Subsurface Drillhole Depth Trajectory Lines */}
-              {mapMode === '3D_ELEVATION' && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  {drillholes.map((dh) => (
-                    <div
-                      key={dh.holeId}
-                      className="absolute border-l-2 border-dashed border-amber-400 text-[9px] text-amber-300 pl-1.5 space-y-1"
-                      style={{
-                        top: `${(dh.lat + 3.48) * 3000}%`,
-                        left: `${(dh.lng - 114.8) * 3000}%`,
-                        height: `${dh.totalDepth * 0.8}px`,
-                      }}
-                    >
-                      <div className="font-bold bg-slate-900/90 px-1 py-0.5 rounded border border-amber-500/40">
-                        {dh.holeId} (Dip {dh.dipAngle}°, Az {dh.azimuth}°)
-                      </div>
-                      <div className="text-[8px] text-emerald-300">Assay Grade: {dh.assayGradeGt} g/t</div>
-                      <div className="text-[8px] text-purple-300">Target: {dh.targetVein}</div>
-                    </div>
-                  ))}
+                  {/* 3D Globe Pit Markers & Deep Vein Point Hotspots */}
+                  {pits.map((pit, idx) => {
+                    const isSelected = pit.id === selectedPit.id;
+                    // Project 3D Spherical Offset
+                    const offsetX = (idx - 1) * 60;
+                    const offsetY = (idx - 1) * 35;
+                    return (
+                      <button
+                        type="button"
+                        key={pit.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPit(pit);
+                        }}
+                        className={`absolute cursor-pointer p-2 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-1 backdrop-blur-md ${
+                          isSelected
+                            ? 'bg-amber-500/90 text-slate-950 border-white shadow-2xl scale-110 z-30'
+                            : 'bg-slate-900/85 text-amber-300 border-amber-500/50 hover:border-amber-400 z-20'
+                        }`}
+                        style={{
+                          transform: `translate3d(${offsetX}px, ${offsetY}px, 40px)`,
+                        }}
+                      >
+                        <div className="flex items-center gap-1 text-[10px] font-black">
+                          <MapPin size={12} className={isSelected ? 'text-slate-950' : 'text-amber-400'} />
+                          <span>{pit.code}</span>
+                        </div>
+                        <div className="text-[9px] font-extrabold whitespace-nowrap">
+                          {pit.goldGradeGramsPerTon} g/t Au ({pit.goldProbabilityPct}%)
+                        </div>
+                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
 
-              {/* Pit Contour Layers Simulation */}
-              {pits.map((pit) => {
-                const isSelected = pit.id === selectedPit.id;
-                return (
-                  <button
-                    type="button"
-                    key={pit.id}
-                    onClick={() => setSelectedPit(pit)}
-                    className={`absolute rounded-2xl cursor-pointer transition-all duration-300 border-2 p-4 flex flex-col justify-between text-left ${
-                      isSelected
-                        ? 'bg-amber-500/20 border-amber-400 shadow-2xl shadow-amber-500/20 scale-105 z-20'
-                        : 'bg-slate-800/60 border-slate-700 hover:border-slate-500 z-10'
-                    }`}
-                    style={{
-                      top: `${(pit.lat + 3.48) * 3000}%`,
-                      left: `${(pit.lng - 114.8) * 3000}%`,
-                      width: '185px',
-                      height: '145px',
-                    }}
-                  >
-                    <div className="flex justify-between items-start">
-                      <span className="font-mono text-[10px] font-bold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-600/30">
-                        {pit.code}
-                      </span>
-                      <span className="text-[10px] font-bold text-white bg-slate-900/80 px-1.5 py-0.5 rounded">
-                        -{pit.depthMeters}m
-                      </span>
-                    </div>
+                {/* 3D Globe Interactive Drag / Zoom On-Screen Controls */}
+                <div className="absolute bottom-4 right-4 z-20 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700 text-white text-xs space-y-2 shadow-xl">
+                  <div className="font-bold text-amber-400 flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1"><Compass size={14} /> 3D Globe Controls</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGlobeRotation({ rotX: 15, rotY: -115 });
+                        setGlobeZoom(1.1);
+                      }}
+                      className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+                      title="Reset Globe View"
+                    >
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-300">Zoom:</span>
+                    <button
+                      type="button"
+                      onClick={() => setGlobeZoom((prev) => Math.min(1.8, prev + 0.15))}
+                      className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 py-0.5 rounded text-xs border border-slate-600"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGlobeZoom((prev) => Math.max(0.7, prev - 0.15))}
+                      className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 py-0.5 rounded text-xs border border-slate-600"
+                    >
+                      -
+                    </button>
+                    <span className="text-[10px] text-cyan-400 font-mono">{(globeZoom * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="text-[9px] text-slate-400">
+                    * Click &amp; drag sphere to rotate 360° globe. Select any pit marker for deep gold deposit details.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* STANDARD 2D / 3D SUBSURFACE CANVAS */
+              <>
+                {/* Geological Fault Overlay Graphic Lines */}
+                {activeLayers.geologicalFaults && (
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60">
+                    <path d="M 50 100 Q 200 180 450 120 T 650 350" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="6 4" fill="none" />
+                    <path d="M 120 400 Q 300 250 550 420" stroke="#ef4444" strokeWidth="2" strokeDasharray="4 4" fill="none" />
+                    <text x="210" y="165" fill="#f59e0b" fontSize="10" fontWeight="bold">Primary Shear Fault Zone (NE-SW)</text>
+                  </svg>
+                )}
 
-                    <div className="my-1">
-                      <div className="font-bold text-white text-xs truncate">{pit.name}</div>
-                      <div className="text-[11px] font-extrabold text-amber-400 mt-0.5">
-                        Grade: {pit.goldGradeGramsPerTon} g/t Gold
-                      </div>
-                      <div className="text-[10px] font-bold text-emerald-400">
-                        Prob: {pit.goldProbabilityPct}%
-                      </div>
-                    </div>
+                {/* Hyperspectral Alteration Overlay Graphics */}
+                {activeLayers.alterationZones && (
+                  <div className="absolute inset-0 pointer-events-none opacity-30 flex items-center justify-center">
+                    <div className="w-80 h-80 rounded-full bg-purple-600 filter blur-3xl" />
+                    <div className="w-56 h-56 rounded-full bg-amber-500 filter blur-2xl" />
+                  </div>
+                )}
 
-                    {/* 3D Depth Rings / Contours */}
-                    <div className="w-full bg-slate-900/60 rounded-lg p-1 border border-slate-700 text-[10px] text-slate-300 flex justify-between">
-                      <span>Ore: {pit.estimatedOreTons.toLocaleString()} Tons</span>
+                {/* 2D Gold Potential Heatmap Grid Visualizer */}
+                {mapMode === 'GRADE_HEATMAP' && (
+                  <div className="absolute inset-0 pointer-events-none opacity-50 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-600 via-amber-500 to-transparent" />
+                )}
+
+                {/* 3D Depth Pitch Simulation Controls */}
+                {mapMode === '3D_ELEVATION' && (
+                  <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700 text-white text-xs space-y-2">
+                    <span className="font-bold text-amber-400 block">3D Subsurface Tilt Angle: {pitch3d}°</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="75"
+                      value={pitch3d}
+                      onChange={(e) => setPitch3d(Number(e.target.value))}
+                      className="w-32 accent-amber-500"
+                    />
+                    <div className="text-[10px] text-slate-300">Subterranean Depth Grid: 0m down to -150m</div>
+                  </div>
+                )}
+
+                {/* Map Canvas Graphic */}
+                <div
+                  className="relative w-full h-full max-w-xl max-h-96 flex items-center justify-center transition-all duration-500"
+                  style={{
+                    transform: mapMode === '3D_ELEVATION' ? `rotateX(${pitch3d}deg) rotateZ(-15deg)` : 'none',
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
+                  {/* 3D Subsurface Drillhole Depth Trajectory Lines */}
+                  {mapMode === '3D_ELEVATION' && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      {drillholes.map((dh) => (
+                        <div
+                          key={dh.holeId}
+                          className="absolute border-l-2 border-dashed border-amber-400 text-[9px] text-amber-300 pl-1.5 space-y-1"
+                          style={{
+                            top: `${(dh.lat + 3.48) * 3000}%`,
+                            left: `${(dh.lng - 114.8) * 3000}%`,
+                            height: `${dh.totalDepth * 0.8}px`,
+                          }}
+                        >
+                          <div className="font-bold bg-slate-900/90 px-1 py-0.5 rounded border border-amber-500/40">
+                            {dh.holeId} (Dip {dh.dipAngle}°, Az {dh.azimuth}°)
+                          </div>
+                          <div className="text-[8px] text-emerald-300">Assay Grade: {dh.assayGradeGt} g/t</div>
+                          <div className="text-[8px] text-purple-300">Target: {dh.targetVein}</div>
+                        </div>
+                      ))}
                     </div>
-                  </button>
-                );
-              })}
-            </div>
+                  )}
+
+                  {/* Pit Contour Layers Simulation */}
+                  {pits.map((pit) => {
+                    const isSelected = pit.id === selectedPit.id;
+                    return (
+                      <button
+                        type="button"
+                        key={pit.id}
+                        onClick={() => setSelectedPit(pit)}
+                        className={`absolute rounded-2xl cursor-pointer transition-all duration-300 border-2 p-4 flex flex-col justify-between text-left ${
+                          isSelected
+                            ? 'bg-amber-500/20 border-amber-400 shadow-2xl shadow-amber-500/20 scale-105 z-20'
+                            : 'bg-slate-800/60 border-slate-700 hover:border-slate-500 z-10'
+                        }`}
+                        style={{
+                          top: `${(pit.lat + 3.48) * 3000}%`,
+                          left: `${(pit.lng - 114.8) * 3000}%`,
+                          width: '185px',
+                          height: '145px',
+                        }}
+                      >
+                        <div className="flex justify-between items-start">
+                          <span className="font-mono text-[10px] font-bold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-600/30">
+                            {pit.code}
+                          </span>
+                          <span className="text-[10px] font-bold text-white bg-slate-900/80 px-1.5 py-0.5 rounded">
+                            -{pit.depthMeters}m
+                          </span>
+                        </div>
+
+                        <div className="my-1">
+                          <div className="font-bold text-white text-xs truncate">{pit.name}</div>
+                          <div className="text-[11px] font-extrabold text-amber-400 mt-0.5">
+                            Grade: {pit.goldGradeGramsPerTon} g/t Gold
+                          </div>
+                          <div className="text-[10px] font-bold text-emerald-400">
+                            Prob: {pit.goldProbabilityPct}%
+                          </div>
+                        </div>
+
+                        {/* 3D Depth Rings / Contours */}
+                        <div className="w-full bg-slate-900/60 rounded-lg p-1 border border-slate-700 text-[10px] text-slate-300 flex justify-between">
+                          <span>Ore: {pit.estimatedOreTons.toLocaleString()} Tons</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Map Footer Legend */}

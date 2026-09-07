@@ -2,7 +2,7 @@ import { translateValue } from '../utils/locale';
 import { hasPermission, PermissionKey } from '../services/rbac';
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun, ShieldCheck, Pickaxe, Store, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Hammer, Truck, FileText, Activity, PackageSearch, ArrowRightLeft, Users, ShoppingBag, MapPin, Clock, Landmark, LogOut, Moon, Sun, ShieldCheck, Pickaxe, Store, Menu, X, Globe } from 'lucide-react';
 
 interface NavProps {
   currentUser?: any;
@@ -42,6 +42,7 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
     { id: 'supplier', label: 'ပစ္စည်းရောင်းချသူများ', icon: ShoppingBag },
     { id: 'debt', label: 'ဘဏ္ဍာရေး', icon: Landmark },
     { id: 'location', label: 'တည်နေရာများ', icon: MapPin },
+    { id: 'gis-prediction', label: 'GIS & 3D Gold Vein Prediction', icon: Globe },
     { id: 'hse', label: 'HSE နှင့် ဘေးကင်းရေး', icon: Activity },
     { id: 'audit', label: 'စစ်ဆေးမှတ်တမ်းများ', icon: FileText },
     { id: 'user-management', label: 'အသုံးပြုသူနှင့် Permission', icon: ShieldCheck, requiredPermission: 'user_management.view' as PermissionKey },

@@ -19,9 +19,16 @@ describe('PitMapView Component', () => {
   it('renders GIS Gold Vein Mapping header and controls', () => {
     render(<PitMapView />);
     expect(screen.getByText('Gold Veins & Mineral Deposits Prediction Map')).toBeInTheDocument();
+    expect(screen.getByText('3D Globe Visualizer')).toBeInTheDocument();
     expect(screen.getByText('2D GIS Satellite')).toBeInTheDocument();
     expect(screen.getByText('3D Geological Subsurface')).toBeInTheDocument();
     expect(screen.getByText('2D Gold Potential Heatmap')).toBeInTheDocument();
+  });
+
+  it('renders 3D Globe Visualizer by default and supports interactive controls', () => {
+    render(<PitMapView />);
+    expect(screen.getByText('3D Globe Controls')).toBeInTheDocument();
+    expect(screen.getByText(/Click & drag sphere to rotate 360° globe/i)).toBeInTheDocument();
   });
 
   it('renders default pit locations and details panel', () => {

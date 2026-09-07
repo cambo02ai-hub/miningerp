@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import '@testing-library/jest-dom'
 import { MemoryRouter } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 
@@ -25,5 +26,6 @@ describe('Navigation', () => {
       </MemoryRouter>
     )
     expect(screen.getByRole('navigation')).toBeTruthy()
+    expect(screen.getByText('GIS & 3D Gold Vein Prediction')).toBeInTheDocument()
   })
 })

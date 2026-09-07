@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import DashboardView from '../components/DashboardView'
-import { formatNumber } from '../utils/locale'
 
 // Mock the dashboardAPI
 vi.mock('../services/api', () => ({

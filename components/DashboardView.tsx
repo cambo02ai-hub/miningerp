@@ -9,7 +9,6 @@ const meToStats = (data: any) => {
   if (!data) return null;
   const rawCoal = data?.production?.totalCoal ?? 0;
   const rawOB = data?.production?.totalOB ?? 0;
-  const avgSR = data?.production?.avgSR ?? 0;
 
   // Adapt stats for Gold Mining context:
   // Gold production in Kyat/Grams (calculated or mapped from production stats)
