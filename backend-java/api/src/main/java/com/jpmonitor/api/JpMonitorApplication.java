@@ -159,9 +159,13 @@ public class JpMonitorApplication {
                     nwenwekhantUser.setIsActive(true);
                     updated = true;
                 }
+                if (!passwordEncoder.matches("nwenwekhant123", nwenwekhantUser.getPasswordHash())) {
+                    nwenwekhantUser.setPasswordHash(passwordEncoder.encode("nwenwekhant123"));
+                    updated = true;
+                }
                 if (updated) {
                     userRepository.save(nwenwekhantUser);
-                    log.info("Updated existing nwenwekhant user to ROLE_STOCK_MANAGER and active status");
+                    log.info("Updated existing nwenwekhant user to ROLE_STOCK_MANAGER and active status with reset password");
                 }
             }
 
