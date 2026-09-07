@@ -69,7 +69,20 @@ public class UnitMutationServiceImpl implements UnitMutationService {
 
     private void updateEntity(UnitMutation m, UnitMutationDTO dto) {
         m.setType(dto.type());
-        m.setEquipment(equipmentRepository.findById(dto.equipmentId()).orElseThrow());
+        if (dto.equipmentId() != null) {
+            equipmentRepository.findById(dto.equipmentId()).ifPresent(m::setEquipment);
+        }
+        if (m.getEquipment() == null && dto.equipmentCode() != null && !dto.equipmentCode().isBlank()) {
+            com.jpmonitor.domains.fleet.entity.Equipment eq = equipmentRepository.findByCode(dto.equipmentCode().trim()).orElseGet(() -> {
+                com.jpmonitor.domains.fleet.entity.Equipment newEq = new com.jpmonitor.domains.fleet.entity.Equipment();
+                newEq.setCode(dto.equipmentCode().trim());
+                newEq.setModel(dto.equipmentCode().trim());
+                newEq.setType("Excavator");
+                newEq.setStatus("Operational");
+                return equipmentRepository.save(newEq);
+            });
+            m.setEquipment(eq);
+        }
         m.setEquipmentCode(dto.equipmentCode()); // Snapshot
 
         if (dto.sourceLocationId() != null) {
