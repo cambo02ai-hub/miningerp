@@ -1,5 +1,6 @@
 package com.jpmonitor.domains.inventory.service.impl;
 
+import com.jpmonitor.domains.core.repository.LocationRepository;
 import com.jpmonitor.domains.inventory.dto.InventoryTransactionDTO;
 import com.jpmonitor.domains.inventory.dto.SparePartDTO;
 import com.jpmonitor.domains.inventory.entity.InventoryTransaction;
@@ -26,6 +27,7 @@ public class InventoryServiceImpl implements InventoryService {
     private final SparePartRepository sparePartRepository;
     private final InventoryTransactionRepository transactionRepository;
     private final TelegramNotificationService telegramNotificationService;
+    private final LocationRepository locationRepository;
 
     // ==================== PARTS ====================
 
@@ -174,6 +176,12 @@ public class InventoryServiceImpl implements InventoryService {
         part.setMinStockLevel(dto.minStockLevel());
         part.setUnit(dto.unit());
         part.setRackCode(dto.location()); // Frontend sends "location" as Rack Code string
+        if (dto.locationId() != null) {
+            part.setLocation(locationRepository.findById(dto.locationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Location", dto.locationId())));
+        } else {
+            part.setLocation(null);
+        }
     }
 
     private SparePartDTO mapPartToDTO(SparePart p) {
