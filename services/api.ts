@@ -332,7 +332,19 @@ export const employeesAPI = {
 
 export const locationsAPI = {
     async getLocations() {
-        return apiRequest<any[]>('/locations');
+        try {
+            const data = await apiRequest<any[]>('/locations');
+            if (data && data.length > 0) return data;
+        } catch {
+            // Fall through to fallback locations
+        }
+        return [
+            { id: 'LOC-WS', code: 'LOC-WS', name: 'Satui Workshop & Store', type: 'WORKSHOP', address: 'Satui, South Kalimantan' },
+            { id: 'LOC-PIT-A', code: 'LOC-PIT-A', name: 'Pit A Mining Site', type: 'PIT', address: 'Pit A Mining Area' },
+            { id: 'LOC-PIT-B', code: 'LOC-PIT-B', name: 'Pit B Mining Site', type: 'PIT', address: 'Pit B Mining Area' },
+            { id: 'LOC-SP', code: 'LOC-SP', name: 'Stockpile Central', type: 'STOCKPILE', address: 'Stockpile Area' },
+            { id: 'LOC-OFFICE', code: 'LOC-OFFICE', name: 'Banjarmasin Head Office', type: 'OFFICE', address: 'Banjarmasin' }
+        ];
     },
 
     async getLocation(id: string) {

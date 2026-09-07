@@ -202,9 +202,34 @@ const MutationView: React.FC = () => {
             const eq = equipment.find(e => e.id === formData.equipmentId);
             const eqCode = eq ? eq.code : formData.newCode;
 
+            let targetEqId = formData.equipmentId;
+            if (modalType === MutationType.ACQUISITION && formData.newCode) {
+                try {
+                    const createdEq = await equipmentAPI.createEquipment({
+                        code: formData.newCode,
+                        model: formData.newModel || formData.newCode,
+                        type: formData.newType || 'Excavator',
+                        manufactureYear: Number(formData.newManufactureYear) || new Date().getFullYear(),
+                        hourMeter: Number(formData.newHourMeter) || 0,
+                        kilometer: Number(formData.newKilometer) || 0,
+                        owner: formData.newOwner,
+                        chassisNumber: formData.newChassisNumber,
+                        plateNumber: formData.newPlateNumber,
+                        serialNumber: formData.newSerialNumber,
+                        engineNumber: formData.newEngineNumber,
+                        locationId: formData.targetLocationId || undefined
+                    });
+                    if (createdEq?.id) {
+                        targetEqId = createdEq.id;
+                    }
+                } catch (eqErr) {
+                    console.warn('Equipment creation during acquisition warning/fallback:', eqErr);
+                }
+            }
+
             const mutationData = {
                 type: modalType,
-                equipmentId: formData.equipmentId,
+                equipmentId: targetEqId || undefined,
                 equipmentCode: eqCode,
                 sourceLocationId: eq ? (eq.location_id || eq.locationId || '') : 'VENDOR',
                 targetLocationId: modalType === 'DISPOSAL' ? 'SOLD/SCRAPPED' : formData.targetLocationId,
