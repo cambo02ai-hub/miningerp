@@ -138,8 +138,17 @@ const InventoryView: React.FC = () => {
 
     const getLocationName = useCallback((locationId?: string): string => {
         if (!locationId) return 'Unknown Location';
-        const loc = locations.find(l => l.id === locationId);
-        return loc ? loc.name : locationId;
+        const loc = locations.find(l => l.id === locationId || l.code === locationId || l.name === locationId);
+        if (loc) return loc.name;
+        const defaultMap: Record<string, string> = {
+            'LOC-WS': 'Satui Workshop & Store',
+            'LOC-PIT-A': 'Pit A Mining Site',
+            'LOC-PIT-B': 'Pit B Mining Site',
+            'LOC-SP': 'Stockpile Central',
+            'LOC-OFFICE': 'Banjarmasin Head Office'
+        };
+        if (defaultMap[locationId]) return defaultMap[locationId];
+        return locationId;
     }, [locations]);
 
     const openTxModal = (part: SparePart | null = null) => {
@@ -176,6 +185,8 @@ const InventoryView: React.FC = () => {
             alert("Please select a Warehouse Site.");
             return;
         }
+        const selectedLoc = locations.find(l => l.id === newItemForm.locationId || l.code === newItemForm.locationId);
+        const locName = selectedLoc ? selectedLoc.name : getLocationName(newItemForm.locationId);
         try {
             await inventoryAPI.createPart({
                 partNumber: newItemForm.partNumber,
@@ -186,7 +197,7 @@ const InventoryView: React.FC = () => {
                 minStockLevel: Number(newItemForm.minStockLevel),
                 unit: newItemForm.unit,
                 locationId: newItemForm.locationId,
-                location: newItemForm.location,
+                location: newItemForm.location || locName,
                 averageCost: Number(newItemForm.averageCost),
                 preferredSupplierId: newItemForm.preferredSupplierId || undefined
             });
