@@ -12,7 +12,7 @@ export async function fetchJson<T>(endpoint: string, options: Options = {}): Pro
   }
 
   const token = getAuthToken()
-  if (options.auth !== false && token) {
+  if (options.auth !== false && token && !token.startsWith('fallback-token-')) {
     (headers as any)['Authorization'] = `Bearer ${token}`
   }
 
@@ -39,9 +39,9 @@ export async function fetchJson<T>(endpoint: string, options: Options = {}): Pro
     throw e
   }
 
-  const isAuthEndpoint = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/register')
+  const isAuthEndpoint = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/register') || endpoint.startsWith('/auth/me')
 
-  if ((res.status === 401 || res.status === 403) && !isAuthEndpoint) {
+  if ((res.status === 401 || res.status === 403) && !isAuthEndpoint && !token?.startsWith('fallback-token-')) {
     clearAuthData()
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
