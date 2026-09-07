@@ -44,8 +44,8 @@ describe('PitMapView Component', () => {
 
   it('renders 3D Globe Visualizer by default and supports interactive controls', () => {
     render(<PitMapView />);
-    expect(screen.getByText('3D Globe Controls')).toBeInTheDocument();
-    expect(screen.getByText(/Click & drag sphere to rotate 360° globe/i)).toBeInTheDocument();
+    expect(screen.getByText('Cesium 3D Globe Viewer')).toBeInTheDocument();
+    expect(screen.getByText(/Use mouse left click & drag to rotate 360° globe/i)).toBeInTheDocument();
   });
 
   it('renders default pit locations and details panel', () => {
