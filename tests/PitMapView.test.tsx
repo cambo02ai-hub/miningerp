@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import PitMapView from '../components/PitMapView';
 
-// Mock chatAPI and locationsAPI
+// Mock chatAPI, locationsAPI and gisGoldAPI
 vi.mock('../services/api', () => ({
   chatAPI: {
     sendMessage: vi.fn().mockResolvedValue({ reply: 'Mocked AI Pit Response' }),
@@ -12,6 +12,23 @@ vi.mock('../services/api', () => ({
   locationsAPI: {
     getLocations: vi.fn().mockResolvedValue([]),
     createLocation: vi.fn().mockResolvedValue({ id: 'loc-101', name: 'Pit Delta - Gold Vein (KML)', code: 'PIT-KML-101' }),
+  },
+  gisGoldAPI: {
+    getMarketPrice: vi.fn().mockResolvedValue({
+      priceUsdPerOz: 2920.50,
+      priceMmkPerTael: 4650000,
+      lastUpdated: new Date().toISOString()
+    }),
+    getGoldHeatmapPoints: vi.fn().mockResolvedValue([
+      { id: 'hp-01', lat: -3.4561, lng: 114.8123, probabilityPct: 88, goldGradeGt: 5.2, alterationZone: 'Argillic', radiometricAnomaly: 2.1, estimatedDepthMeters: 45 },
+      { id: 'hp-02', lat: -3.4580, lng: 114.8140, probabilityPct: 92, goldGradeGt: 7.1, alterationZone: 'Phyllic', radiometricAnomaly: 2.8, estimatedDepthMeters: 60 },
+    ]),
+    calculateEconomicValuation: vi.fn().mockResolvedValue({
+      estGoldYieldGrams: 65000,
+      estGoldYieldKyat: 3915.6,
+      totalValuationMMK: 18200000000,
+      totalValuationUSD: 5200000
+    }),
   },
 }));
 
