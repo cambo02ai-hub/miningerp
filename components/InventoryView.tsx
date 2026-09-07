@@ -523,15 +523,13 @@ const InventoryView: React.FC = () => {
                         <Plus size={18} />
                         Add New Item
                     </button>
-                    {getCurrentUser()?.role !== 'MANAGER' && getCurrentUser()?.role !== 'STOCK_MANAGER' && (
-                        <button
-                            onClick={() => openTxModal(null)}
-                            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition-colors"
-                        >
-                            <RefreshCw size={18} />
-                            Process Transaction
-                        </button>
-                    )}
+                    <button
+                        onClick={() => openTxModal(null)}
+                        className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition-colors"
+                    >
+                        <RefreshCw size={18} />
+                        Process Transaction
+                    </button>
                 </div>
             </div>
 

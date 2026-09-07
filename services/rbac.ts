@@ -243,33 +243,54 @@ export const isSuperAdmin = (user?: RBACUserLike | null): boolean => normalizeRo
 const canUseStorage = (): boolean => typeof window !== 'undefined' && !!window.localStorage;
 
 export const loadManagedUsers = (actor?: RBACUserLike | null): ManagedUser[] => {
+  let users: ManagedUser[] = [];
   if (canUseStorage()) {
     try {
       const raw = window.localStorage.getItem(RBAC_STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as ManagedUser[];
+      if (raw) users = JSON.parse(raw) as ManagedUser[];
     } catch {
       // Fall through to the bootstrap account.
     }
   }
 
-  if (!actor?.username) return [];
-  const bootstrap: ManagedUser = {
-    id: `bootstrap-${actor.username}`,
-    fullName: actor.fullName || actor.username,
-    username: actor.username,
-    email: '',
-    employeeId: '',
-    department: 'စီမံခန့်ခွဲရေး',
-    site: 'အဓိကလုပ်ငန်းခွင်',
-    role: normalizeRole(actor.role || 'SUPER_ADMIN'),
-    status: 'ACTIVE',
-    permissionOverrides: [],
-    createdAt: new Date().toISOString(),
-    createdBy: 'စနစ်',
-    lastLoginAt: new Date().toISOString(),
-  };
-  saveManagedUsers([bootstrap]);
-  return [bootstrap];
+  if (users.length === 0 && actor?.username) {
+    users = [{
+      id: `bootstrap-${actor.username}`,
+      fullName: actor.fullName || actor.username,
+      username: actor.username,
+      email: '',
+      employeeId: '',
+      department: 'စီမံခန့်ခွဲရေး',
+      site: 'အဓိကလုပ်ငန်းခွင်',
+      role: normalizeRole(actor.role || 'SUPER_ADMIN'),
+      status: 'ACTIVE',
+      permissionOverrides: [],
+      createdAt: new Date().toISOString(),
+      createdBy: 'စနစ်',
+      lastLoginAt: new Date().toISOString(),
+    }];
+  }
+
+  if (!users.some((u) => u.username.toLowerCase() === 'nwenwekhant')) {
+    users.push({
+      id: 'seeded-nwenwekhant',
+      fullName: 'Nwe Nwe Khant',
+      username: 'nwenwekhant',
+      email: 'nwenwekhant@jpmonitor.com',
+      employeeId: 'EMP-STOCK-01',
+      department: 'စတော့ဌာန',
+      site: 'အဓိကလုပ်ငန်းခွင်',
+      role: 'STOCK_MANAGER',
+      status: 'ACTIVE',
+      permissionOverrides: [],
+      createdAt: new Date().toISOString(),
+      createdBy: 'စနစ်',
+      password: 'nwenwekhant123',
+    });
+    if (canUseStorage()) saveManagedUsers(users);
+  }
+
+  return users;
 };
 
 export const saveManagedUsers = (users: ManagedUser[]): void => {
