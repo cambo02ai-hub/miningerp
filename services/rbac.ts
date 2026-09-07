@@ -243,18 +243,18 @@ export const isSuperAdmin = (user?: RBACUserLike | null): boolean => normalizeRo
 const canUseStorage = (): boolean => typeof window !== 'undefined' && !!window.localStorage;
 
 export const loadManagedUsers = (actor?: RBACUserLike | null): ManagedUser[] => {
-  let users: ManagedUser[] = [];
   if (canUseStorage()) {
     try {
       const raw = window.localStorage.getItem(RBAC_STORAGE_KEY);
-      if (raw) users = JSON.parse(raw) as ManagedUser[];
+      if (raw) return JSON.parse(raw) as ManagedUser[];
     } catch {
       // Fall through to the bootstrap account.
     }
   }
 
-  if (users.length === 0 && actor?.username) {
-    users = [{
+  const initialUsers: ManagedUser[] = [];
+  if (actor?.username) {
+    initialUsers.push({
       id: `bootstrap-${actor.username}`,
       fullName: actor.fullName || actor.username,
       username: actor.username,
@@ -268,11 +268,11 @@ export const loadManagedUsers = (actor?: RBACUserLike | null): ManagedUser[] => 
       createdAt: new Date().toISOString(),
       createdBy: 'စနစ်',
       lastLoginAt: new Date().toISOString(),
-    }];
+    });
   }
 
-  if (!users.some((u) => u.username.toLowerCase() === 'nwenwekhant')) {
-    users.push({
+  if (!initialUsers.some((u) => u.username.toLowerCase() === 'nwenwekhant')) {
+    initialUsers.push({
       id: 'seeded-nwenwekhant',
       fullName: 'Nwe Nwe Khant',
       username: 'nwenwekhant',
@@ -287,10 +287,10 @@ export const loadManagedUsers = (actor?: RBACUserLike | null): ManagedUser[] => 
       createdBy: 'စနစ်',
       password: 'nwenwekhant123',
     });
-    if (canUseStorage()) saveManagedUsers(users);
   }
 
-  return users;
+  if (initialUsers.length > 0) saveManagedUsers(initialUsers);
+  return initialUsers;
 };
 
 export const saveManagedUsers = (users: ManagedUser[]): void => {
