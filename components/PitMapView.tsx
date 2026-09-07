@@ -231,11 +231,6 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
   const cesiumContainerRef = useRef<HTMLDivElement | null>(null);
   const cesiumViewerRef = useRef<any>(null);
 
-  // 3D Globe Interactive Rotation & Zoom State
-  const [globeRotation, setGlobeRotation] = useState({ rotX: 15, rotY: -115 });
-  const [globeZoom, setGlobeZoom] = useState(1.1);
-  const [isDraggingGlobe, setIsDraggingGlobe] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number; rotX: number; rotY: number }>({ x: 0, y: 0, rotX: 15, rotY: -115 });
 
   // Initialize Real CesiumJS Viewer when mapMode === '3D_GLOBE' and DOM container is mounted
   useEffect(() => {
@@ -243,8 +238,12 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
       const Cesium = (window as any).Cesium;
       if (!cesiumViewerRef.current) {
         try {
-          // Disable default Ion token prompt by using default Bing/OpenStreetMap/Terrain
+          // Disable default Ion token requirement by configuring an open tile provider (OpenStreetMap)
           if (Cesium.Ion) Cesium.Ion.defaultAccessToken = '';
+          const openStreetMapProvider = new Cesium.OpenStreetMapImageryProvider({
+            url: 'https://tile.openstreetmap.org/',
+          });
+
           const viewer = new Cesium.Viewer(cesiumContainerRef.current, {
             animation: false,
             timeline: false,
@@ -255,7 +254,7 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
             navigationHelpButton: false,
             infoBox: false,
             selectionIndicator: false,
-            terrainProvider: Cesium.createWorldTerrain ? Cesium.createWorldTerrain() : undefined,
+            imageryProvider: openStreetMapProvider,
           });
 
           // Add Pit Markers to Cesium 3D Globe Viewer
@@ -618,135 +617,36 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
 
             {mapMode === '3D_GLOBE' ? (
-              /* 3D GLOBE SPHERE PROJECTION CANVAS */
-              /* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions */
-              <div
-                className="relative w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing select-none outline-none"
-                onMouseDown={(e) => {
-                  setIsDraggingGlobe(true);
-                  dragStartRef.current = {
-                    x: e.clientX,
-                    y: e.clientY,
-                    rotX: globeRotation.rotX,
-                    rotY: globeRotation.rotY,
-                  };
-                }}
-                onMouseMove={(e) => {
-                  if (!isDraggingGlobe) return;
-                  const deltaX = e.clientX - dragStartRef.current.x;
-                  const deltaY = e.clientY - dragStartRef.current.y;
-                  setGlobeRotation({
-                    rotX: Math.max(-80, Math.min(80, dragStartRef.current.rotX - deltaY * 0.4)),
-                    rotY: dragStartRef.current.rotY + deltaX * 0.4,
-                  });
-                }}
-                onMouseUp={() => setIsDraggingGlobe(false)}
-                onMouseLeave={() => setIsDraggingGlobe(false)}
-              >
-                {/* Real Cesium 3D WebGL Viewer Container */}
-                <div ref={cesiumContainerRef} className="absolute inset-0 w-full h-full" />
+              /* REAL CESIUM 3D GLOBE FULL CANVAS */
+              <div className="relative w-full h-full">
+                {/* 100% Full-Canvas WebGL Cesium Container */}
+                <div ref={cesiumContainerRef} className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden" />
 
-                {/* 3D Sphere Outer Atmospheric Glow */}
-                <div
-                  className="relative rounded-full transition-transform duration-100 flex items-center justify-center shadow-[0_0_80px_rgba(14,165,233,0.35)]"
-                  style={{
-                    width: `${280 * globeZoom}px`,
-                    height: `${280 * globeZoom}px`,
-                    transform: `rotateX(${globeRotation.rotX}deg) rotateY(${globeRotation.rotY}deg)`,
-                    transformStyle: 'preserve-3d',
-                  }}
-                >
-                  {/* Sphere Surface Gradient Base */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-900 via-slate-900 to-blue-950 border-2 border-cyan-500/40 opacity-90 overflow-hidden shadow-inner">
-                    {/* Continental Map Outline Overlay Simulation */}
-                    <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_30%_30%,_var(--tw-gradient-stops))] from-amber-500 via-emerald-600 to-transparent" />
-
-                    {/* Graticule Latitude / Longitude Grid Lines */}
-                    <svg className="absolute inset-0 w-full h-full opacity-40">
-                      <ellipse cx="50%" cy="50%" rx="48%" ry="20%" stroke="#0284c7" strokeWidth="1" fill="none" />
-                      <ellipse cx="50%" cy="50%" rx="48%" ry="38%" stroke="#0284c7" strokeWidth="1" fill="none" fillOpacity="0" />
-                      <line x1="50%" y1="0%" x2="50%" y2="100%" stroke="#0284c7" strokeWidth="1" strokeDasharray="3 3" />
-                      <line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#38bdf8" strokeWidth="1.5" />
-                    </svg>
-
-                    {/* Hyperspectral Alteration Overlay on Sphere Surface */}
-                    {activeLayers.alterationZones && (
-                      <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_60%_60%,_var(--tw-gradient-stops))] from-purple-500 via-amber-400 to-transparent" />
-                    )}
-                  </div>
-
-                  {/* 3D Globe Pit Markers & Deep Vein Point Hotspots */}
-                  {pits.map((pit, idx) => {
-                    const isSelected = pit.id === selectedPit.id;
-                    // Project 3D Spherical Offset
-                    const offsetX = (idx - 1) * 60;
-                    const offsetY = (idx - 1) * 35;
-                    return (
-                      <button
-                        type="button"
-                        key={pit.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPit(pit);
-                        }}
-                        className={`absolute cursor-pointer p-2 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-1 backdrop-blur-md ${
-                          isSelected
-                            ? 'bg-amber-500/90 text-slate-950 border-white shadow-2xl scale-110 z-30'
-                            : 'bg-slate-900/85 text-amber-300 border-amber-500/50 hover:border-amber-400 z-20'
-                        }`}
-                        style={{
-                          transform: `translate3d(${offsetX}px, ${offsetY}px, 40px)`,
-                        }}
-                      >
-                        <div className="flex items-center gap-1 text-[10px] font-black">
-                          <MapPin size={12} className={isSelected ? 'text-slate-950' : 'text-amber-400'} />
-                          <span>{pit.code}</span>
-                        </div>
-                        <div className="text-[9px] font-extrabold whitespace-nowrap">
-                          {pit.goldGradeGramsPerTon} g/t Au ({pit.goldProbabilityPct}%)
-                        </div>
-                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* 3D Globe Interactive Drag / Zoom On-Screen Controls */}
+                {/* 3D Globe Navigation HUD Controls */}
                 <div className="absolute bottom-4 right-4 z-20 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700 text-white text-xs space-y-2 shadow-xl">
                   <div className="font-bold text-amber-400 flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1"><Compass size={14} /> 3D Globe Controls</span>
+                    <span className="flex items-center gap-1"><Compass size={14} /> Cesium 3D Globe Viewer</span>
                     <button
                       type="button"
                       onClick={() => {
-                        setGlobeRotation({ rotX: 15, rotY: -115 });
-                        setGlobeZoom(1.1);
+                        if (cesiumViewerRef.current && (window as any).Cesium) {
+                          const Cesium = (window as any).Cesium;
+                          cesiumViewerRef.current.camera.flyTo({
+                            destination: Cesium.Cartesian3.fromDegrees(selectedPit.lng, selectedPit.lat, 15000),
+                          });
+                        }
                       }}
                       className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
-                      title="Reset Globe View"
+                      title="Reset Camera to Target Pit"
                     >
                       <RotateCcw size={12} />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-300">Zoom:</span>
-                    <button
-                      type="button"
-                      onClick={() => setGlobeZoom((prev) => Math.min(1.8, prev + 0.15))}
-                      className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 py-0.5 rounded text-xs border border-slate-600"
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setGlobeZoom((prev) => Math.max(0.7, prev - 0.15))}
-                      className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 py-0.5 rounded text-xs border border-slate-600"
-                    >
-                      -
-                    </button>
-                    <span className="text-[10px] text-cyan-400 font-mono">{(globeZoom * 100).toFixed(0)}%</span>
+                  <div className="text-[10px] text-slate-300">
+                    Use mouse left click &amp; drag to rotate 360° globe, scroll wheel to zoom, right click &amp; drag to tilt.
                   </div>
-                  <div className="text-[9px] text-slate-400">
-                    * Click &amp; drag sphere to rotate 360° globe. Select any pit marker for deep gold deposit details.
+                  <div className="text-[9px] text-cyan-400 font-mono">
+                    OpenStreetMap / Bing Maps Aerial Satellite Tiles Active
                   </div>
                 </div>
               </div>
@@ -1497,6 +1397,40 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
 
                     setPits((prev) => [newPit, ...prev]);
                     setSelectedPit(newPit);
+
+                    // Add entity to real Cesium WebGL Viewer if active
+                    if (cesiumViewerRef.current && (window as any).Cesium) {
+                      const Cesium = (window as any).Cesium;
+                      try {
+                        if (importText.trim().startsWith('{') || importText.trim().startsWith('[')) {
+                          const geoJsonData = JSON.parse(importText);
+                          Cesium.GeoJsonDataSource.load(geoJsonData).then((ds: any) => {
+                            cesiumViewerRef.current.dataSources.add(ds);
+                            cesiumViewerRef.current.zoomTo(ds);
+                          });
+                        } else if (importText.includes('<kml')) {
+                          const blob = new Blob([importText], { type: 'application/vnd.google-earth.kml+xml' });
+                          const kmlUrl = URL.createObjectURL(blob);
+                          Cesium.KmlDataSource.load(kmlUrl).then((ds: any) => {
+                            cesiumViewerRef.current.dataSources.add(ds);
+                            cesiumViewerRef.current.zoomTo(ds);
+                          });
+                        } else {
+                          cesiumViewerRef.current.entities.add({
+                            name: pitName,
+                            position: Cesium.Cartesian3.fromDegrees(newPit.lng, newPit.lat, newPit.elevationMeters),
+                            point: { pixelSize: 14, color: Cesium.Color.LIME, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
+                            label: { text: pitCode, font: '14px sans-serif', fillColor: Cesium.Color.CYAN, pixelOffset: new Cesium.Cartesian2(0, -20) },
+                          });
+                          cesiumViewerRef.current.camera.flyTo({
+                            destination: Cesium.Cartesian3.fromDegrees(newPit.lng, newPit.lat, 8000),
+                          });
+                        }
+                      } catch (err) {
+                        console.warn('Cesium KML Data Source import fallback:', err);
+                      }
+                    }
+
                     setImportSuccess(true);
                   }}
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow flex items-center gap-1.5"
