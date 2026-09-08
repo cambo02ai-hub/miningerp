@@ -49,6 +49,7 @@ public class JpMonitorApplication {
             seedRole("ROLE_ADMIN", "Administrator", "System Administrator", "[\"dashboard.view\",\"production.view\",\"production.create\",\"production.edit\",\"production.approve\",\"production.export\",\"fleet.view\",\"fleet.create\",\"fleet.edit\",\"fleet.delete\",\"fleet.approve\",\"fleet.export\",\"mutation.view\",\"mutation.create\",\"mutation.edit\",\"mutation.delete\",\"mutation.approve\",\"mutation.export\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.delete\",\"inventory.approve\",\"inventory.export\",\"maintenance.view\",\"maintenance.create\",\"maintenance.edit\",\"maintenance.delete\",\"maintenance.approve\",\"maintenance.export\",\"employee.view\",\"employee.create\",\"employee.edit\",\"employee.delete\",\"employee.export\",\"supplier.view\",\"supplier.create\",\"supplier.edit\",\"supplier.delete\",\"supplier.export\",\"debt.view\",\"debt.create\",\"debt.edit\",\"debt.approve\",\"debt.export\",\"location.view\",\"location.create\",\"location.edit\",\"location.delete\",\"hse.view\",\"hse.create\",\"hse.edit\",\"hse.approve\",\"hse.export\",\"timesheet.view\",\"timesheet.create\",\"timesheet.edit\",\"timesheet.approve\",\"timesheet.export\",\"audit.view\",\"audit.export\",\"user_management.view\",\"user_management.create\",\"user_management.edit\",\"user_management.delete\",\"user_management.manage\"]");
             seedRole("ROLE_MANAGER", "Manager", "Operational Manager", "[\"dashboard.view\",\"production.view\",\"production.create\",\"production.edit\",\"production.approve\",\"production.export\",\"fleet.view\",\"fleet.approve\",\"fleet.export\",\"mutation.view\",\"mutation.approve\",\"mutation.export\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.approve\",\"inventory.export\",\"maintenance.view\",\"maintenance.approve\",\"maintenance.export\",\"employee.view\",\"employee.export\",\"supplier.view\",\"supplier.export\",\"debt.view\",\"debt.approve\",\"debt.export\",\"location.view\",\"hse.view\",\"hse.approve\",\"hse.export\",\"timesheet.view\",\"timesheet.approve\",\"timesheet.export\",\"audit.view\",\"audit.export\"]");
             seedRole("ROLE_STOCK_MANAGER", "Stock Manager", "Inventory & Stock Data Manager", "[\"dashboard.view\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.export\"]");
+            seedRole("ROLE_STORE_EMPLOYEE", "Store Employee", "Store Issue & Daily Inventory Operations", "[\"inventory.view\",\"inventory.create\",\"inventory.edit\"]");
             seedRole("ROLE_SUPERVISOR", "Supervisor", "Site & Operations Supervisor", "[\"dashboard.view\",\"production.view\",\"production.create\",\"production.edit\",\"production.export\",\"fleet.view\",\"fleet.create\",\"fleet.edit\",\"mutation.view\",\"mutation.create\",\"mutation.edit\",\"inventory.view\",\"inventory.create\",\"inventory.edit\",\"inventory.export\",\"maintenance.view\",\"maintenance.create\",\"maintenance.edit\",\"maintenance.export\",\"employee.view\",\"supplier.view\",\"supplier.create\",\"debt.view\",\"location.view\",\"hse.view\",\"hse.create\",\"hse.edit\",\"timesheet.view\",\"timesheet.create\",\"timesheet.edit\",\"audit.view\"]");
             seedRole("ROLE_OPERATOR", "Operator", "Daily Operations Input", "[\"dashboard.view\",\"production.view\",\"production.create\",\"fleet.view\",\"mutation.view\",\"mutation.create\",\"inventory.view\",\"inventory.create\",\"maintenance.view\",\"maintenance.create\",\"hse.view\",\"hse.create\",\"timesheet.view\",\"timesheet.create\"]");
             seedRole("ROLE_VIEWER", "Viewer", "Read-Only Access", "[\"dashboard.view\",\"production.view\",\"fleet.view\",\"mutation.view\",\"inventory.view\",\"maintenance.view\",\"employee.view\",\"supplier.view\",\"debt.view\",\"location.view\",\"hse.view\",\"timesheet.view\",\"audit.view\"]");
@@ -166,6 +167,56 @@ public class JpMonitorApplication {
                 if (updated) {
                     userRepository.save(nwenwekhantUser);
                     log.info("Updated existing nwenwekhant user to ROLE_STOCK_MANAGER and active status with reset password");
+                }
+            }
+
+            // Ensure 5 demo Store Employee accounts exist
+            Role storeEmployeeRole = roleRepository.findByCodeIgnoreCase("ROLE_STORE_EMPLOYEE")
+                    .orElseGet(() -> roleRepository.findByCodeIgnoreCase("ROLE_OPERATOR")
+                    .orElse(stockManagerRole));
+
+            String[][] storeEmployeeSeed = {
+                {"store01", "Store Staff 1", "store01@jpmonitor.com"},
+                {"store02", "Store Staff 2", "store02@jpmonitor.com"},
+                {"store03", "Store Staff 3", "store03@jpmonitor.com"},
+                {"store04", "Store Staff 4", "store04@jpmonitor.com"},
+                {"store05", "Store Staff 5", "store05@jpmonitor.com"}
+            };
+
+            for (String[] emp : storeEmployeeSeed) {
+                String uName = emp[0];
+                String fName = emp[1];
+                String uEmail = emp[2];
+                Optional<User> empOpt = userRepository.findByUsernameIgnoreCase(uName);
+                if (empOpt.isEmpty()) {
+                    User storeUser = new User();
+                    storeUser.setUsername(uName);
+                    storeUser.setEmail(uEmail);
+                    storeUser.setFullName(fName);
+                    storeUser.setIsActive(true);
+                    storeUser.setRole(storeEmployeeRole);
+                    storeUser.setPasswordHash(passwordEncoder.encode("store123"));
+                    userRepository.save(storeUser);
+                    log.info("Seeded store employee user: {}", uName);
+                } else {
+                    User storeUser = empOpt.get();
+                    boolean updated = false;
+                    if (!storeUser.getRole().getId().equals(storeEmployeeRole.getId())) {
+                        storeUser.setRole(storeEmployeeRole);
+                        updated = true;
+                    }
+                    if (Boolean.FALSE.equals(storeUser.getIsActive())) {
+                        storeUser.setIsActive(true);
+                        updated = true;
+                    }
+                    if (!passwordEncoder.matches("store123", storeUser.getPasswordHash())) {
+                        storeUser.setPasswordHash(passwordEncoder.encode("store123"));
+                        updated = true;
+                    }
+                    if (updated) {
+                        userRepository.save(storeUser);
+                        log.info("Updated existing store employee user: {}", uName);
+                    }
                 }
             }
 

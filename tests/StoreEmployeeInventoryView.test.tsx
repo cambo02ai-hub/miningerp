@@ -58,10 +58,10 @@ describe('StoreEmployeeInventoryView Component', () => {
   });
 
   it('renders store employee header and parts catalog', async () => {
-    render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw', role: 'OPERATOR' }} />);
+    render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw', role: 'STORE_EMPLOYEE' }} />);
 
     await waitFor(() => {
-      expect(screen.getByText('ဂိုဒေါင် ပစ္စည်း ထုတ်ပေးခြင်း (POS Dispatch)')).toBeInTheDocument();
+      expect(screen.getByText('Store Employee App')).toBeInTheDocument();
       expect(screen.getByText('Fuel Filter D375')).toBeInTheDocument();
       expect(screen.getByText('Hydraulic Hose 1/2')).toBeInTheDocument();
     });
@@ -71,7 +71,7 @@ describe('StoreEmployeeInventoryView Component', () => {
     render(<StoreEmployeeInventoryView currentUser={{ fullName: 'Kyaw Kyaw' }} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/စတော့ နည်းနေသော ပစ္စည်း/i)).toBeInTheDocument();
+      expect(screen.getByText(/စတော့ လျော့နည်းနေသည်/i)).toBeInTheDocument();
     });
   });
 
@@ -82,9 +82,9 @@ describe('StoreEmployeeInventoryView Component', () => {
       expect(screen.getByText('Fuel Filter D375')).toBeInTheDocument();
     });
 
-    const addBtns = screen.getAllByText('Cart ထဲထည့်မည်');
+    const addBtns = screen.getAllByText('Cart သို့ထည့်မည်');
     fireEvent.click(addBtns[0]);
 
-    expect(screen.getByText('ထည့်ပြီး (1)')).toBeInTheDocument();
+    expect(screen.getByText('ခြင်းတောင်းထဲတွင် (1)')).toBeInTheDocument();
   });
 });

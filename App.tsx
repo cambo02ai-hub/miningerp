@@ -19,7 +19,6 @@ const DebtView = React.lazy(() => import('./components/DebtView'))
 const UserManagementView = React.lazy(() => import('./components/UserManagementView'))
 const ContractorMiningView = React.lazy(() => import('./components/ContractorMiningView'))
 import LoginPage from './components/LoginPage';
-import AIChatWidget from './components/AIChatWidget';
 import { getAuthToken, getCurrentUser, setAuthData, clearAuthData } from './services/authStorage';
 import { authAPI } from './services/api';
 import { hasPermission, loadManagedUsers, normalizeRole } from './services/rbac';
@@ -87,8 +86,11 @@ const App: React.FC = () => {
     const user = getCurrentUser();
     setCurrentUser(user);
     setIsAuthenticated(true);
-    if (normalizeRole(user?.role) === 'STOCK_MANAGER') {
+    const userRole = normalizeRole(user?.role);
+    if (userRole === 'STOCK_MANAGER') {
       navigate('/inventory');
+    } else if (userRole === 'STORE_EMPLOYEE') {
+      navigate('/store-inventory');
     }
   };
 
@@ -137,6 +139,11 @@ const App: React.FC = () => {
                 <Route path="/inventory" element={<ErrorBoundary><InventoryView /></ErrorBoundary>} />
                 <Route path="*" element={<Navigate to="/inventory" replace />} />
               </Routes>
+            ) : normalizeRole(currentUser?.role) === 'STORE_EMPLOYEE' ? (
+              <Routes>
+                <Route path="/store-inventory" element={<ErrorBoundary><StoreEmployeeInventoryView currentUser={currentUser} /></ErrorBoundary>} />
+                <Route path="*" element={<Navigate to="/store-inventory" replace />} />
+              </Routes>
             ) : (
               <Routes>
                 <Route path="/" element={<ErrorBoundary><DashboardView /></ErrorBoundary>} />
@@ -161,7 +168,6 @@ const App: React.FC = () => {
           </React.Suspense>
         </div>
       </main>
-      <AIChatWidget />
     </div>
   );
 };
