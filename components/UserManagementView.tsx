@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, Edit3, KeyRound, Lock, Plus, Search, ShieldCheck, Trash2, UserRound, UsersRound, X } from 'lucide-react';
 import { authAPI } from '../services/api';
 import { setAuthData } from '../services/authStorage';
@@ -13,7 +13,9 @@ import {
   ROLE_DEFINITIONS,
   ROLE_LABELS,
   hasPermission,
+  isSuperAdmin,
   loadManagedUsers,
+  normalizeRole,
   recordRBACAudit,
   saveManagedUsers,
 } from '../services/rbac';
@@ -66,11 +68,41 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const allowed = hasPermission(currentUser, 'user_management.manage');
+  const allowed = isSuperAdmin(currentUser) || hasPermission(currentUser, 'user_management.manage');
 
-  useEffect(() => {
+  const loadUsers = useCallback(async () => {
+    try {
+      const apiUsers = await authAPI.getUsers();
+      if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+        const mappedUsers: ManagedUser[] = apiUsers.map((u: any) => ({
+          id: u.id || `user-${u.username}`,
+          fullName: u.fullName || u.full_name || u.username,
+          username: u.username,
+          email: u.email || '',
+          employeeId: u.employeeId || '',
+          department: u.department || '',
+          site: u.site || '',
+          role: normalizeRole(u.role),
+          status: (u.status || 'ACTIVE') as AccountStatus,
+          permissions: u.permissions,
+          permissionOverrides: u.permissionOverrides || [],
+          createdAt: u.createdAt || new Date().toISOString(),
+          createdBy: u.createdBy || 'စနစ်',
+          lastLoginAt: u.lastLoginAt || u.last_login,
+        }));
+        setUsers(mappedUsers);
+        saveManagedUsers(mappedUsers);
+        return;
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch users from backend API, using local fallback:', err?.message);
+    }
     setUsers(loadManagedUsers(currentUser));
   }, [currentUser]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const filteredUsers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -221,11 +253,8 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         lastLoginAt: editingUser?.lastLoginAt,
         password: form.password ? form.password : (editingUser?.password || undefined),
       };
-      const nextUsers = editingUser
-        ? users.map((user) => (user.id === editingUser.id ? nextUser : user))
-        : [nextUser, ...users];
-      saveManagedUsers(nextUsers);
-      setUsers(nextUsers);
+
+      await loadUsers();
 
       if (currentUser?.username && currentUser.username.toLowerCase() === nextUser.username.toLowerCase()) {
         const updatedCurrent = {
@@ -261,9 +290,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     } catch (apiErr: any) {
       console.warn('Backend status update warning:', apiErr?.message);
     }
-    const nextUsers = users.map((item) => (item.id === user.id ? { ...item, status: nextStatus } : item));
-    saveManagedUsers(nextUsers);
-    setUsers(nextUsers);
+    await loadUsers();
     recordRBACAudit(nextStatus === 'ACTIVE' ? 'USER_ACTIVATED' : 'USER_SUSPENDED', user.username, statusLabels[nextStatus], currentUser);
     setNotice({ type: 'success', text: `${user.username} account ကို ${statusLabels[nextStatus]} အဖြစ် ပြောင်းပြီးပါပြီ။` });
   };
@@ -279,9 +306,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     } catch (apiErr: any) {
       console.warn('Backend user delete warning:', apiErr?.message);
     }
-    const nextUsers = users.filter((item) => item.id !== user.id);
-    saveManagedUsers(nextUsers);
-    setUsers(nextUsers);
+    await loadUsers();
     recordRBACAudit('USER_DELETED', user.username, 'Account ကို စာရင်းမှ ဖယ်ရှားခဲ့သည်။', currentUser);
     setNotice({ type: 'success', text: 'Account ကို ဖယ်ရှားပြီးပါပြီ။' });
   };

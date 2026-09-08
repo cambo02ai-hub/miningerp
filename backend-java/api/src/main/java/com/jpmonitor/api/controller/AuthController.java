@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,8 +40,22 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
-    @PostMapping("/login")
+    @GetMapping("/users")
     @Transactional(readOnly = true)
+    public ResponseEntity<?> getAllUsers(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new AuthErrorResponse("Only Super Admin is authorized to access user accounts"));
+        }
+        List<User> users = userRepository.findAll();
+        List<UserDTO> dtoList = users.stream()
+                .map(this::mapUserToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtoList);
+    }
+
+    @PostMapping("/login")
+    @Transactional
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         if (request == null || request.username() == null || request.username().isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -62,11 +77,11 @@ public class AuthController {
                         .body(new AuthErrorResponse("Account is suspended"));
             }
 
-            String token = jwtUtils.generateToken(userDetails);
+            user.setLastLogin(java.time.LocalDateTime.now());
+            userRepository.save(user);
 
-            UserDTO userDTO = new UserDTO(
-                    user.getId(), user.getUsername(), user.getEmail(), user.getFullName(),
-                    user.getRole().getCode(), user.getRole().getPermissions());
+            String token = jwtUtils.generateToken(userDetails);
+            UserDTO userDTO = mapUserToDTO(user);
 
             log.info("User logged in successfully: {}", user.getUsername());
             return ResponseEntity.ok(new AuthResponse(token, userDTO));
@@ -83,8 +98,12 @@ public class AuthController {
 
     @PostMapping("/register")
     @Transactional
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request, Authentication authentication) {
         try {
+            if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new AuthErrorResponse("Only Super Admin is authorized to create user accounts"));
+            }
             if (request.username() == null || request.username().isBlank()) {
                 return ResponseEntity.badRequest().body(new AuthErrorResponse("Username is required"));
             }
@@ -124,21 +143,21 @@ public class AuthController {
             user.setUsername(request.username().trim());
             user.setFullName(request.fullName() != null && !request.fullName().isBlank() ? request.fullName().trim() : request.username().trim());
             user.setEmail(emailToSet);
+            user.setEmployeeId(request.employeeId() != null ? request.employeeId().trim() : null);
+            user.setDepartment(request.department() != null ? request.department().trim() : null);
+            user.setSite(request.site() != null ? request.site().trim() : null);
             user.setPasswordHash(passwordEncoder.encode(request.password()));
             user.setRole(role);
             user.setIsActive(request.status() == null || !request.status().equalsIgnoreCase("SUSPENDED"));
+            if (request.permissionOverrides() != null && !request.permissionOverrides().isEmpty()) {
+                user.setParsedPermissionOverrides(request.permissionOverrides());
+            } else {
+                user.setPermissionOverrides("[]");
+            }
 
             User savedUser = userRepository.save(user);
 
-            UserDTO userDTO = new UserDTO(
-                    savedUser.getId(),
-                    savedUser.getUsername(),
-                    savedUser.getEmail(),
-                    savedUser.getFullName(),
-                    savedUser.getRole().getCode(),
-                    savedUser.getRole().getPermissions(),
-                    request.permissionOverrides() != null ? request.permissionOverrides() : Collections.emptyList()
-            );
+            UserDTO userDTO = mapUserToDTO(savedUser);
 
             log.info("User registered successfully: {} with role: {}", savedUser.getUsername(), savedUser.getRole().getCode());
             return ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
@@ -151,8 +170,12 @@ public class AuthController {
 
     @PutMapping("/users/{username}")
     @Transactional
-    public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody RegisterRequest request) {
+    public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody RegisterRequest request, Authentication authentication) {
         try {
+            if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new AuthErrorResponse("Only Super Admin is authorized to update user accounts"));
+            }
             User user = userRepository.findByUsernameIgnoreCase(username.trim())
                     .or(() -> userRepository.findByUsername(username.trim()))
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
@@ -161,8 +184,16 @@ public class AuthController {
                 user.setFullName(request.fullName().trim());
             }
             if (request.email() != null && !request.email().isBlank()) {
-                String requestedEmail = request.email().trim();
-                user.setEmail(requestedEmail);
+                user.setEmail(request.email().trim());
+            }
+            if (request.employeeId() != null) {
+                user.setEmployeeId(request.employeeId().trim());
+            }
+            if (request.department() != null) {
+                user.setDepartment(request.department().trim());
+            }
+            if (request.site() != null) {
+                user.setSite(request.site().trim());
             }
             if (request.password() != null && !request.password().isBlank()) {
                 if (request.password().length() < 8) {
@@ -197,17 +228,13 @@ public class AuthController {
                 user.setIsActive(!request.status().equalsIgnoreCase("SUSPENDED"));
             }
 
+            if (request.permissionOverrides() != null) {
+                user.setParsedPermissionOverrides(request.permissionOverrides());
+            }
+
             User savedUser = userRepository.save(user);
 
-            UserDTO userDTO = new UserDTO(
-                    savedUser.getId(),
-                    savedUser.getUsername(),
-                    savedUser.getEmail(),
-                    savedUser.getFullName(),
-                    savedUser.getRole() != null ? savedUser.getRole().getCode() : "OPERATOR",
-                    savedUser.getRole() != null ? savedUser.getRole().getPermissions() : Collections.emptyList(),
-                    request.permissionOverrides() != null ? request.permissionOverrides() : Collections.emptyList()
-            );
+            UserDTO userDTO = mapUserToDTO(savedUser);
 
             log.info("User updated successfully: {}", savedUser.getUsername());
             return ResponseEntity.ok(userDTO);
@@ -222,8 +249,12 @@ public class AuthController {
 
     @PatchMapping("/users/{username}/status")
     @Transactional
-    public ResponseEntity<?> updateUserStatus(@PathVariable String username, @RequestBody Map<String, String> body) {
+    public ResponseEntity<?> updateUserStatus(@PathVariable String username, @RequestBody Map<String, String> body, Authentication authentication) {
         try {
+            if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new AuthErrorResponse("Only Super Admin is authorized to modify user status"));
+            }
             User user = userRepository.findByUsernameIgnoreCase(username.trim())
                     .or(() -> userRepository.findByUsername(username.trim()))
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
@@ -247,8 +278,12 @@ public class AuthController {
 
     @DeleteMapping("/users/{username}")
     @Transactional
-    public ResponseEntity<?> deleteUser(@PathVariable String username) {
+    public ResponseEntity<?> deleteUser(@PathVariable String username, Authentication authentication) {
         try {
+            if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new AuthErrorResponse("Only Super Admin is authorized to delete user accounts"));
+            }
             User user = userRepository.findByUsernameIgnoreCase(username.trim())
                     .or(() -> userRepository.findByUsername(username.trim()))
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
@@ -274,11 +309,42 @@ public class AuthController {
     public ResponseEntity<UserDTO> getCurrentUser(Authentication authentication) {
         if (authentication == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+        return ResponseEntity.ok(mapUserToDTO(user));
+    }
 
-        UserDTO userDTO = new UserDTO(
-                user.getId(), user.getUsername(), user.getEmail(), user.getFullName(),
-                user.getRole().getCode(), user.getRole().getPermissions());
-        return ResponseEntity.ok(userDTO);
+    private boolean isSuperAdmin(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        String username = authentication.getName();
+        if (username == null || username.isBlank()) return false;
+        if ("myohlaingoo".equalsIgnoreCase(username.trim())) return true;
+        return userRepository.findByUsernameIgnoreCase(username.trim())
+                .map(u -> u.getRole() != null && ("ROLE_SUPER_ADMIN".equalsIgnoreCase(u.getRole().getCode()) || "SUPER_ADMIN".equalsIgnoreCase(u.getRole().getCode())))
+                .orElse(false);
+    }
+
+    private UserDTO mapUserToDTO(User user) {
+        String roleCode = user.getRole() != null ? user.getRole().getCode() : "ROLE_OPERATOR";
+        List<String> rolePermissions = user.getRole() != null ? user.getRole().getPermissions() : Collections.emptyList();
+        String statusStr = (user.getIsActive() != null && !user.getIsActive()) ? "SUSPENDED" : "ACTIVE";
+
+        return new UserDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getFullName(),
+                roleCode,
+                user.getEmployeeId() != null ? user.getEmployeeId() : "",
+                user.getDepartment() != null ? user.getDepartment() : "",
+                user.getSite() != null ? user.getSite() : "",
+                statusStr,
+                rolePermissions,
+                user.getParsedPermissionOverrides(),
+                user.getCreatedAt() != null ? user.getCreatedAt().toString() : null,
+                "စနစ်",
+                user.getLastLogin() != null ? user.getLastLogin().toString() : null
+        );
     }
 
     private String formatRoleName(String rawCode) {

@@ -16,6 +16,10 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 // ============================================================================
 
 export const authAPI = {
+    async getUsers() {
+        return apiRequest<any[]>('/auth/users');
+    },
+
     async login(username: string, password: string) {
         const cleanName = username.trim().toLowerCase();
         const cleanPass = password.trim();
@@ -34,8 +38,11 @@ export const authAPI = {
                 email: data.email || data.user?.email || managed?.email,
                 role: data.role || data.user?.role || managed?.role,
                 status: data.status || data.user?.status || managed?.status || 'ACTIVE',
+                employeeId: data.employeeId || data.user?.employeeId || managed?.employeeId || '',
+                department: data.department || data.user?.department || managed?.department || '',
+                site: data.site || data.user?.site || managed?.site || '',
                 permissions: apiPerms || managed?.permissions,
-                permissionOverrides: (apiOverrides && apiOverrides.length > 0) ? apiOverrides : (managed?.permissionOverrides || []),
+                permissionOverrides: apiOverrides ?? (managed?.permissionOverrides || []),
             };
             setAuthData(data.token, user);
             return { token: data.token, user };
@@ -55,6 +62,9 @@ export const authAPI = {
                         email: localUser.email,
                         role: localUser.role,
                         status: localUser.status,
+                        employeeId: localUser.employeeId || '',
+                        department: localUser.department || '',
+                        site: localUser.site || '',
                         permissionOverrides: localUser.permissionOverrides || [],
                     };
                     setAuthData(fallbackToken, user);
