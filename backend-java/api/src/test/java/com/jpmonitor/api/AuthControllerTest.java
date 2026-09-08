@@ -89,6 +89,19 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/auth/users returns all users from database")
+    void testGetAllUsers() throws Exception {
+        when(userRepository.findAll()).thenReturn(List.of(testUser));
+
+        mockMvc.perform(get("/api/auth/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].username").value(TEST_USERNAME))
+                .andExpect(jsonPath("$[0].email").value("admin@jpmonitor.com"));
+
+        verify(userRepository).findAll();
+    }
+
+    @Test
     @DisplayName("POST /api/auth/login with valid credentials returns JWT token and user info")
     void testLoginWithValidCredentials() throws Exception {
         // Given
@@ -224,17 +237,7 @@ class AuthControllerTest {
         when(userRepository.findByUsernameIgnoreCase("newuser")).thenReturn(Optional.empty());
         when(roleRepository.findByCodeIgnoreCase("ROLE_MANAGER")).thenReturn(Optional.of(managerRole));
         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword123");
-
-        User savedUser = new User();
-        savedUser.setId(UUID.randomUUID());
-        savedUser.setUsername("newuser");
-        savedUser.setEmail("newuser@jpmonitor.com");
-        savedUser.setFullName("New User");
-        savedUser.setPasswordHash("encodedPassword123");
-        savedUser.setRole(managerRole);
-        savedUser.setIsActive(true);
-
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When/Then
         mockMvc.perform(post("/api/auth/register")
@@ -279,17 +282,7 @@ class AuthControllerTest {
         when(userRepository.findByUsernameIgnoreCase("operator_custom")).thenReturn(Optional.empty());
         when(roleRepository.findByCodeIgnoreCase("ROLE_OPERATOR")).thenReturn(Optional.of(operatorRole));
         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword123");
-
-        User savedUser = new User();
-        savedUser.setId(UUID.randomUUID());
-        savedUser.setUsername("operator_custom");
-        savedUser.setEmail("operator_custom@jpmonitor.com");
-        savedUser.setFullName("Custom Operator");
-        savedUser.setPasswordHash("encodedPassword123");
-        savedUser.setRole(operatorRole);
-        savedUser.setIsActive(true);
-
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -338,7 +331,7 @@ class AuthControllerTest {
 
         when(userRepository.findByUsernameIgnoreCase(TEST_USERNAME)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.encode("newpassword123")).thenReturn("encodedNewPassword");
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(put("/api/auth/users/" + TEST_USERNAME)
                         .contentType(MediaType.APPLICATION_JSON)
