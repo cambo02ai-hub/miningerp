@@ -3,12 +3,9 @@ import { inventoryAPI, equipmentAPI, locationsAPI } from '../services/api';
 import { SparePart, InventoryTransaction, InventoryTxType } from '../types';
 import {
   Search,
-  PackageCheck,
   AlertTriangle,
   RefreshCw,
   CheckCircle,
-  FileText,
-  Wrench,
   QrCode,
   SlidersHorizontal,
   Printer,
@@ -23,7 +20,6 @@ import {
   User,
   History,
   Box,
-  Check,
   Building
 } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';

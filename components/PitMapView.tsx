@@ -1426,8 +1426,8 @@ const PitMapView: React.FC<PitMapViewProps> = ({ locations = [], onAddLocation }
                             destination: Cesium.Cartesian3.fromDegrees(newPit.lng, newPit.lat, 8000),
                           });
                         }
-                      } catch (err) {
-                        console.warn('Cesium KML Data Source import fallback:', err);
+                      } catch (_err) {
+                        console.warn('Cesium KML Data Source import fallback:', _err);
                       }
                     }
 
