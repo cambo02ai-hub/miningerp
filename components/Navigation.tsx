@@ -112,8 +112,9 @@ const Navigation: React.FC<NavProps> = ({ currentUser, onLogout }) => {
 
         <nav className="flex-1 py-4 space-y-0.5 px-3 overflow-y-auto">
           {menuItems.map((item) => {
-            const isStockManager = normalizeRole(currentUser?.role) === 'STOCK_MANAGER';
-            if (isStockManager && item.id !== 'inventory') return null;
+            const userRole = normalizeRole(currentUser?.role);
+            if (userRole === 'STOCK_MANAGER' && item.id !== 'inventory') return null;
+            if (userRole === 'STORE_EMPLOYEE' && item.id !== 'store-inventory') return null;
             if (item.requiredPermission && !hasPermission(currentUser, item.requiredPermission)) return null;
             const Icon = item.icon;
             const to = item.id === 'dashboard' ? '/' : `/${item.id}`;

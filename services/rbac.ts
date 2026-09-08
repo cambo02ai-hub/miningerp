@@ -3,6 +3,7 @@ export type AppRole =
   | 'ADMIN'
   | 'MANAGER'
   | 'STOCK_MANAGER'
+  | 'STORE_EMPLOYEE'
   | 'SUPERVISOR'
   | 'OPERATOR'
   | 'VIEWER';
@@ -165,6 +166,14 @@ export const ROLE_DEFINITIONS: Array<{
     ),
   },
   {
+    value: 'STORE_EMPLOYEE',
+    label: 'စတိုဝန်ထမ်း',
+    description: 'စတို ပစ္စည်း ထုတ်ပေးခြင်းနှင့် နေ့စဉ်စတော့ စီမံဆောင်ရွက်မှုများသာ ပြုလုပ်နိုင်သည်။',
+    permissions: permissionKeys.filter((key) =>
+      ['inventory.view', 'inventory.create', 'inventory.edit'].includes(key),
+    ),
+  },
+  {
     value: 'SUPERVISOR',
     label: 'ကြီးကြပ်သူ',
     description: 'နေ့စဉ်လုပ်ငန်းဒေတာများကို ထည့်သွင်း၊ ပြင်ဆင်၊ စောင့်ကြည့်နိုင်သည်။',
@@ -198,6 +207,7 @@ export const normalizeRole = (role?: string | null): AppRole => {
   if (normalized === 'SUPER_ADMIN' || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMINISTRATOR') return 'SUPER_ADMIN';
   if (normalized === 'ADMIN' || normalized === 'ADMINISTRATOR' || normalized === 'SYSTEM_ADMIN' || normalized === 'SYSTEM_ADMINISTRATOR') return 'ADMIN';
   if (normalized === 'STOCK_MANAGER' || normalized === 'STOCKMANAGER') return 'STOCK_MANAGER';
+  if (normalized === 'STORE_EMPLOYEE' || normalized === 'STOREEMPLOYEE' || normalized === 'STORE_STAFF') return 'STORE_EMPLOYEE';
   if (normalized === 'MANAGER' || normalized === 'OPERATIONAL_MANAGER') return 'MANAGER';
   if (normalized === 'SUPERVISOR' || normalized === 'SITE_SUPERVISOR') return 'SUPERVISOR';
   if (normalized === 'OPERATOR' || normalized === 'OPERATIONAL_INPUT') return 'OPERATOR';
@@ -287,6 +297,34 @@ export const loadManagedUsers = (actor?: RBACUserLike | null): ManagedUser[] => 
       createdBy: 'စနစ်',
       password: 'nwenwekhant123',
     });
+  }
+
+  const storeEmployeeSeed = [
+    { username: 'store01', fullName: 'Store Staff 1', empId: 'EMP-STORE-01' },
+    { username: 'store02', fullName: 'Store Staff 2', empId: 'EMP-STORE-02' },
+    { username: 'store03', fullName: 'Store Staff 3', empId: 'EMP-STORE-03' },
+    { username: 'store04', fullName: 'Store Staff 4', empId: 'EMP-STORE-04' },
+    { username: 'store05', fullName: 'Store Staff 5', empId: 'EMP-STORE-05' },
+  ];
+
+  for (const emp of storeEmployeeSeed) {
+    if (!initialUsers.some((u) => u.username.toLowerCase() === emp.username)) {
+      initialUsers.push({
+        id: `seeded-${emp.username}`,
+        fullName: emp.fullName,
+        username: emp.username,
+        email: `${emp.username}@jpmonitor.com`,
+        employeeId: emp.empId,
+        department: 'စတော့ဌာန',
+        site: 'အဓိကလုပ်ငန်းခွင်',
+        role: 'STORE_EMPLOYEE',
+        status: 'ACTIVE',
+        permissionOverrides: [],
+        createdAt: new Date().toISOString(),
+        createdBy: 'စနစ်',
+        password: 'store123',
+      });
+    }
   }
 
   if (initialUsers.length > 0) saveManagedUsers(initialUsers);
