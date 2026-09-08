@@ -2,7 +2,7 @@ import { formatCurrency, formatDate, translateValue, translateStatus } from '../
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { employeesAPI, suppliersAPI, maintenanceAPI, equipmentAPI, inventoryAPI, mutationsAPI } from '../services/api';
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query';
 import { Wrench, X, Printer, PieChart } from 'lucide-react';
 import { Equipment, MaintenanceRecord, InventoryTransaction, SparePart } from '../types';
 import FleetDashboard from './FleetDashboard';
@@ -21,6 +21,7 @@ const calculateEquipmentFinancials = (
 ) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
 
     const periodLogs = maintenanceRecords.filter(log => {
         const d = new Date(log.startDate);
@@ -37,34 +38,34 @@ const calculateEquipmentFinancials = (
     let partsCost = 0;
     let storingCost = 0;
     let externalServiceCost = 0;
+    let totalManpowerHours = 0;
 
     const details: any[] = [];
 
     periodLogs.forEach(log => {
         const mCost = (log.mechanicStoringCost || 0) + (log.mechanicMealCost || 0) + (log.driverStoringCost || 0);
         const eCost = log.externalCost || 0;
+        let duration = log.durationHours || 0;
+        if (!duration && log.endDate && log.endTime && log.startTime) {
+            const s = new Date(`${log.startDate}T${log.startTime}`);
+            const e = new Date(`${log.endDate}T${log.endTime}`);
+            duration = Math.max(0, (e.getTime() - s.getTime()) / (1000 * 60 * 60));
+        }
+        const techCount = log.technicians && log.technicians.length > 0 ? log.technicians.length : 1;
+        if (log.serviceProvider === 'INTERNAL') {
+            totalManpowerHours += (duration * techCount);
+        }
 
         storingCost += mCost;
         externalServiceCost += eCost;
-
-        if (mCost > 0) {
+        if (mCost > 0 || eCost > 0) {
             details.push({
                 date: log.startDate,
-                type: 'Operational Overhead',
-                description: `WO: ${log.woNumber} (Meals/Allowances)`,
-                downtime: 0,
-                cost: mCost,
-                isCash: true
-            });
-        }
-
-        if (eCost > 0) {
-            details.push({
-                date: log.startDate,
-                type: 'External Service',
+                ref: log.woNumber,
+                type: log.serviceProvider === 'EXTERNAL' ? 'Vendor Invoice' : 'Operational OH',
                 description: `WO: ${log.woNumber} - ${log.description}`,
-                downtime: 0,
-                cost: eCost,
+                downtime: duration,
+                cost: mCost + eCost,
                 isCash: true
             });
         }
@@ -76,6 +77,7 @@ const calculateEquipmentFinancials = (
 
         details.push({
             date: tx.date,
+            ref: tx.id,
             type: 'Spare Parts',
             description: `Part Usage: ${tx.partId} (Qty: ${tx.quantity})`,
             downtime: 0,
@@ -85,12 +87,16 @@ const calculateEquipmentFinancials = (
     });
 
     const totalCashCost = partsCost + storingCost + externalServiceCost;
+    // Standard technician estimated internal rate (e.g. 15,000 MMK/hr)
+    const estimatedManpowerCost = Math.round(totalManpowerHours * 15000);
 
     return {
         totalCashCost,
         partsCost,
         storingCost,
         externalServiceCost,
+        estimatedManpowerCost,
+        totalManpowerHours,
         details: details.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     };
 };
@@ -103,6 +109,7 @@ const calculateAssetReliabilityMetrics = (
 ) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
 
     const totalDays = Math.max(1, (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     const totalPeriodHours = totalDays * 24;
@@ -120,7 +127,7 @@ const calculateAssetReliabilityMetrics = (
         if (!duration && log.endDate && log.endTime && log.startTime) {
             const s = new Date(`${log.startDate}T${log.startTime}`);
             const e = new Date(`${log.endDate}T${log.endTime}`);
-            duration = (e.getTime() - s.getTime()) / (1000 * 60 * 60);
+            duration = Math.max(0, (e.getTime() - s.getTime()) / (1000 * 60 * 60));
         }
 
         totalDowntimeHours += duration;
@@ -244,24 +251,24 @@ const FleetView: React.FC = () => {
     const loadReferenceData = useCallback(async () => {
         try {
             setLoading(true);
-            const empP = employeesAPI.getEmployees()
-            const supP = suppliersAPI.getSuppliers()
-            const maintP = maintenanceAPI.getMaintenanceRecords()
+            const empP = employeesAPI.getEmployees();
+            const supP = suppliersAPI.getSuppliers();
+            const maintP = maintenanceAPI.getMaintenanceRecords();
             await Promise.all([
                 qc.prefetchQuery({ queryKey: ['equipment'], queryFn: () => equipmentAPI.getEquipment() }),
                 qc.prefetchQuery({ queryKey: ['inventory', 'parts'], queryFn: () => inventoryAPI.getParts() }),
                 empP,
                 supP,
                 maintP
-            ])
-            const equipData = qc.getQueryData<any[]>(['equipment']) || []
-            const partsData = qc.getQueryData<any[]>(['inventory', 'parts']) || []
-            const [empData, supData, maintData] = await Promise.all([empP, supP, maintP])
-            setEmployees(empData)
-            setSuppliers(supData)
-            setMaintenanceRecords(maintData)
-            setEquipment(equipData)
-            setSpareParts(partsData)
+            ]);
+            const equipData = qc.getQueryData<any[]>(['equipment']) || [];
+            const partsData = qc.getQueryData<any[]>(['inventory', 'parts']) || [];
+            const [empData, supData, maintData] = await Promise.all([empP, supP, maintP]);
+            setEmployees(empData);
+            setSuppliers(supData);
+            setMaintenanceRecords(maintData);
+            setEquipment(equipData);
+            setSpareParts(partsData);
         } catch (err: any) {
             if (err?.name === 'AbortError') return;
             console.error('Failed to load reference data:', err);
@@ -343,6 +350,30 @@ const FleetView: React.FC = () => {
 
     const openDetails = async (eq: Equipment) => {
         setSelectedEquipment(eq);
+        setActiveModalTab('maintenance');
+        setEditingLog(null);
+        setLogForm({
+            startDate: new Date().toISOString().split('T')[0],
+            startTime: '08:00',
+            endDate: new Date().toISOString().split('T')[0],
+            endTime: '17:00',
+            type: 'Corrective',
+            priority: 'HIGH',
+            damageType: 'Hydraulic',
+            description: '',
+            notes: '',
+            status: 'OPEN',
+            serviceProvider: 'INTERNAL',
+            technicians: [],
+            mechanicStoringCost: 0,
+            mechanicMealCost: 0,
+            driverStoringCost: 0,
+            supplierId: '',
+            externalInvoiceNumber: '',
+            externalCost: 0,
+            useDriver: false
+        });
+        setTempUsedParts([]);
         
         try {
             const partsData = await inventoryAPI.getTransactions();
@@ -369,31 +400,6 @@ const FleetView: React.FC = () => {
             console.error("Failed to fetch mutations", err);
             setMutationHistory([]);
         }
-
-        setActiveModalTab('maintenance');
-        setEditingLog(null);
-        setLogForm({
-            startDate: new Date().toISOString().split('T')[0],
-            startTime: '08:00',
-            endDate: new Date().toISOString().split('T')[0],
-            endTime: '17:00',
-            type: 'Corrective',
-            priority: 'HIGH',
-            damageType: 'Hydraulic',
-            description: '',
-            notes: '',
-            status: 'OPEN',
-            serviceProvider: 'INTERNAL',
-            technicians: [],
-            mechanicStoringCost: 0,
-            mechanicMealCost: 0,
-            driverStoringCost: 0,
-            supplierId: '',
-            externalInvoiceNumber: '',
-            externalCost: 0,
-            useDriver: false
-        });
-        setTempUsedParts([]);
     };
 
     const handleOpenEdit = (log: MaintenanceRecord) => {
@@ -564,9 +570,16 @@ const FleetView: React.FC = () => {
         if (extPct > 50) primaryDriver = 'External Repairs';
 
         return { partsPct, fuelPct, extPct, primaryDriver };
-    }
+    };
 
     const ratios = getFinancialRatios();
+
+    const cphUnitCost = useMemo(() => {
+        if (!selectedEquipment || !financialData) return 0;
+        const totalMeter = selectedEquipment.hourMeter > 0 ? selectedEquipment.hourMeter : (selectedEquipment.kilometer || 0);
+        const divisor = totalMeter > 0 ? totalMeter : 1;
+        return Math.round(financialData.totalCashCost / divisor);
+    }, [selectedEquipment, financialData]);
 
     return (
         <div className="space-y-6">
@@ -678,7 +691,7 @@ const FleetView: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {financialData && (
+                                    {financialData ? (
                                         <div className="space-y-6">
                                             <div className="grid grid-cols-4 gap-4">
                                                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -710,7 +723,7 @@ const FleetView: React.FC = () => {
                                                 <div className="h-8 w-px bg-slate-300"></div>
                                                 <div>
                                                     <span className="text-xs text-slate-500 font-bold block">တစ်နာရီကုန်ကျစရိတ် (CPH)</span>
-                                                    <span className="text-sm font-mono text-slate-700">{formatCurrency(Math.round(financialData.totalCashCost / (selectedEquipment.hourMeter > 0 ? 100 : 1)))}/hr</span>
+                                                    <span className="text-sm font-mono text-slate-700">{formatCurrency(cphUnitCost)}/hr</span>
                                                 </div>
                                             </div>
 
@@ -726,7 +739,7 @@ const FleetView: React.FC = () => {
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
                                                     {financialData.details.map((d: any, i: number) => (
-                                                        <tr key={i} className={`hover:bg-slate-50 ${!d.isCash ? 'opacity-60 italic' : ''} `}>
+                                                        <tr key={i} className={`hover:bg-slate-50 ${!d.isCash ? 'opacity-60 italic' : ''}`}>
                                                             <td className="p-3 text-slate-600">{d.date}</td>
                                                             <td className="p-3 font-mono text-xs text-slate-500">{d.ref}</td>
                                                             <td className="p-3">
@@ -734,7 +747,7 @@ const FleetView: React.FC = () => {
                                                                     d.type === 'Operational OH' ? 'bg-amber-100 text-amber-700' :
                                                                         d.type === 'Vendor Invoice' ? 'bg-purple-100 text-purple-700' :
                                                                             'bg-slate-200 text-slate-600'
-                                                                    } `}>
+                                                                    }`}>
                                                                     {translateValue(d.type)}
                                                                 </span>
                                                             </td>
@@ -751,6 +764,10 @@ const FleetView: React.FC = () => {
                                                     </tr>
                                                 </tfoot>
                                             </table>
+                                        </div>
+                                    ) : (
+                                        <div className="p-8 text-center text-slate-400">
+                                            ကုန်ကျစရိတ် ဒေတာ တင်နေပါသည်...
                                         </div>
                                     )}
 
@@ -807,7 +824,7 @@ const FleetView: React.FC = () => {
 
                                                     {reliabilityData && (
                                                         <div className="grid grid-cols-4 gap-4 mb-6">
-                                                            <div className={`border p-4 rounded ${reliabilityData.pa >= 85 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} `}>
+                                                            <div className={`border p-4 rounded ${reliabilityData.pa >= 85 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                                                                 <span className="text-[10px] font-bold uppercase block mb-1">လက်တွေ့အသုံးပြုနိုင်မှု (PA)</span>
                                                                 <div className="text-2xl font-black">{reliabilityData.pa}%</div>
                                                                 <span className="text-[10px] font-medium">{reliabilityData.pa >= 85 ? 'ရည်မှန်းချက် ပြည့်မီသည် (>၈၅%)' : 'ရည်မှန်းချက်အောက်'}</span>
@@ -834,11 +851,11 @@ const FleetView: React.FC = () => {
                                                         </div>
                                                         <div className="border border-slate-200 p-4 rounded bg-slate-50">
                                                             <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">တစ်နာရီကုန်ကျစရိတ် (CPH)</span>
-                                                            <span className="text-xl font-bold text-slate-900">{formatCurrency(Math.round((financialData?.totalCashCost || 0) / (selectedEquipment.hourMeter > 0 ? 100 : 1)))}</span>
+                                                            <span className="text-xl font-bold text-slate-900">{formatCurrency(cphUnitCost)}</span>
                                                         </div>
                                                         <div className="border border-slate-200 p-4 rounded bg-slate-50">
                                                             <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">လက်ရှိ HM</span>
-                                                            <span className="text-xl font-bold text-slate-900">{selectedEquipment.hourMeter.toLocaleString()}</span>
+                                                            <span className="text-xl font-bold text-slate-900">{(selectedEquipment.hourMeter || 0).toLocaleString()}</span>
                                                         </div>
                                                         <div className="border border-slate-200 p-4 rounded bg-slate-50">
                                                             <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">အဓိကကုန်ကျစရိတ်ဖြစ်စေသောအချက်</span>
@@ -853,17 +870,17 @@ const FleetView: React.FC = () => {
 
                                                         <div className="w-full h-8 bg-slate-100 rounded flex overflow-hidden mb-2">
                                                             {ratios.partsPct > 0 && (
-                                                                <div style={{ width: `${ratios.partsPct}% ` }} className="bg-blue-600 h-full flex items-center justify-center text-[10px] font-bold text-white relative group">
+                                                                <div style={{ width: `${ratios.partsPct}%` }} className="bg-blue-600 h-full flex items-center justify-center text-[10px] font-bold text-white relative group">
                                                                     {ratios.partsPct}%
                                                                 </div>
                                                             )}
                                                             {ratios.fuelPct > 0 && (
-                                                                <div style={{ width: `${ratios.fuelPct}% ` }} className="bg-amber-500 h-full flex items-center justify-center text-[10px] font-bold text-white relative group">
+                                                                <div style={{ width: `${ratios.fuelPct}%` }} className="bg-amber-500 h-full flex items-center justify-center text-[10px] font-bold text-white relative group">
                                                                     {ratios.fuelPct}%
                                                                 </div>
                                                             )}
                                                             {ratios.extPct > 0 && (
-                                                                <div style={{ width: `${ratios.extPct}% ` }} className="bg-purple-600 h-full flex items-center justify-center text-[10px] font-bold text-white relative group">
+                                                                <div style={{ width: `${ratios.extPct}%` }} className="bg-purple-600 h-full flex items-center justify-center text-[10px] font-bold text-white relative group">
                                                                     {ratios.extPct}%
                                                                 </div>
                                                             )}
@@ -890,11 +907,11 @@ const FleetView: React.FC = () => {
                                                             <tbody>
                                                                 {reportLogs.length > 0 ? (
                                                                     reportLogs.map(log => (
-                                                                        <tr key={log.id} className={`border-b border-slate-200`}>
+                                                                        <tr key={log.id} className="border-b border-slate-200">
                                                                             <td className="p-2 border border-slate-200 align-top">
                                                                                 <div className="font-bold">{log.startDate}</div>
                                                                                 <div className="font-mono text-slate-500">{log.woNumber}</div>
-                                                                                <div className={`mt - 1 font - bold ${log.status === 'CLOSED' ? 'text-green-600' : 'text-red-600'} `}>
+                                                                                <div className={`mt-1 font-bold ${log.status === 'CLOSED' ? 'text-green-600' : 'text-red-600'}`}>
                                                                                     {translateStatus(log.status)}
                                                                                 </div>
                                                                             </td>
@@ -954,8 +971,8 @@ const FleetView: React.FC = () => {
                                                                             <td className="p-2 text-slate-600 font-mono">{d.date}</td>
                                                                             <td className="p-2 font-bold text-slate-700">{translateValue(d.type)}</td>
                                                                             <td className="p-2 text-slate-600">{d.description}</td>
-                                                                            <td className={`p - 2 text - right font - mono font - bold ${d.downtime > 0 ? 'text-red-600' : 'text-slate-300'} `}>{d.downtime > 0 ? d.downtime : '-'}</td>
-                                                                            <td className="p-2 text-right font-mono font-medium text-slate-800">{d.cost.toLocaleString()}</td>
+                                                                            <td className={`p-2 text-right font-mono font-bold ${d.downtime > 0 ? 'text-red-600' : 'text-slate-300'}`}>{d.downtime > 0 ? d.downtime : '-'}</td>
+                                                                            <td className="p-2 text-right font-mono font-medium text-slate-800">{(d.cost || 0).toLocaleString()}</td>
                                                                         </tr>
                                                                     ))}
                                                                     <tr className="bg-slate-50 font-bold border-t-2 border-slate-800 text-sm">

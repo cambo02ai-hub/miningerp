@@ -111,25 +111,31 @@ const FleetDashboard: React.FC = () => {
                         <Activity size={18} className="text-slate-400" /> Fleet Status Distribution
                     </h3>
                     <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={statusDistribution}
-                                    cx="50%" cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {statusDistribution.map((entry: any, index: number) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend verticalAlign="bottom" height={36} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        {statusDistribution.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={statusDistribution}
+                                        cx="50%" cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {statusDistribution.map((entry: any, index: number) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                                အချက်အလက် မရှိပါ
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -143,40 +149,53 @@ const FleetDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-2 space-y-3">
-                        {predictiveMaint.map((unit: any) => (
-                            <div key={unit.id} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`w-2 h-2 rounded-full ${unit.color.replace('bg-', 'text-').replace('500', '600')}`}></span>
-                                        <span className="font-bold text-slate-900">{unit.code}</span>
-                                        <span className="text-xs text-slate-500">{unit.model}</span>
-                                    </div>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${unit.urgency === 'Overdue' ? 'bg-red-100 text-red-700 animate-pulse' :
-                                            unit.urgency === 'Critical' ? 'bg-red-50 text-red-600' :
-                                                unit.urgency === 'Warning' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'
-                                        }`}>
-                                        {unit.urgency}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between text-xs text-slate-600 mb-1">
-                                    <span>နောက်တစ်ကြိမ်: <strong>{unit.serviceType}</strong></span>
-                                    <span>ပြုပြင်ရမည့် HM: {formatNumber(unit.nextServiceHM)} HM</span>
-                                </div>
-
-                                {/* Progress Bar */}
-                                <div className="w-full bg-slate-100 rounded-full h-2 mb-1">
-                                    <div
-                                        className={`h-2 rounded-full ${unit.color}`}
-                                        style={{ width: `${Math.min(100, (unit.currentHM / unit.nextServiceHM) * 100)}%` }}
-                                    ></div>
-                                </div>
-
-                                <div className="text-right text-[10px] text-slate-400">
-                                    {unit.hoursRemaining} hours remaining
-                                </div>
+                        {predictiveMaint.length === 0 ? (
+                            <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                                စစ်ဆေးရန် လိုအပ်သော ယာဉ်/စက် မရှိပါ။
                             </div>
-                        ))}
+                        ) : (
+                            predictiveMaint.map((unit: any) => {
+                                const nextHM = Number(unit.nextServiceHM) || 1;
+                                const currentHM = Number(unit.currentHM) || 0;
+                                const progressPct = Math.max(0, Math.min(100, (currentHM / nextHM) * 100));
+                                const badgeColor = unit.urgency === 'Overdue' ? 'bg-red-100 text-red-700 animate-pulse' :
+                                    unit.urgency === 'Critical' ? 'bg-red-50 text-red-600' :
+                                    unit.urgency === 'Warning' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600';
+                                const dotColor = (unit.color || 'bg-blue-500').replace('bg-', 'text-').replace('500', '600');
+
+                                return (
+                                    <div key={unit.id} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${dotColor}`}></span>
+                                                <span className="font-bold text-slate-900">{unit.code}</span>
+                                                <span className="text-xs text-slate-500">{unit.model}</span>
+                                            </div>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${badgeColor}`}>
+                                                {unit.urgency}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex justify-between text-xs text-slate-600 mb-1">
+                                            <span>နောက်တစ်ကြိမ်: <strong>{unit.serviceType}</strong></span>
+                                            <span>ပြုပြင်ရမည့် HM: {formatNumber(unit.nextServiceHM)} HM</span>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div className="w-full bg-slate-100 rounded-full h-2 mb-1">
+                                            <div
+                                                className={`h-2 rounded-full ${unit.color || 'bg-blue-500'}`}
+                                                style={{ width: `${progressPct}%` }}
+                                            ></div>
+                                        </div>
+
+                                        <div className="text-right text-[10px] text-slate-400">
+                                            {unit.hoursRemaining} hours remaining
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
             </div>
