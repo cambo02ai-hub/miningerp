@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import jsQR from "jsqr";
 import { authAPI } from "../services/api";
-import { LogIn, AlertCircle, Shield, Moon, Sun, QrCode, Upload, Scan, KeyRound } from "lucide-react";
+import { LogIn, AlertCircle, Shield, Moon, Sun, QrCode, Upload, Scan, KeyRound, UserCheck, Phone, CreditCard, Briefcase, MapPin } from "lucide-react";
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
+}
+
+interface ScannedEmployeeProfile {
+  fullName?: string;
+  username?: string;
+  phone?: string;
+  nrc?: string;
+  position?: string;
+  address?: string;
+  employeeId?: string;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
@@ -15,6 +25,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [loginTab, setLoginTab] = useState<"standard" | "qr">("standard");
   const [qrScanInput, setQrScanInput] = useState("");
   const [scanNotice, setScanNotice] = useState("");
+  const [scannedProfile, setScannedProfile] = useState<ScannedEmployeeProfile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
@@ -29,6 +40,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("jpmonitor-dark-mode", String(darkMode));
   }, [darkMode]);
+
+  const processQrTextPayload = (rawText: string) => {
+    try {
+      const parsed = JSON.parse(rawText);
+      if (typeof parsed === 'object' && parsed !== null) {
+        setScannedProfile(parsed);
+        const uname = parsed.username || parsed.employeeId || rawText;
+        setUsername(uname);
+        setScanNotice(`QR ID Badge Scan အောင်မြင်ပါသည် - ${parsed.fullName || uname}`);
+        setLoginTab("standard");
+        return;
+      }
+    } catch {
+      // Plain text fallback
+    }
+    setScannedProfile(null);
+    setUsername(rawText.trim());
+    setScanNotice(`Scanned Username/ID: ${rawText.trim()}`);
+    setLoginTab("standard");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +94,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           const imageData = ctx.getImageData(0, 0, img.width, img.height);
           const code = jsQR(imageData.data, imageData.width, imageData.height);
           if (code && code.data) {
-            const scannedVal = code.data.trim();
-            setUsername(scannedVal);
-            setScanNotice(`QR Code မှ အကောင့်အမည်/ID (${scannedVal}) ကို ရယူပြီးပါပြီ။`);
-            setLoginTab("standard");
+            processQrTextPayload(code.data.trim());
           } else {
             setError("QR Code ပုံရိပ်ကို ဖတ်၍ မရပါ။ ကျေးဇူးပြု၍ အကြည်လင်းဆုံး ပုံကို ရွေးချယ်ပါ။");
           }
@@ -80,11 +108,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const handleQrScanSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!qrScanInput.trim()) return;
-    const scannedVal = qrScanInput.trim();
-    setUsername(scannedVal);
-    setScanNotice(`Scanned Username/ID: ${scannedVal}`);
+    processQrTextPayload(qrScanInput.trim());
     setQrScanInput("");
-    setLoginTab("standard");
   };
 
   return (
@@ -170,6 +195,31 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </div>
             )}
 
+            {/* Scanned Employee Profile Card Display */}
+            {scannedProfile && (
+              <div className="mb-5 p-3.5 bg-bg-surface border border-border rounded-jpmonitor-lg text-xs space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-jpmonitor-red">
+                  <UserCheck size={16} />
+                  <span>{scannedProfile.fullName} ({scannedProfile.position || 'ဝန်ထမ်း'})</span>
+                </div>
+                {scannedProfile.phone && (
+                  <div className="flex items-center gap-2 text-text-muted">
+                    <Phone size={13} /> <span>ဖုန်း: {scannedProfile.phone}</span>
+                  </div>
+                )}
+                {scannedProfile.nrc && (
+                  <div className="flex items-center gap-2 text-text-muted">
+                    <CreditCard size={13} /> <span>မှတ်ပုံတင်: {scannedProfile.nrc}</span>
+                  </div>
+                )}
+                {scannedProfile.address && (
+                  <div className="flex items-center gap-2 text-text-muted">
+                    <MapPin size={13} /> <span>နေရပ်: {scannedProfile.address}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {loginTab === "qr" ? (
               <div className="space-y-5">
                 {error && (
@@ -211,7 +261,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                       type="text"
                       value={qrScanInput}
                       onChange={(e) => setQrScanInput(e.target.value)}
-                      placeholder="QR code text သို့မဟုတ် barcode..."
+                      placeholder="QR code text သို့မဟုတ် JSON..."
                       className="w-full pl-9 pr-4 py-2.5 border border-border rounded-jpmonitor bg-bg-surface text-text-primary text-sm focus:border-jpmonitor-red focus:outline-none"
                     />
                     <Scan size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
