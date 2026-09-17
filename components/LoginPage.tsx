@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import jsQR from "jsqr";
 import { authAPI } from "../services/api";
-import { LogIn, AlertCircle, Shield, Moon, Sun } from "lucide-react";
+import { LogIn, AlertCircle, Shield, Moon, Sun, QrCode, Upload, Scan, KeyRound } from "lucide-react";
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -11,6 +12,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginTab, setLoginTab] = useState<"standard" | "qr">("standard");
+  const [qrScanInput, setQrScanInput] = useState("");
+  const [scanNotice, setScanNotice] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("jpmonitor-dark-mode");
@@ -37,6 +42,49 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQrFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError("");
+    setScanNotice("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, img.width, img.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code && code.data) {
+            const scannedVal = code.data.trim();
+            setUsername(scannedVal);
+            setScanNotice(`QR Code မှ အကောင့်အမည်/ID (${scannedVal}) ကို ရယူပြီးပါပြီ။`);
+            setLoginTab("standard");
+          } else {
+            setError("QR Code ပုံရိပ်ကို ဖတ်၍ မရပါ။ ကျေးဇူးပြု၍ အကြည်လင်းဆုံး ပုံကို ရွေးချယ်ပါ။");
+          }
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleQrScanSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!qrScanInput.trim()) return;
+    const scannedVal = qrScanInput.trim();
+    setUsername(scannedVal);
+    setScanNotice(`Scanned Username/ID: ${scannedVal}`);
+    setQrScanInput("");
+    setLoginTab("standard");
   };
 
   return (
@@ -88,15 +136,95 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </span>
             </div>
 
-            <div className="mb-8">
+            <div className="mb-6">
               <h2 className="text-text-primary text-2xl font-light tracking-tight mb-2" style={{ letterSpacing: "-0.02em" }}>
                 Sign in to your account
               </h2>
               <p className="text-text-muted text-sm">
-                Enter your credentials to access the dashboard
+                Enter your credentials or scan QR Badge to access the dashboard
               </p>
             </div>
 
+            {/* Login Mode Toggle Tabs */}
+            <div className="flex border-b border-border mb-6">
+              <button
+                type="button"
+                onClick={() => { setLoginTab("standard"); setError(""); }}
+                className={`flex-1 py-2.5 text-xs font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${loginTab === "standard" ? "border-jpmonitor-red text-jpmonitor-red" : "border-transparent text-text-muted hover:text-text-primary"}`}
+              >
+                <KeyRound size={15} /> Standard Login
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLoginTab("qr"); setError(""); }}
+                className={`flex-1 py-2.5 text-xs font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${loginTab === "qr" ? "border-jpmonitor-red text-jpmonitor-red" : "border-transparent text-text-muted hover:text-text-primary"}`}
+              >
+                <QrCode size={15} /> QR Badge Scan
+              </button>
+            </div>
+
+            {scanNotice && (
+              <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-jpmonitor text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
+                <Scan size={16} className="text-emerald-600 flex-shrink-0" />
+                <span>{scanNotice}</span>
+              </div>
+            )}
+
+            {loginTab === "qr" ? (
+              <div className="space-y-5">
+                {error && (
+                  <div className="flex items-start gap-3 p-4 bg-jpmonitor-red-subtle border border-status-success-border rounded-jpmonitor">
+                    <AlertCircle size={18} className="text-jpmonitor-red flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-jpmonitor-red">{error}</p>
+                  </div>
+                )}
+
+                {/* File Upload QR Option */}
+                <div className="border-2 border-dashed border-border rounded-jpmonitor p-6 text-center hover:border-jpmonitor-red/50 transition-colors bg-bg-surface">
+                  <QrCode size={36} className="mx-auto text-jpmonitor-red mb-2" />
+                  <p className="text-xs font-medium text-text-primary mb-1">QR Code ID Badge ပုံရိပ် တင်သွင်းရန်</p>
+                  <p className="text-[11px] text-text-muted mb-3">PNG, JPG သို့မဟုတ် WebP ပုံရိပ် ဖတ်ရှုနိုင်ပါသည်</p>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleQrFileUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium bg-jpmonitor-red text-white rounded-jpmonitor hover:bg-jpmonitor-red-hover transition-colors"
+                  >
+                    <Upload size={14} /> ပုံရိပ် ရွေးချယ်မည်
+                  </button>
+                </div>
+
+                {/* QR Hardware Gun / Direct Scan Field */}
+                <form onSubmit={handleQrScanSubmit} className="space-y-3">
+                  <label htmlFor="qr-hardware-input" className="block text-xs font-medium text-text-secondary">
+                    သို့မဟုတ် Hardware QR Scanner ဖြင့် တိုက်ရိုက် ဖတ်ရှုရန်
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="qr-hardware-input"
+                      type="text"
+                      value={qrScanInput}
+                      onChange={(e) => setQrScanInput(e.target.value)}
+                      placeholder="QR code text သို့မဟုတ် barcode..."
+                      className="w-full pl-9 pr-4 py-2.5 border border-border rounded-jpmonitor bg-bg-surface text-text-primary text-sm focus:border-jpmonitor-red focus:outline-none"
+                    />
+                    <Scan size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-bg-elevated text-text-primary border border-border hover:bg-bg-surface font-medium text-xs rounded-jpmonitor transition-colors"
+                  >
+                    Username ဖြည့်သွင်းမည်
+                  </button>
+                </form>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="flex items-start gap-3 p-4 bg-jpmonitor-red-subtle border border-status-success-border rounded-jpmonitor">
@@ -157,6 +285,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 )}
               </button>
             </form>
+            )}
 
             <div className="mt-8 pt-6 border-t border-border">
               <p className="text-xs text-text-muted text-center">
