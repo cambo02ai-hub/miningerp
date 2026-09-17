@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Edit3, KeyRound, Lock, Plus, Search, ShieldCheck, Trash2, UserRound, UsersRound, X } from 'lucide-react';
+import { Check, Edit3, KeyRound, Lock, Plus, QrCode, Search, ShieldCheck, Trash2, UserRound, UsersRound, X } from 'lucide-react';
 import { authAPI } from '../services/api';
+import UserQRCodeModal from './UserQRCodeModal';
 import { setAuthData } from '../services/authStorage';
 import { formatDateTime } from '../utils/locale';
 import {
@@ -67,6 +68,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
   const [permissionSearch, setPermissionSearch] = useState('');
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [qrUser, setQrUser] = useState<ManagedUser | null>(null);
 
   const allowed = isSuperAdmin(currentUser) || hasPermission(currentUser, 'user_management.manage');
 
@@ -272,6 +274,9 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
       recordRBACAudit(editingUser ? 'USER_UPDATED' : 'USER_CREATED', nextUser.username, `${ROLE_LABELS[nextUser.role]} / ${statusLabels[nextUser.status]}`, currentUser);
       setNotice({ type: 'success', text: editingUser ? 'Account အချက်အလက်များကို ပြင်ဆင်ပြီးပါပြီ။' : 'Account အသစ် ဖန်တီးပြီးပါပြီ။' });
       setIsModalOpen(false);
+      if (!editingUser) {
+        setQrUser(nextUser);
+      }
     } catch (error: any) {
       setNotice({ type: 'error', text: error?.message || 'Account ဖန်တီး/ပြင်ဆင်ရာတွင် အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်။' });
     } finally {
@@ -392,7 +397,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
                     <td className="px-5 py-4"><span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-bg-elevated text-text-secondary">{ROLE_LABELS[user.role]}</span></td>
                     <td className="px-5 py-4"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-status-success-bg text-status-success' : user.status === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-jpmonitor-red-subtle text-jpmonitor-red'}`}>{statusLabels[user.status]}</span></td>
                     <td className="px-5 py-4 text-xs text-text-muted">{user.lastLoginAt ? formatDateTime(user.lastLoginAt) : 'မဝင်ရောက်ရသေးပါ'}</td>
-                    <td className="px-5 py-4"><div className="flex justify-end gap-1"><button onClick={() => openEdit(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ပြင်ဆင်ရန်"><Edit3 size={16} /></button><button onClick={() => toggleStatus(user)} className="p-2 text-text-muted hover:text-amber-600 hover:bg-amber-50 rounded-jpmonitor" title={user.status === 'ACTIVE' ? 'ယာယီပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}><Lock size={16} /></button><button onClick={() => deleteUser(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ဖယ်ရှားရန်"><Trash2 size={16} /></button></div></td>
+                    <td className="px-5 py-4"><div className="flex justify-end gap-1"><button onClick={() => setQrUser(user)} className="p-2 text-text-muted hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-jpmonitor" title="QR Code / ID Badge ထုတ်ရန်"><QrCode size={16} /></button><button onClick={() => openEdit(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ပြင်ဆင်ရန်"><Edit3 size={16} /></button><button onClick={() => toggleStatus(user)} className="p-2 text-text-muted hover:text-amber-600 hover:bg-amber-50 rounded-jpmonitor" title={user.status === 'ACTIVE' ? 'ယာယီပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}><Lock size={16} /></button><button onClick={() => deleteUser(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ဖယ်ရှားရန်"><Trash2 size={16} /></button></div></td>
                   </tr>
                 ))}
                 {filteredUsers.length === 0 && <tr><td colSpan={6} className="px-5 py-12 text-center text-text-muted">ကိုက်ညီသော Account မတွေ့ပါ။</td></tr>}
@@ -421,6 +426,10 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
             </div>
           </div>
         </div>
+      )}
+
+      {qrUser && (
+        <UserQRCodeModal user={qrUser} onClose={() => setQrUser(null)} />
       )}
 
       {isModalOpen && (
