@@ -42,6 +42,11 @@ export interface ManagedUser {
   employeeId: string;
   department: string;
   site: string;
+  phone?: string;
+  nrc?: string;
+  address?: string;
+  position?: string;
+  photoUrl?: string;
   role: AppRole;
   status: AccountStatus;
   permissions?: PermissionKey[];

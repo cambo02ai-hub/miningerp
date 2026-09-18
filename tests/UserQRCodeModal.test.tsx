@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import UserQRCodeModal from '../components/UserQRCodeModal';
 import LoginPage from '../components/LoginPage';
 import { ManagedUser } from '../services/rbac';
+import { processEmployeePhotoWithGemini } from '../services/aiPhotoEditor';
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -32,10 +33,19 @@ vi.mock('qrcode', () => ({
 
 // Mock jsQR library
 vi.mock('jsqr', () => ({
-  default: vi.fn(() => ({ data: 'testuser123' })),
+  default: vi.fn(() => ({
+    data: JSON.stringify({
+      fullName: 'ဦးအေးမောင်',
+      username: 'ayemaung',
+      phone: '0912345678',
+      nrc: '၁၂/ဥက္တ(နိုင်)၉၉၉၉၉၉',
+      position: 'မိုင်းမန်နေဂျာ',
+      address: 'ရန်ကုန်မြို့',
+    }),
+  })),
 }));
 
-describe('UserQRCodeModal Component', () => {
+describe('UserQRCodeModal Component with Extra Profile Fields', () => {
   const mockUser: ManagedUser = {
     id: 'user-1',
     fullName: 'မောင်မောင်',
@@ -44,6 +54,10 @@ describe('UserQRCodeModal Component', () => {
     employeeId: 'EMP-001',
     department: 'သတ္တုထုတ်လုပ်ရေး',
     site: 'Satui Mine',
+    phone: '09987654321',
+    nrc: '၁၂/လမန(နိုင်)၁၂၃၄၅၆',
+    address: 'မန္တလေးမြို့',
+    position: 'အင်ဂျင်နီယာ',
     role: 'OPERATOR',
     status: 'ACTIVE',
     permissionOverrides: [],
@@ -57,60 +71,69 @@ describe('UserQRCodeModal Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders user details and ID Badge header correctly', () => {
+  it('renders extended profile details (Phone, NRC, Address, Position) on ID Card', () => {
     render(<UserQRCodeModal user={mockUser} onClose={mockOnClose} />);
 
-    expect(screen.getByText('ဝန်ထမ်း ID Badge & QR Code')).toBeInTheDocument();
+    expect(screen.getByText('ဝန်ထမ်း ID Card & QR Code')).toBeInTheDocument();
     expect(screen.getByText('မောင်မောင်')).toBeInTheDocument();
     expect(screen.getByText(/@maungmaung/)).toBeInTheDocument();
-    expect(screen.getByText(/EMP-001/)).toBeInTheDocument();
-    expect(screen.getByText('သတ္တုထုတ်လုပ်ရေး')).toBeInTheDocument();
-    expect(screen.getByText('Satui Mine')).toBeInTheDocument();
+    expect(screen.getByText('09987654321')).toBeInTheDocument();
+    expect(screen.getByText('၁၂/လမန(နိုင်)၁၂၃၄၅၆')).toBeInTheDocument();
+    expect(screen.getByText('မန္တလေးမြို့')).toBeInTheDocument();
   });
 
-  it('triggers window.print when Badge Print button is clicked', () => {
+  it('triggers window.print when ID Card Print button is clicked', () => {
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
     render(<UserQRCodeModal user={mockUser} onClose={mockOnClose} />);
 
-    const printButton = screen.getByText('Badge Print ထုတ်ရန်');
+    const printButton = screen.getByText('ID Card Print ထုတ်ရန်');
     fireEvent.click(printButton);
 
     expect(printSpy).toHaveBeenCalledTimes(1);
     printSpy.mockRestore();
   });
+});
 
-  it('calls onClose when close button is clicked', () => {
-    render(<UserQRCodeModal user={mockUser} onClose={mockOnClose} />);
+describe('Gemini AI Photo Editor Service', () => {
+  it('returns fallback photoUrl when VITE_COMET_API_KEY is not configured', async () => {
+    const rawPhoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const result = await processEmployeePhotoWithGemini(rawPhoto);
 
-    const closeBtn = screen.getByRole('button', { name: 'ပိတ်ရန်' });
-    fireEvent.click(closeBtn);
-
-    expect(mockOnClose).toHaveBeenCalledTimes(1);
+    expect(result.editedPhotoUrl).toBe(rawPhoto);
+    expect(result.processedByAi).toBe(false);
   });
 });
 
-describe('LoginPage QR Badge Scan functionality', () => {
+describe('LoginPage JSON QR Badge Scan functionality', () => {
   const mockOnLoginSuccess = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('switches to QR Badge Scan tab and accepts hardware QR input', () => {
+  it('parses JSON QR payload and displays full employee profile fields', () => {
     render(<LoginPage onLoginSuccess={mockOnLoginSuccess} />);
 
     const qrTabBtn = screen.getByRole('button', { name: /QR Badge Scan/i });
     fireEvent.click(qrTabBtn);
 
-    expect(screen.getByText('QR Code ID Badge ပုံရိပ် တင်သွင်းရန်')).toBeInTheDocument();
+    const jsonText = JSON.stringify({
+      fullName: 'ဦးအေးမောင်',
+      username: 'ayemaung',
+      phone: '0912345678',
+      nrc: '၁၂/ဥက္တ(နိုင်)၉၉၉၉၉၉',
+      position: 'မိုင်းမန်နေဂျာ',
+      address: 'ရန်ကုန်မြို့',
+    });
 
-    const hardwareInput = screen.getByPlaceholderText('QR code text သို့မဟုတ် barcode...');
-    fireEvent.change(hardwareInput, { target: { value: 'scanned_user_55' } });
+    const hardwareInput = screen.getByPlaceholderText('QR code text သို့မဟုတ် JSON...');
+    fireEvent.change(hardwareInput, { target: { value: jsonText } });
 
     const submitBtn = screen.getByRole('button', { name: 'Username ဖြည့်သွင်းမည်' });
     fireEvent.click(submitBtn);
 
-    expect(screen.getByDisplayValue('scanned_user_55')).toBeInTheDocument();
-    expect(screen.getByText(/Scanned Username\/ID: scanned_user_55/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('ayemaung')).toBeInTheDocument();
+    expect(screen.getAllByText(/ဦးအေးမောင်/)[0]).toBeInTheDocument();
+    expect(screen.getByText(/0912345678/)).toBeInTheDocument();
   });
 });

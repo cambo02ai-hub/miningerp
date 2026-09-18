@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Edit3, KeyRound, Lock, Plus, QrCode, Search, ShieldCheck, Trash2, UserRound, UsersRound, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Edit3, KeyRound, Lock, Plus, QrCode, Search, ShieldCheck, Trash2, UserRound, UsersRound, X, Settings, Upload, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { authAPI } from '../services/api';
 import UserQRCodeModal from './UserQRCodeModal';
 import { setAuthData } from '../services/authStorage';
@@ -20,6 +20,8 @@ import {
   recordRBACAudit,
   saveManagedUsers,
 } from '../services/rbac';
+import { getIdCardDesignSettings, saveIdCardDesignSettings, IDCardDesignSettings } from '../services/idCardSettings';
+import { processEmployeePhotoWithGemini } from '../services/aiPhotoEditor';
 
 interface UserManagementViewProps {
   currentUser: any;
@@ -32,6 +34,11 @@ type AccountForm = {
   employeeId: string;
   department: string;
   site: string;
+  phone: string;
+  nrc: string;
+  address: string;
+  position: string;
+  photoUrl: string;
   role: AppRole;
   status: AccountStatus;
   password: string;
@@ -45,6 +52,11 @@ const emptyForm = (): AccountForm => ({
   employeeId: '',
   department: '',
   site: '',
+  phone: '',
+  nrc: '',
+  address: '',
+  position: '',
+  photoUrl: '',
   role: 'OPERATOR',
   status: 'ACTIVE',
   password: '',
@@ -68,7 +80,15 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
   const [permissionSearch, setPermissionSearch] = useState('');
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [aiProcessing, setAiProcessing] = useState(false);
   const [qrUser, setQrUser] = useState<ManagedUser | null>(null);
+
+  // ID Card Design Settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [cardSettings, setCardSettings] = useState<IDCardDesignSettings>(getIdCardDesignSettings());
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const uniformInputRef = useRef<HTMLInputElement>(null);
 
   const allowed = isSuperAdmin(currentUser) || hasPermission(currentUser, 'user_management.manage');
 
@@ -84,6 +104,11 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
           employeeId: u.employeeId || '',
           department: u.department || '',
           site: u.site || '',
+          phone: u.phone || '',
+          nrc: u.nrc || '',
+          address: u.address || '',
+          position: u.position || '',
+          photoUrl: u.photoUrl || u.photo_url || '',
           role: normalizeRole(u.role),
           status: (u.status || 'ACTIVE') as AccountStatus,
           permissions: u.permissions,
@@ -110,7 +135,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     const query = searchTerm.trim().toLowerCase();
     if (!query) return users;
     return users.filter((user) =>
-      [user.fullName, user.username, user.email, user.department, user.site, ROLE_LABELS[user.role]]
+      [user.fullName, user.username, user.email, user.department, user.site, user.phone, user.nrc, user.position, ROLE_LABELS[user.role]]
         .join(' ')
         .toLowerCase()
         .includes(query),
@@ -141,6 +166,11 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
       employeeId: user.employeeId,
       department: user.department,
       site: user.site,
+      phone: user.phone || '',
+      nrc: user.nrc || '',
+      address: user.address || '',
+      position: user.position || '',
+      photoUrl: user.photoUrl || '',
       role: user.role,
       status: user.status,
       password: '',
@@ -156,6 +186,48 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
 
   const updateField = <K extends keyof AccountForm>(field: K, value: AccountForm[K]) => {
     setForm((previous) => ({ ...previous, [field]: value }));
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const rawUrl = event.target?.result as string;
+      updateField('photoUrl', rawUrl);
+
+      // Auto process with Gemini AI
+      setAiProcessing(true);
+      try {
+        const res = await processEmployeePhotoWithGemini(rawUrl);
+        if (res.editedPhotoUrl) {
+          updateField('photoUrl', res.editedPhotoUrl);
+        }
+        setNotice({ type: 'success', text: res.message });
+      } catch {
+        // Keep uploaded photo
+      } finally {
+        setAiProcessing(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleManualAiEdit = async () => {
+    if (!form.photoUrl) return;
+    setAiProcessing(true);
+    try {
+      const res = await processEmployeePhotoWithGemini(form.photoUrl);
+      if (res.editedPhotoUrl) {
+        updateField('photoUrl', res.editedPhotoUrl);
+      }
+      setNotice({ type: 'success', text: res.message });
+    } catch {
+      setNotice({ type: 'error', text: 'AI Photo processing မအောင်မြင်ပါ။' });
+    } finally {
+      setAiProcessing(false);
+    }
   };
 
   const isPermissionChecked = (permission: PermissionKey): boolean => {
@@ -212,6 +284,11 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         employeeId: form.employeeId.trim(),
         department: form.department.trim(),
         site: form.site.trim(),
+        phone: form.phone.trim(),
+        nrc: form.nrc.trim(),
+        address: form.address.trim(),
+        position: form.position.trim(),
+        photoUrl: form.photoUrl,
         role: form.role,
         status: form.status,
         permissions: ROLE_DEFINITIONS.find((role) => role.value === form.role)?.permissions ?? [],
@@ -247,6 +324,11 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         employeeId: form.employeeId.trim(),
         department: form.department.trim(),
         site: form.site.trim(),
+        phone: form.phone.trim(),
+        nrc: form.nrc.trim(),
+        address: form.address.trim(),
+        position: form.position.trim(),
+        photoUrl: form.photoUrl,
         role: form.role,
         status: form.status,
         permissionOverrides: form.permissionOverrides,
@@ -282,6 +364,13 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveCardSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveIdCardDesignSettings(cardSettings);
+    setIsSettingsOpen(false);
+    setNotice({ type: 'success', text: 'ID Card ဒီဇိုင်း အعدادသတ်မှတ်မှုများကို သိမ်းဆည်းပြီးပါပြီ။' });
   };
 
   const toggleStatus = async (user: ManagedUser) => {
@@ -334,12 +423,21 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
             <div className="p-2.5 rounded-jpmonitor bg-jpmonitor-red-subtle text-jpmonitor-red"><ShieldCheck size={22} /></div>
             <h2 className="text-2xl font-semibold text-text-primary">User နှင့် Permission စီမံခန့်ခွဲမှု</h2>
           </div>
-          <p className="text-sm text-text-muted">Super Admin သည် Account ဖန်တီးခြင်း၊ Role သတ်မှတ်ခြင်းနှင့် Permission ခွဲဝေပေးခြင်းကို စီမံနိုင်ပါသည်။</p>
+          <p className="text-sm text-text-muted">Super Admin သည် Account ဖန်တီးခြင်း၊ Role သတ်မှတ်ခြင်း၊ Photo နှင့် ID Card Reference သတ်မှတ်ခြင်းကို စီမံနိုင်ပါသည်။</p>
         </div>
         {activeTab === 'users' && (
-          <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 bg-jpmonitor-red hover:bg-jpmonitor-red-hover text-white px-4 py-2.5 rounded-jpmonitor font-medium transition-colors">
-            <Plus size={18} /> Account အသစ်ဖန်တီးရန်
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="inline-flex items-center justify-center gap-2 border border-border bg-bg-surface hover:bg-bg-elevated text-text-primary px-3.5 py-2.5 rounded-jpmonitor font-medium text-sm transition-colors"
+              title="ID Card ဒီဇိုင်း Reference သတ်မှတ်ရန်"
+            >
+              <Settings size={17} /> ID Card Settings
+            </button>
+            <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 bg-jpmonitor-red hover:bg-jpmonitor-red-hover text-white px-4 py-2.5 rounded-jpmonitor font-medium transition-colors">
+              <Plus size={18} /> Account အသစ်ဖန်တီးရန်
+            </button>
+          </div>
         )}
       </div>
 
@@ -364,12 +462,12 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
           <div className="p-4 border-b border-border flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div>
               <h3 className="font-semibold text-text-primary">အသုံးပြုသူစာရင်း</h3>
-              <p className="text-xs text-text-muted mt-1">Role နှင့် Account status ကို တစ်နေရာတည်းမှ စီမံပါ။</p>
+              <p className="text-xs text-text-muted mt-1">Role၊ Photo နှင့် Account status ကို တစ်နေရာတည်းမှ စီမံပါ။</p>
             </div>
             <div className="relative w-full md:w-72">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <label htmlFor="user-management-search" className="sr-only">အသုံးပြုသူ ရှာရန်</label>
-              <input id="user-management-search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="အမည်၊ Username၊ Role ရှာရန်..." className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" />
+              <input id="user-management-search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="အမည်၊ Username၊ ဖုန်း၊ NRC ရှာရန်..." className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" />
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -377,10 +475,10 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
               <thead className="bg-bg-elevated text-text-muted border-b border-border">
                 <tr>
                   <th className="px-5 py-3 font-medium">အသုံးပြုသူ</th>
-                  <th className="px-5 py-3 font-medium">ဌာန / လုပ်ငန်းခွင်</th>
+                  <th className="px-5 py-3 font-medium">ရာထူး / ဌာန</th>
+                  <th className="px-5 py-3 font-medium">ဖုန်း / မှတ်ပုံတင်</th>
                   <th className="px-5 py-3 font-medium">Role</th>
                   <th className="px-5 py-3 font-medium">အခြေအနေ</th>
-                  <th className="px-5 py-3 font-medium">နောက်ဆုံးဝင်ရောက်မှု</th>
                   <th className="px-5 py-3 font-medium text-right">လုပ်ဆောင်ချက်</th>
                 </tr>
               </thead>
@@ -389,14 +487,29 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
                   <tr key={user.id} className="hover:bg-bg-elevated transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-jpmonitor-red-subtle text-jpmonitor-red flex items-center justify-center"><UserRound size={17} /></div>
-                        <div><p className="font-medium text-text-primary">{user.fullName}</p><p className="text-xs text-text-muted">@{user.username}{user.email ? ` · ${user.email}` : ''}</p></div>
+                        {user.photoUrl ? (
+                          <img src={user.photoUrl} alt={user.fullName} className="w-10 h-10 rounded-full object-cover border border-slate-300 shadow-sm" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-jpmonitor-red-subtle text-jpmonitor-red flex items-center justify-center font-bold text-sm">
+                            <UserRound size={18} />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-text-primary">{user.fullName}</p>
+                          <p className="text-xs text-text-muted">@{user.username}{user.employeeId ? ` · ${user.employeeId}` : ''}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-text-secondary"><div>{user.department || '—'}</div><div className="text-xs text-text-muted">{user.site || '—'}</div></td>
+                    <td className="px-5 py-4 text-text-secondary">
+                      <div className="font-medium text-xs text-text-primary">{user.position || user.role}</div>
+                      <div className="text-xs text-text-muted">{user.department || '—'} ({user.site || '—'})</div>
+                    </td>
+                    <td className="px-5 py-4 text-text-secondary text-xs">
+                      <div>{user.phone || '—'}</div>
+                      <div className="text-text-muted">{user.nrc || '—'}</div>
+                    </td>
                     <td className="px-5 py-4"><span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-bg-elevated text-text-secondary">{ROLE_LABELS[user.role]}</span></td>
                     <td className="px-5 py-4"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-status-success-bg text-status-success' : user.status === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-jpmonitor-red-subtle text-jpmonitor-red'}`}>{statusLabels[user.status]}</span></td>
-                    <td className="px-5 py-4 text-xs text-text-muted">{user.lastLoginAt ? formatDateTime(user.lastLoginAt) : 'မဝင်ရောက်ရသေးပါ'}</td>
                     <td className="px-5 py-4"><div className="flex justify-end gap-1"><button onClick={() => setQrUser(user)} className="p-2 text-text-muted hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-jpmonitor" title="QR Code / ID Badge ထုတ်ရန်"><QrCode size={16} /></button><button onClick={() => openEdit(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ပြင်ဆင်ရန်"><Edit3 size={16} /></button><button onClick={() => toggleStatus(user)} className="p-2 text-text-muted hover:text-amber-600 hover:bg-amber-50 rounded-jpmonitor" title={user.status === 'ACTIVE' ? 'ယာယီပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}><Lock size={16} /></button><button onClick={() => deleteUser(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ဖယ်ရှားရန်"><Trash2 size={16} /></button></div></td>
                   </tr>
                 ))}
@@ -432,19 +545,162 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         <UserQRCodeModal user={qrUser} onClose={() => setQrUser(null)} />
       )}
 
+      {/* ID Card Reference Design Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border rounded-jpmonitor-lg shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-bg-elevated">
+              <div className="flex items-center gap-2 font-semibold text-text-primary">
+                <Settings className="text-jpmonitor-red" size={20} />
+                <span>ID Card ဒီဇိုင်း Reference သတ်မှတ်ရန်</span>
+              </div>
+              <button onClick={() => setIsSettingsOpen(false)} className="p-1 text-text-muted hover:text-text-primary"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleSaveCardSettings} className="p-5 space-y-4 text-xs">
+              <label className="block space-y-1">
+                <span className="font-medium text-text-secondary">ကုမ္ပဏီအမည် (Company Name)</span>
+                <input
+                  value={cardSettings.companyName}
+                  onChange={(e) => setCardSettings({ ...cardSettings, companyName: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-jpmonitor bg-bg-page text-text-primary"
+                  required
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="font-medium text-text-secondary">စာတန်းငယ် (Sub-title / Tagline)</span>
+                <input
+                  value={cardSettings.companySubTitle}
+                  onChange={(e) => setCardSettings({ ...cardSettings, companySubTitle: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-jpmonitor bg-bg-page text-text-primary"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="font-medium text-text-secondary">Card Badge ခေါင်းစဉ်</span>
+                <input
+                  value={cardSettings.badgeTitle}
+                  onChange={(e) => setCardSettings({ ...cardSettings, badgeTitle: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-jpmonitor bg-bg-page text-text-primary"
+                />
+              </label>
+              <div className="space-y-1">
+                <span className="font-medium text-text-secondary">Reference Uniform Photo (ဝတ်စုံ / Background Reference)</span>
+                <div className="flex items-center gap-3">
+                  {cardSettings.referenceUniformPhotoUrl ? (
+                    <img src={cardSettings.referenceUniformPhotoUrl} alt="Uniform Ref" className="w-12 h-14 object-cover rounded border border-border" />
+                  ) : (
+                    <div className="w-12 h-14 bg-bg-elevated rounded border border-border flex items-center justify-center text-text-muted">
+                      <ImageIcon size={20} />
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    ref={uniformInputRef}
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const r = new FileReader();
+                        r.onload = (ev) => setCardSettings({ ...cardSettings, referenceUniformPhotoUrl: ev.target?.result as string });
+                        r.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => uniformInputRef.current?.click()}
+                    className="px-3 py-1.5 border border-border rounded-jpmonitor bg-bg-elevated hover:bg-bg-surface text-text-primary"
+                  >
+                    <Upload size={14} className="inline mr-1" /> Reference ဝတ်စုံပုံ တင်ရန်
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                <button type="button" onClick={() => setIsSettingsOpen(false)} className="px-3 py-2 rounded-jpmonitor text-text-secondary hover:bg-bg-elevated">
+                  ပယ်ဖျက်ရန်
+                </button>
+                <button type="submit" className="px-4 py-2 bg-jpmonitor-red text-white rounded-jpmonitor hover:bg-jpmonitor-red-hover font-medium">
+                  သိမ်းဆည်းမည်
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* User Create/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-bg-surface border border-border rounded-jpmonitor-lg shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
-            <div className="p-5 border-b border-border flex items-start justify-between sticky top-0 bg-bg-surface z-10"><div><h3 className="text-xl font-semibold text-text-primary">{editingUser ? 'Account ပြင်ဆင်ရန်' : 'Account အသစ်ဖန်တီးရန်'}</h3><p className="text-xs text-text-muted mt-1">Role နှင့် Permission ကို သတ်မှတ်ပေးပါ။</p></div><button onClick={closeModal} className="p-2 text-text-muted hover:text-text-primary rounded-jpmonitor"><X size={19} /></button></div>
+            <div className="p-5 border-b border-border flex items-start justify-between sticky top-0 bg-bg-surface z-10"><div><h3 className="text-xl font-semibold text-text-primary">{editingUser ? 'Account ပြင်ဆင်ရန်' : 'Account အသစ်ဖန်တီးရန်'}</h3><p className="text-xs text-text-muted mt-1">အသုံးပြုသူ အချက်အလက်နှင့် ID Card ဓာတ်ပုံ သတ်မှတ်ပါ။</p></div><button onClick={closeModal} className="p-2 text-text-muted hover:text-text-primary rounded-jpmonitor"><X size={19} /></button></div>
             <form onSubmit={submitForm} className="p-5 space-y-6">
+              {/* Photo Upload & AI Gemini Section */}
+              <div className="p-4 bg-bg-elevated border border-border rounded-jpmonitor-lg flex flex-col md:flex-row items-center gap-4">
+                <div className="relative">
+                  {form.photoUrl ? (
+                    <img src={form.photoUrl} alt="Employee Headshot" className="w-20 h-24 object-cover rounded-xl border-2 border-jpmonitor-red shadow-md" />
+                  ) : (
+                    <div className="w-20 h-24 bg-bg-surface border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-text-muted">
+                      <UserRound size={28} />
+                      <span className="text-[10px] mt-1">ဓာတ်ပုံ</span>
+                    </div>
+                  )}
+                  {aiProcessing && (
+                    <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center text-amber-400">
+                      <Sparkles size={22} className="animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-2 text-center md:text-left">
+                  <h4 className="text-sm font-semibold text-text-primary flex items-center gap-1.5 justify-center md:justify-start">
+                    <span>ဝန်ထမ်း ID Card ဓာတ်ပုံ Upload</span>
+                    <Sparkles size={15} className="text-amber-500" />
+                  </h4>
+                  <p className="text-xs text-text-muted">
+                    တင်သွင်းထားသော ဓာတ်ပုံကို CometAPI (gemini-3.1-flash-lite-image) ဖြင့် reference ဝတ်စုံနှင့် background အတိုင်း auto-edit ပြုလုပ်ပေးပါမည်။
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-start pt-1">
+                    <input
+                      type="file"
+                      ref={photoInputRef}
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-jpmonitor-red text-white rounded-jpmonitor hover:bg-jpmonitor-red-hover transition-colors"
+                    >
+                      <Upload size={14} /> ဓာတ်ပုံ ရွေးချယ်မည်
+                    </button>
+                    {form.photoUrl && (
+                      <button
+                        type="button"
+                        onClick={handleManualAiEdit}
+                        disabled={aiProcessing}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-jpmonitor transition-colors"
+                      >
+                        <Sparkles size={14} /> Gemini AI ဖြင့် ပြန်လည်ပြင်မည်
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">အမည်အပြည့်အစုံ *</span><input required value={form.fullName} onChange={(event) => updateField('fullName', event.target.value)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">Username *</span><input required disabled={!!editingUser} value={form.username} onChange={(event) => updateField('username', event.target.value)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red disabled:opacity-60" /></label>
+                <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">ဖုန်းနံပါတ် (Phone)</span><input value={form.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="09xxxxxxxxx" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
+                <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">မှတ်ပုံတင် (NRC)</span><input value={form.nrc} onChange={(event) => updateField('nrc', event.target.value)} placeholder="၁၂/ဥက္တ(နိုင်)xxxxxx" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
+                <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">ရာထူး (Position)</span><input value={form.position} onChange={(event) => updateField('position', event.target.value)} placeholder="ဥပမာ - မိုင်းစူပါဗိုက်ဆာ" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">Email</span><input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">ဝန်ထမ်း ID</span><input value={form.employeeId} onChange={(event) => updateField('employeeId', event.target.value)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">ဌာန</span><input value={form.department} onChange={(event) => updateField('department', event.target.value)} placeholder="ဥပမာ - ထုတ်လုပ်ရေး" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">လုပ်ငန်းခွင် / Site</span><input value={form.site} onChange={(event) => updateField('site', event.target.value)} placeholder="ဥပမာ - Satui သတ္တုတွင်း" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">Role</span><select value={form.role} onChange={(event) => updateField('role', event.target.value as AppRole)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red">{ROLE_DEFINITIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
+                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-text-secondary">နေရပ်လိပ်စာ (Address)</span><textarea rows={2} value={form.address} onChange={(event) => updateField('address', event.target.value)} placeholder="နေရပ်လိပ်စာ အပြည့်အစုံ..." className="w-full px-3 py-2 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red resize-none" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">Account အခြေအနေ</span><select value={form.status} onChange={(event) => updateField('status', event.target.value as AccountStatus)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red">{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
                 <label className="space-y-1.5 md:col-span-2">
                   <span className="text-xs font-medium text-text-secondary">
