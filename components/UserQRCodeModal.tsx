@@ -15,8 +15,8 @@ export const UserQRCodeModal: React.FC<UserQRCodeModalProps> = ({ user, onClose 
 
   const cardSettings = getIdCardDesignSettings();
 
-  // Construct structured QR payload
-  const qrPayload = JSON.stringify({
+  // Construct structured QR payload with verification link for external camera scanning
+  const userData = JSON.stringify({
     fullName: user.fullName,
     username: user.username,
     employeeId: user.employeeId || '',
@@ -26,7 +26,12 @@ export const UserQRCodeModal: React.FC<UserQRCodeModalProps> = ({ user, onClose 
     position: user.position || ROLE_LABELS[user.role] || '',
     department: user.department || '',
     site: user.site || '',
+    photoUrl: user.photoUrl || '',
+    role: user.role || '',
   });
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const qrPayload = `${origin}/verify-user?data=${encodeURIComponent(userData)}`;
 
   useEffect(() => {
     if (canvasRef.current) {

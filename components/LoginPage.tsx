@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import jsQR from "jsqr";
 import { authAPI } from "../services/api";
-import { LogIn, AlertCircle, Shield, Moon, Sun, QrCode, Upload, Scan, KeyRound, UserCheck, Phone, CreditCard, Briefcase, MapPin } from "lucide-react";
+import { LogIn, AlertCircle, Shield, Moon, Sun, QrCode, Upload, Scan, KeyRound, UserCheck, Phone, CreditCard, Briefcase, MapPin, Camera, X, ExternalLink, ShieldCheck, User } from "lucide-react";
+import { getIdCardDesignSettings } from "../services/idCardSettings";
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -15,6 +16,10 @@ interface ScannedEmployeeProfile {
   position?: string;
   address?: string;
   employeeId?: string;
+  department?: string;
+  site?: string;
+  photoUrl?: string;
+  role?: string;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
@@ -26,7 +31,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [qrScanInput, setQrScanInput] = useState("");
   const [scanNotice, setScanNotice] = useState("");
   const [scannedProfile, setScannedProfile] = useState<ScannedEmployeeProfile | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const animFrameIdRef = useRef<number | null>(null);
+
+  const cardSettings = getIdCardDesignSettings();
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("jpmonitor-dark-mode");
@@ -42,14 +56,31 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   }, [darkMode]);
 
   const processQrTextPayload = (rawText: string) => {
+    let payload = rawText.trim();
+
+    // Check if the payload is a verification URL (e.g., https://.../verify-user?data=...)
+    if (payload.includes('/verify-user?data=')) {
+      try {
+        const url = new URL(payload);
+        const dataParam = url.searchParams.get('data');
+        if (dataParam) {
+          payload = decodeURIComponent(dataParam);
+        }
+      } catch {
+        const match = payload.split('/verify-user?data=')[1];
+        if (match) {
+          payload = decodeURIComponent(match);
+        }
+      }
+    }
+
     try {
-      const parsed = JSON.parse(rawText);
+      const parsed = JSON.parse(payload);
       if (typeof parsed === 'object' && parsed !== null) {
         setScannedProfile(parsed);
         const uname = parsed.username || parsed.employeeId || rawText;
         setUsername(uname);
         setScanNotice(`QR ID Badge Scan အောင်မြင်ပါသည် - ${parsed.fullName || uname}`);
-        setLoginTab("standard");
         return;
       }
     } catch {
@@ -58,7 +89,74 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setScannedProfile(null);
     setUsername(rawText.trim());
     setScanNotice(`Scanned Username/ID: ${rawText.trim()}`);
+  };
+
+  // Live Camera WebCam Scanning Effect
+  useEffect(() => {
+    if (!isCameraModalOpen) return;
+    setCameraError("");
+    let stream: MediaStream | null = null;
+
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute("playsinline", "true");
+          videoRef.current.play();
+          requestAnimationFrame(scanVideoFrame);
+        }
+      } catch (err: any) {
+        setCameraError(err.message || "ကင်မရာ အသုံးပြုခွင့် မရရှိပါ သို့မဟုတ် ကင်မရာ ရှာမတွေ့ပါ။");
+      }
+    };
+
+    const scanVideoFrame = () => {
+      if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+        const video = videoRef.current;
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code && code.data) {
+            processQrTextPayload(code.data.trim());
+            stopCamera();
+            setIsCameraModalOpen(false);
+            return;
+          }
+        }
+      }
+      animFrameIdRef.current = requestAnimationFrame(scanVideoFrame);
+    };
+
+    const stopCamera = () => {
+      if (animFrameIdRef.current) {
+        cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = null;
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      stopCamera();
+    };
+  }, [isCameraModalOpen]);
+
+  const handleSelectStandardLogin = () => {
     setLoginTab("standard");
+    setTimeout(() => {
+      passwordInputRef.current?.focus();
+    }, 100);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,26 +295,78 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
             {/* Scanned Employee Profile Card Display */}
             {scannedProfile && (
-              <div className="mb-5 p-3.5 bg-bg-surface border border-border rounded-jpmonitor-lg text-xs space-y-1.5">
-                <div className="flex items-center gap-2 font-bold text-jpmonitor-red">
-                  <UserCheck size={16} />
-                  <span>{scannedProfile.fullName} ({scannedProfile.position || 'ဝန်ထမ်း'})</span>
+              <div className="mb-5 p-4 bg-bg-surface border border-emerald-500/30 rounded-jpmonitor-lg shadow-md text-xs space-y-3 relative overflow-hidden">
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheck size={18} />
+                    <span>စကန်ဖတ်ရရှိသော ဝန်ထမ်း အချက်အလက်</span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-semibold">
+                    VERIFIED
+                  </span>
                 </div>
-                {scannedProfile.phone && (
-                  <div className="flex items-center gap-2 text-text-muted">
-                    <Phone size={13} /> <span>ဖုန်း: {scannedProfile.phone}</span>
+
+                <div className="flex items-center gap-3">
+                  {scannedProfile.photoUrl ? (
+                    <img
+                      src={scannedProfile.photoUrl}
+                      alt={scannedProfile.fullName}
+                      className="w-12 h-14 object-cover rounded-lg border border-border shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-14 bg-bg-elevated border border-border rounded-lg flex items-center justify-center text-text-muted shrink-0">
+                      <User size={24} />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-text-primary text-sm truncate">
+                      {scannedProfile.fullName || username}
+                    </h3>
+                    <p className="text-[11px] text-text-muted">
+                      @{username} {scannedProfile.employeeId ? `(ID: ${scannedProfile.employeeId})` : ''}
+                    </p>
+                    <div className="inline-block mt-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-semibold text-[10px] rounded border border-amber-200 dark:border-amber-800">
+                      {scannedProfile.position || 'ဝန်ထမ်း'}
+                    </div>
                   </div>
-                )}
-                {scannedProfile.nrc && (
-                  <div className="flex items-center gap-2 text-text-muted">
-                    <CreditCard size={13} /> <span>မှတ်ပုံတင်: {scannedProfile.nrc}</span>
-                  </div>
-                )}
-                {scannedProfile.address && (
-                  <div className="flex items-center gap-2 text-text-muted">
-                    <MapPin size={13} /> <span>နေရပ်: {scannedProfile.address}</span>
-                  </div>
-                )}
+                </div>
+
+                {/* Quick Details List */}
+                <div className="grid grid-cols-1 gap-1 text-[11px] text-text-muted pt-1 border-t border-border/50">
+                  {scannedProfile.phone && (
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Phone size={12} className="shrink-0 text-text-muted" />
+                      <span>ဖုန်း: <strong className="text-text-primary">{scannedProfile.phone}</strong></span>
+                    </div>
+                  )}
+                  {scannedProfile.department && (
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Briefcase size={12} className="shrink-0 text-text-muted" />
+                      <span>ဌာန/Site: <strong className="text-text-primary">{scannedProfile.department} ({scannedProfile.site || '—'})</strong></span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons: View Details & Proceed to Standard Login */}
+                <div className="flex items-center gap-2 pt-2 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileModal(true)}
+                    className="flex-1 py-1.5 px-2 bg-bg-elevated hover:bg-bg-surface border border-border rounded-jpmonitor text-text-primary font-medium text-[11px] flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <ExternalLink size={13} />
+                    <span>Profile အသေးစိတ်ကြည့်မည်</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSelectStandardLogin}
+                    className="flex-1 py-1.5 px-2 bg-jpmonitor-red hover:bg-jpmonitor-red-hover text-white font-medium text-[11px] rounded-jpmonitor flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <KeyRound size={13} />
+                    <span>Standard Login ပြုလုပ်မည်</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -228,6 +378,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <p className="text-sm text-jpmonitor-red">{error}</p>
                   </div>
                 )}
+
+                {/* Live Camera Scanner Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsCameraModalOpen(true)}
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-jpmonitor shadow transition-colors flex items-center justify-center gap-2"
+                >
+                  <Camera size={18} />
+                  <span>WebCam / Camera ဖြင့် တိုက်ရိုက် Scan ဖတ်မည်</span>
+                </button>
 
                 {/* File Upload QR Option */}
                 <div className="border-2 border-dashed border-border rounded-jpmonitor p-6 text-center hover:border-jpmonitor-red/50 transition-colors bg-bg-surface">
@@ -306,6 +466,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </label>
                 <input
                   id="password"
+                  ref={passwordInputRef}
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -345,6 +506,161 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
         </div>
       </div>
+
+      {/* Detailed Employee Profile Modal */}
+      {showProfileModal && scannedProfile && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-bg-elevated">
+              <div className="flex items-center gap-2 text-text-primary font-semibold text-sm">
+                <UserCheck className="text-emerald-500" size={18} />
+                <span>ဝန်ထမ်း အချက်အလက် Profile</span>
+              </div>
+              <button
+                onClick={() => setShowProfileModal(false)}
+                className="p-1 text-text-muted hover:text-text-primary rounded"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5 flex flex-col items-center text-center">
+              {/* Badge Header Banner */}
+              <div className="w-full bg-slate-900 text-white rounded-xl py-2 px-3 mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-left">
+                  {cardSettings.logoUrl ? (
+                    <img src={cardSettings.logoUrl} alt="Logo" className="w-5 h-5 object-contain" />
+                  ) : (
+                    <Shield className="text-amber-400 shrink-0" size={16} />
+                  )}
+                  <span className="text-[11px] font-bold tracking-wide">{cardSettings.companyName}</span>
+                </div>
+                <span className="text-[9px] bg-amber-400 text-slate-950 font-extrabold px-1.5 py-0.5 rounded">
+                  VERIFIED
+                </span>
+              </div>
+
+              {/* Avatar */}
+              <div className="mb-3">
+                {scannedProfile.photoUrl ? (
+                  <img
+                    src={scannedProfile.photoUrl}
+                    alt={scannedProfile.fullName}
+                    className="w-20 h-24 object-cover rounded-xl border-2 border-border shadow-md"
+                  />
+                ) : (
+                  <div className="w-20 h-24 rounded-xl bg-bg-elevated border-2 border-border text-text-muted flex items-center justify-center">
+                    <User size={36} />
+                  </div>
+                )}
+              </div>
+
+              <h3 className="text-base font-bold text-text-primary mb-0.5">
+                {scannedProfile.fullName || username}
+              </h3>
+              <p className="text-xs text-text-muted mb-2">
+                @{username} {scannedProfile.employeeId ? `(ID: ${scannedProfile.employeeId})` : ''}
+              </p>
+
+              <div className="inline-block px-3 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-full border border-amber-200 dark:border-amber-800 mb-4">
+                {scannedProfile.position || 'ဝန်ထမ်း'}
+              </div>
+
+              {/* Detailed Grid */}
+              <div className="w-full bg-bg-elevated rounded-xl p-3 text-xs border border-border space-y-2 text-left mb-4">
+                <div className="flex items-center gap-2">
+                  <Briefcase size={13} className="text-text-muted shrink-0" />
+                  <span className="text-text-muted font-medium shrink-0">ဌာန/Site:</span>
+                  <span className="font-semibold text-text-primary truncate">{scannedProfile.department || '—'} ({scannedProfile.site || '—'})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone size={13} className="text-text-muted shrink-0" />
+                  <span className="text-text-muted font-medium shrink-0">ဖုန်း:</span>
+                  <span className="font-semibold text-text-primary">{scannedProfile.phone || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CreditCard size={13} className="text-text-muted shrink-0" />
+                  <span className="text-text-muted font-medium shrink-0">မှတ်ပုံတင်:</span>
+                  <span className="font-semibold text-text-primary">{scannedProfile.nrc || '—'}</span>
+                </div>
+                {scannedProfile.address && (
+                  <div className="flex items-start gap-2 pt-1 border-t border-border">
+                    <MapPin size={13} className="text-text-muted shrink-0 mt-0.5" />
+                    <span className="text-text-muted font-medium shrink-0">နေရပ်:</span>
+                    <span className="font-semibold text-text-primary text-[11px] leading-tight">{scannedProfile.address}</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileModal(false);
+                  handleSelectStandardLogin();
+                }}
+                className="w-full py-2.5 bg-jpmonitor-red hover:bg-jpmonitor-red-hover text-white font-medium text-xs rounded-xl shadow transition-colors flex items-center justify-center gap-2"
+              >
+                <KeyRound size={15} />
+                <span>Standard Login ပြုလုပ်ရန် Username ယူမည်</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live WebCam Scan Modal */}
+      {isCameraModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border rounded-jpmonitor-lg shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-bg-elevated">
+              <div className="flex items-center gap-2 text-text-primary font-semibold text-sm">
+                <Camera size={18} className="text-emerald-500" />
+                <span>WebCam QR Scanner</span>
+              </div>
+              <button
+                onClick={() => setIsCameraModalOpen(false)}
+                className="p-1 text-text-muted hover:text-text-primary rounded hover:bg-bg-surface"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4 flex flex-col items-center">
+              {cameraError ? (
+                <div className="p-4 bg-jpmonitor-red-subtle border border-red-300 rounded-lg text-jpmonitor-red text-xs text-center my-6">
+                  {cameraError}
+                </div>
+              ) : (
+                <div className="relative w-full aspect-square bg-black rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-inner flex items-center justify-center">
+                  <video ref={videoRef} className="w-full h-full object-cover" muted>
+                    <track kind="captions" />
+                  </video>
+                  {/* Scanner Reticle Overlay */}
+                  <div className="absolute inset-0 border-[3px] border-emerald-400/60 rounded-2xl pointer-events-none flex items-center justify-center">
+                    <div className="w-48 h-48 border-2 border-emerald-400 border-dashed rounded-xl animate-pulse flex items-center justify-center">
+                      <Scan className="text-emerald-400/80 w-10 h-10 animate-bounce" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-text-muted mt-3 text-center">
+                ဝန်ထမ်း ID Card QR Code ကို ကင်မရာ၏ ဘောင်အတွင်း တည့်တည့် ထားရှိပါ
+              </p>
+            </div>
+
+            <div className="p-3 border-t border-border bg-bg-elevated flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsCameraModalOpen(false)}
+                className="px-4 py-2 text-xs font-medium border border-border rounded-jpmonitor hover:bg-bg-surface text-text-primary"
+              >
+                ပိတ်မည်
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
