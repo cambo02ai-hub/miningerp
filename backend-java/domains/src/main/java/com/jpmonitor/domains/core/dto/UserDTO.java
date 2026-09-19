@@ -18,13 +18,18 @@ public record UserDTO(
         List<PermissionOverrideDTO> permissionOverrides,
         String createdAt,
         String createdBy,
-        String lastLoginAt
+        String lastLoginAt,
+        String phone,
+        String nrc,
+        String address,
+        String position,
+        String photoUrl
 ) {
     public UserDTO(UUID id, String username, String email, String fullName, String role, List<String> permissions) {
-        this(id, username, email, fullName, null, role, null, null, null, "ACTIVE", permissions, List.of(), null, null, null);
+        this(id, username, email, fullName, null, role, null, null, null, "ACTIVE", permissions, List.of(), null, null, null, null, null, null, null, null);
     }
 
     public UserDTO(UUID id, String username, String email, String fullName, String role, List<String> permissions, List<PermissionOverrideDTO> permissionOverrides) {
-        this(id, username, email, fullName, null, role, null, null, null, "ACTIVE", permissions, permissionOverrides, null, null, null);
+        this(id, username, email, fullName, null, role, null, null, null, "ACTIVE", permissions, permissionOverrides, null, null, null, null, null, null, null, null);
     }
 }

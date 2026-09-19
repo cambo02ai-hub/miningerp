@@ -14,7 +14,12 @@ public record RegisterRequest(
         String role,
         String status,
         List<String> permissions,
-        List<PermissionOverrideDTO> permissionOverrides
+        List<PermissionOverrideDTO> permissionOverrides,
+        String phone,
+        String nrc,
+        String address,
+        String position,
+        String photoUrl
 ) {
     public RegisterRequest(
             String username,
@@ -29,6 +34,23 @@ public record RegisterRequest(
             String status,
             List<String> permissions
     ) {
-        this(username, password, fullName, fatherName, email, employeeId, department, site, role, status, permissions, List.of());
+        this(username, password, fullName, fatherName, email, employeeId, department, site, role, status, permissions, List.of(), null, null, null, null, null);
+    }
+
+    public RegisterRequest(
+            String username,
+            String password,
+            String fullName,
+            String fatherName,
+            String email,
+            String employeeId,
+            String department,
+            String site,
+            String role,
+            String status,
+            List<String> permissions,
+            List<PermissionOverrideDTO> permissionOverrides
+    ) {
+        this(username, password, fullName, fatherName, email, employeeId, department, site, role, status, permissions, permissionOverrides, null, null, null, null, null);
     }
 }

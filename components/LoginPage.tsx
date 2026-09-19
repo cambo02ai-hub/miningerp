@@ -10,6 +10,7 @@ interface LoginPageProps {
 
 interface ScannedEmployeeProfile {
   fullName?: string;
+  fatherName?: string;
   username?: string;
   phone?: string;
   nrc?: string;
@@ -55,16 +56,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     localStorage.setItem("jpmonitor-dark-mode", String(darkMode));
   }, [darkMode]);
 
-  const processQrTextPayload = (rawText: string) => {
+  const processQrTextPayload = async (rawText: string) => {
     let payload = rawText.trim();
 
-    // Check if the payload is a verification URL (e.g., https://.../verify-user?data=...)
-    if (payload.includes('/verify-user?data=')) {
+    // Resolve the compact verification URL generated on employee ID cards.
+    if (payload.includes('/verify-user?')) {
       try {
         const url = new URL(payload);
+        const usernameParam = url.searchParams.get('username')?.trim();
+        if (usernameParam) {
+          const profile = await authAPI.getPublicProfile(usernameParam);
+          setScannedProfile(profile);
+          setUsername(profile.username || usernameParam);
+          setScanNotice(`QR ID Badge Scan အောင်မြင်ပါသည် - ${profile.fullName || usernameParam}`);
+          return;
+        }
         const dataParam = url.searchParams.get('data');
         if (dataParam) {
-          payload = decodeURIComponent(dataParam);
+          payload = dataParam;
         }
       } catch {
         const match = payload.split('/verify-user?data=')[1];
@@ -125,7 +134,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const code = jsQR(imageData.data, imageData.width, imageData.height);
           if (code && code.data) {
-            processQrTextPayload(code.data.trim());
+            void processQrTextPayload(code.data.trim());
             stopCamera();
             setIsCameraModalOpen(false);
             return;
@@ -192,7 +201,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           const imageData = ctx.getImageData(0, 0, img.width, img.height);
           const code = jsQR(imageData.data, imageData.width, imageData.height);
           if (code && code.data) {
-            processQrTextPayload(code.data.trim());
+            void processQrTextPayload(code.data.trim());
           } else {
             setError("QR Code ပုံရိပ်ကို ဖတ်၍ မရပါ။ ကျေးဇူးပြု၍ အကြည်လင်းဆုံး ပုံကို ရွေးချယ်ပါ။");
           }
@@ -206,7 +215,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const handleQrScanSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!qrScanInput.trim()) return;
-    processQrTextPayload(qrScanInput.trim());
+    void processQrTextPayload(qrScanInput.trim());
     setQrScanInput("");
   };
 

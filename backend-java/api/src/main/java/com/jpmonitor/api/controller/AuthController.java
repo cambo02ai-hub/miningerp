@@ -54,6 +54,17 @@ public class AuthController {
         return ResponseEntity.ok(dtoList);
     }
 
+    /** Public, read-only profile used by employee ID-card QR verification. */
+    @GetMapping("/public-profile/{username}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getPublicProfile(@PathVariable String username) {
+        return userRepository.findByUsernameIgnoreCase(username.trim())
+                .filter(user -> user.getIsActive() == null || user.getIsActive())
+                .<ResponseEntity<?>>map(user -> ResponseEntity.ok(mapUserToDTO(user)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new AuthErrorResponse("User profile not found")));
+    }
+
     @PostMapping("/login")
     @Transactional
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -147,6 +158,11 @@ public class AuthController {
             user.setEmployeeId(request.employeeId() != null ? request.employeeId().trim() : null);
             user.setDepartment(request.department() != null ? request.department().trim() : null);
             user.setSite(request.site() != null ? request.site().trim() : null);
+            user.setPhone(request.phone() != null ? request.phone().trim() : null);
+            user.setNrc(request.nrc() != null ? request.nrc().trim() : null);
+            user.setAddress(request.address() != null ? request.address().trim() : null);
+            user.setPosition(request.position() != null ? request.position().trim() : null);
+            user.setPhotoUrl(request.photoUrl());
             user.setPasswordHash(passwordEncoder.encode(request.password()));
             user.setRole(role);
             user.setIsActive(request.status() == null || !request.status().equalsIgnoreCase("SUSPENDED"));
@@ -198,6 +214,21 @@ public class AuthController {
             }
             if (request.site() != null) {
                 user.setSite(request.site().trim());
+            }
+            if (request.phone() != null) {
+                user.setPhone(request.phone().trim());
+            }
+            if (request.nrc() != null) {
+                user.setNrc(request.nrc().trim());
+            }
+            if (request.address() != null) {
+                user.setAddress(request.address().trim());
+            }
+            if (request.position() != null) {
+                user.setPosition(request.position().trim());
+            }
+            if (request.photoUrl() != null) {
+                user.setPhotoUrl(request.photoUrl());
             }
             if (request.password() != null && !request.password().isBlank()) {
                 if (request.password().length() < 8) {
@@ -348,7 +379,12 @@ public class AuthController {
                 user.getParsedPermissionOverrides(),
                 user.getCreatedAt() != null ? user.getCreatedAt().toString() : null,
                 "စနစ်",
-                user.getLastLogin() != null ? user.getLastLogin().toString() : null
+                user.getLastLogin() != null ? user.getLastLogin().toString() : null,
+                user.getPhone() != null ? user.getPhone() : "",
+                user.getNrc() != null ? user.getNrc() : "",
+                user.getAddress() != null ? user.getAddress() : "",
+                user.getPosition() != null ? user.getPosition() : "",
+                user.getPhotoUrl() != null ? user.getPhotoUrl() : ""
         );
     }
 

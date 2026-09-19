@@ -1,16 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, UserCheck, Phone, CreditCard, Briefcase, MapPin, ArrowRight, Shield, Award } from 'lucide-react';
 import { getIdCardDesignSettings } from '../services/idCardSettings';
+import { authAPI } from '../services/api';
 
 export const PublicUserVerificationView: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const rawData = searchParams.get('data');
+  const username = searchParams.get('username')?.trim() || '';
+  const [remoteProfile, setRemoteProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(Boolean(username));
+  const [loadError, setLoadError] = useState(false);
 
   const cardSettings = getIdCardDesignSettings();
 
-  const userProfile = useMemo(() => {
+  const embeddedProfile = useMemo(() => {
     if (!rawData) return null;
     try {
       const decoded = decodeURIComponent(rawData);
@@ -24,6 +29,29 @@ export const PublicUserVerificationView: React.FC = () => {
     }
   }, [rawData]);
 
+  useEffect(() => {
+    let active = true;
+    if (!username) {
+      setLoading(false);
+      return () => { active = false; };
+    }
+    setLoading(true);
+    setLoadError(false);
+    authAPI.getPublicProfile(username)
+      .then((profile) => {
+        if (active) setRemoteProfile(profile);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [username]);
+
+  const userProfile = remoteProfile || embeddedProfile;
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative overflow-hidden">
       {/* Background glow effects */}
@@ -36,7 +64,12 @@ export const PublicUserVerificationView: React.FC = () => {
         <span>တရားဝင် စိစစ်ပြီးသော ဝန်ထမ်း Digital ID Badge</span>
       </div>
 
-      {userProfile ? (
+      {loading ? (
+        <div className="w-full max-w-sm bg-slate-800 text-slate-200 p-8 rounded-2xl border border-slate-700 text-center shadow-xl">
+          <Shield className="mx-auto text-emerald-400 mb-3" size={40} />
+          <p className="text-sm">ဝန်ထမ်းအချက်အလက်ကို စိစစ်နေပါသည်...</p>
+        </div>
+      ) : userProfile && !loadError ? (
         <div className="w-full max-w-sm bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-300 relative">
           {/* Top Brand Banner */}
           <div className="w-full bg-slate-950 text-white p-4 flex items-center justify-between border-b border-slate-800">

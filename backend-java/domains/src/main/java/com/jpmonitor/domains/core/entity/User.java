@@ -47,6 +47,21 @@ public class User extends BaseEntity {
     @Column(name = "site")
     private String site;
 
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "nrc")
+    private String nrc;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "position")
+    private String position;
+
+    @Column(name = "photo_url", columnDefinition = "TEXT")
+    private String photoUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;

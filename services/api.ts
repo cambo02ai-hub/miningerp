@@ -20,6 +20,10 @@ export const authAPI = {
         return apiRequest<any[]>('/auth/users');
     },
 
+    async getPublicProfile(username: string) {
+        return apiRequest<any>(`/auth/public-profile/${encodeURIComponent(username)}`, { auth: false } as RequestInit);
+    },
+
     async login(username: string, password: string) {
         const cleanName = username.trim().toLowerCase();
         const cleanPass = password.trim();
