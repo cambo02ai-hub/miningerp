@@ -29,6 +29,7 @@ interface UserManagementViewProps {
 
 type AccountForm = {
   fullName: string;
+  fatherName: string;
   username: string;
   email: string;
   employeeId: string;
@@ -47,6 +48,7 @@ type AccountForm = {
 
 const emptyForm = (): AccountForm => ({
   fullName: '',
+  fatherName: '',
   username: '',
   email: '',
   employeeId: '',
@@ -99,6 +101,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         const mappedUsers: ManagedUser[] = apiUsers.map((u: any) => ({
           id: u.id || `user-${u.username}`,
           fullName: u.fullName || u.full_name || u.username,
+          fatherName: u.fatherName || u.father_name || '',
           username: u.username,
           email: u.email || '',
           employeeId: u.employeeId || '',
@@ -135,7 +138,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     const query = searchTerm.trim().toLowerCase();
     if (!query) return users;
     return users.filter((user) =>
-      [user.fullName, user.username, user.email, user.department, user.site, user.phone, user.nrc, user.position, ROLE_LABELS[user.role]]
+      [user.fullName, user.fatherName, user.username, user.email, user.department, user.site, user.phone, user.nrc, user.position, ROLE_LABELS[user.role]]
         .join(' ')
         .toLowerCase()
         .includes(query),
@@ -161,6 +164,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
     setEditingUser(user);
     setForm({
       fullName: user.fullName,
+      fatherName: user.fatherName || '',
       username: user.username,
       email: user.email,
       employeeId: user.employeeId,
@@ -280,6 +284,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         username: form.username.trim(),
         password: form.password || undefined,
         fullName: form.fullName.trim(),
+        fatherName: form.fatherName.trim(),
         email: form.email.trim(),
         employeeId: form.employeeId.trim(),
         department: form.department.trim(),
@@ -319,6 +324,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
       const nextUser: ManagedUser = {
         id: editingUser?.id || `user-${Date.now()}`,
         fullName: form.fullName.trim(),
+        fatherName: form.fatherName.trim(),
         username: form.username.trim(),
         email: form.email.trim(),
         employeeId: form.employeeId.trim(),
@@ -496,6 +502,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
                         )}
                         <div>
                           <p className="font-medium text-text-primary">{user.fullName}</p>
+                          {user.fatherName && <p className="text-xs text-text-muted">အဖ - {user.fatherName}</p>}
                           <p className="text-xs text-text-muted">@{user.username}{user.employeeId ? ` · ${user.employeeId}` : ''}</p>
                         </div>
                       </div>
@@ -691,6 +698,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">အမည်အပြည့်အစုံ *</span><input required value={form.fullName} onChange={(event) => updateField('fullName', event.target.value)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
+                <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">အဖအမည် (Father Name)</span><input value={form.fatherName} onChange={(event) => updateField('fatherName', event.target.value)} placeholder="ဥပမာ - ဦးဘ" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">Username *</span><input required disabled={!!editingUser} value={form.username} onChange={(event) => updateField('username', event.target.value)} className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red disabled:opacity-60" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">ဖုန်းနံပါတ် (Phone)</span><input value={form.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="09xxxxxxxxx" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>
                 <label className="space-y-1.5"><span className="text-xs font-medium text-text-secondary">မှတ်ပုံတင် (NRC)</span><input value={form.nrc} onChange={(event) => updateField('nrc', event.target.value)} placeholder="၁၂/ဥက္တ(နိုင်)xxxxxx" className="w-full px-3 py-2.5 border border-border rounded-jpmonitor bg-bg-page text-text-primary outline-none focus:border-jpmonitor-red" /></label>

@@ -142,6 +142,7 @@ public class AuthController {
             User user = new User();
             user.setUsername(request.username().trim());
             user.setFullName(request.fullName() != null && !request.fullName().isBlank() ? request.fullName().trim() : request.username().trim());
+            user.setFatherName(request.fatherName() != null ? request.fatherName().trim() : null);
             user.setEmail(emailToSet);
             user.setEmployeeId(request.employeeId() != null ? request.employeeId().trim() : null);
             user.setDepartment(request.department() != null ? request.department().trim() : null);
@@ -182,6 +183,9 @@ public class AuthController {
 
             if (request.fullName() != null && !request.fullName().isBlank()) {
                 user.setFullName(request.fullName().trim());
+            }
+            if (request.fatherName() != null) {
+                user.setFatherName(request.fatherName().trim());
             }
             if (request.email() != null && !request.email().isBlank()) {
                 user.setEmail(request.email().trim());
@@ -334,6 +338,7 @@ public class AuthController {
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
+                user.getFatherName() != null ? user.getFatherName() : "",
                 roleCode,
                 user.getEmployeeId() != null ? user.getEmployeeId() : "",
                 user.getDepartment() != null ? user.getDepartment() : "",
