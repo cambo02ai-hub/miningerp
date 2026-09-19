@@ -18,6 +18,7 @@ const TimesheetView = React.lazy(() => import('./components/TimesheetView'))
 const DebtView = React.lazy(() => import('./components/DebtView'))
 const UserManagementView = React.lazy(() => import('./components/UserManagementView'))
 const ContractorMiningView = React.lazy(() => import('./components/ContractorMiningView'))
+const PublicUserVerificationView = React.lazy(() => import('./components/PublicUserVerificationView'))
 import LoginPage from './components/LoginPage';
 import { getAuthToken, getCurrentUser, setAuthData, clearAuthData } from './services/authStorage';
 import { authAPI } from './services/api';
@@ -113,9 +114,16 @@ const App: React.FC = () => {
     );
   }
 
-  // Show login page if not authenticated
+  // Show login page or public verification page if not authenticated
   if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">တင်နေပါသည်...</div>}>
+        <Routes>
+          <Route path="/verify-user" element={<PublicUserVerificationView />} />
+          <Route path="*" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
+        </Routes>
+      </React.Suspense>
+    );
   }
 
   return (
@@ -162,6 +170,7 @@ const App: React.FC = () => {
                 <Route path="/hse" element={<ErrorBoundary><HSEView /></ErrorBoundary>} />
                 <Route path="/audit" element={<ErrorBoundary><AuditLogView /></ErrorBoundary>} />
                 <Route path="/user-management" element={hasPermission(currentUser, 'user_management.manage') ? <ErrorBoundary><UserManagementView currentUser={currentUser} /></ErrorBoundary> : <Navigate to="/" replace />} />
+                <Route path="/verify-user" element={<ErrorBoundary><PublicUserVerificationView /></ErrorBoundary>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             )}

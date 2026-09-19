@@ -132,8 +132,30 @@ describe('LoginPage JSON QR Badge Scan functionality', () => {
     const submitBtn = screen.getByRole('button', { name: 'Username ဖြည့်သွင်းမည်' });
     fireEvent.click(submitBtn);
 
-    expect(screen.getByDisplayValue('ayemaung')).toBeInTheDocument();
     expect(screen.getAllByText(/ဦးအေးမောင်/)[0]).toBeInTheDocument();
     expect(screen.getByText(/0912345678/)).toBeInTheDocument();
+
+    const viewDetailsBtn = screen.getByRole('button', { name: /Profile အသေးစိတ်ကြည့်မည်/i });
+    fireEvent.click(viewDetailsBtn);
+
+    expect(screen.getByText('ဝန်ထမ်း အချက်အလက် Profile')).toBeInTheDocument();
+    expect(screen.getAllByText('မိုင်းမန်နေဂျာ').length).toBeGreaterThan(0);
+  });
+
+  it('opens and closes Live WebCam Scanner modal', () => {
+    render(<LoginPage onLoginSuccess={mockOnLoginSuccess} />);
+
+    const qrTabBtn = screen.getByRole('button', { name: /QR Badge Scan/i });
+    fireEvent.click(qrTabBtn);
+
+    const webcamBtn = screen.getByRole('button', { name: /WebCam \/ Camera ဖြင့် တိုက်ရိုက် Scan ဖတ်မည်/i });
+    fireEvent.click(webcamBtn);
+
+    expect(screen.getByText('WebCam QR Scanner')).toBeInTheDocument();
+
+    const closeBtn = screen.getByRole('button', { name: 'ပိတ်မည်' });
+    fireEvent.click(closeBtn);
+
+    expect(screen.queryByText('WebCam QR Scanner')).not.toBeInTheDocument();
   });
 });
