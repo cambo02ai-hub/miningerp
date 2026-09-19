@@ -35,6 +35,9 @@ public class User extends BaseEntity {
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
+    @Column(name = "father_name")
+    private String fatherName;
+
     @Column(name = "employee_id")
     private String employeeId;
 

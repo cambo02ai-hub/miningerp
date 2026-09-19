@@ -8,6 +8,7 @@ public record UserDTO(
         String username,
         String email,
         String fullName,
+        String fatherName,
         String role,
         String employeeId,
         String department,
@@ -20,10 +21,10 @@ public record UserDTO(
         String lastLoginAt
 ) {
     public UserDTO(UUID id, String username, String email, String fullName, String role, List<String> permissions) {
-        this(id, username, email, fullName, role, null, null, null, "ACTIVE", permissions, List.of(), null, null, null);
+        this(id, username, email, fullName, null, role, null, null, null, "ACTIVE", permissions, List.of(), null, null, null);
     }
 
     public UserDTO(UUID id, String username, String email, String fullName, String role, List<String> permissions, List<PermissionOverrideDTO> permissionOverrides) {
-        this(id, username, email, fullName, role, null, null, null, "ACTIVE", permissions, permissionOverrides, null, null, null);
+        this(id, username, email, fullName, null, role, null, null, null, "ACTIVE", permissions, permissionOverrides, null, null, null);
     }
 }

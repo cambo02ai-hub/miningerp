@@ -37,6 +37,7 @@ export interface PermissionOverride {
 export interface ManagedUser {
   id: string;
   fullName: string;
+  fatherName?: string;
   username: string;
   email: string;
   employeeId: string;
@@ -69,6 +70,7 @@ export interface RBACAuditEntry {
 export interface RBACUserLike {
   username?: string;
   fullName?: string;
+  fatherName?: string;
   role?: string;
   status?: AccountStatus | string;
   permissionOverrides?: PermissionOverride[];
@@ -328,6 +330,100 @@ export const loadManagedUsers = (actor?: RBACUserLike | null): ManagedUser[] => 
         createdAt: new Date().toISOString(),
         createdBy: 'စနစ်',
         password: 'store123',
+      });
+    }
+  }
+
+  const employeeData68 = [
+    { username: 'A0002', fullName: 'ဦးတင်ထူးအောင်', fatherName: 'ဦးထွန်းရင်', employeeId: 'STN-ALP-A0002', password: '@stnA0002', nrc: '၉/မကန(နိုင်)၀၆၁၅၈၉', address: 'ဝါးဘို' },
+    { username: 'A0003', fullName: 'ဦးကျော်ဝင်း', fatherName: 'ဦးသောင်းထွန်း', employeeId: 'STN-ALP-A0003', password: '@stnA0003', nrc: '၆/', address: '' },
+    { username: 'A0004', fullName: 'ဦးနိုင်လင်းထွန်း', fatherName: 'ဦးဌေးဝင်း', employeeId: 'STN-ALP-A0004', password: '@stnA0004', nrc: '၉/မယန(နိုင်)၂၄၃၃၃၇', address: '' },
+    { username: 'A0005', fullName: 'ဦးဝင်းသောင်', fatherName: 'ဦးဌေးဝင်း', employeeId: 'STN-ALP-A0005', password: '@stnA0005', nrc: '၉/မယန(နိုင်)၁၅၇၄၆၅', address: '' },
+    { username: 'A0006', fullName: 'မောင်ဝေဖြိုးပိုင်', fatherName: 'ဦးကံကောင်း', employeeId: 'STN-ALP-A0006', password: '@stnA0006', nrc: '၉/ဘအန(နိုင်)၀၅၅၄၄၇', address: '' },
+    { username: 'A0007', fullName: 'မောင်ဆန်းဝင်းသူ', fatherName: 'ဦးစိန်', employeeId: 'STN-ALP-A0007', password: '@stnA0007', nrc: '၉/မနမ(နိုင်)၁၀၉၇၇၅', address: '' },
+    { username: 'A0008', fullName: 'မောင်အောင်ဆန်းဝင်း', fatherName: 'ဦးသန်းလှိုင်', employeeId: 'STN-ALP-A0008', password: '@stnA0008', nrc: '၉/မအလ(နိုင်)၂၁၀၇၃၇', address: '' },
+    { username: 'A0009', fullName: 'မိုးဟိန်း', fatherName: 'ဦးထွန်းလင်း', employeeId: 'STN-ALP-A0009', password: '@stnA0009', nrc: '၁၃/ကတန(နိုင်)၀၇၆၇၀၃', address: '' },
+    { username: 'A0010', fullName: 'မောင်ဆန်းဦးထွန်း', fatherName: 'ဦးကျော်စိန်', employeeId: 'STN-ALP-A0010', password: '@stnA0010', nrc: '၁၃/ဟပန(နိုင်)၀၁၁၃၄၃', address: '' },
+    { username: 'A0011', fullName: 'မောင်ကျော်သန့်', fatherName: 'ဦးလှစိုး', employeeId: 'STN-ALP-A0011', password: '@stnA0011', nrc: '၁၃/ကလတ(နိုင်)၁၁၇၉၀၃', address: '' },
+    { username: 'A0012', fullName: 'မောင်သန်းထိုက်သူ', fatherName: 'ဦးအောင်ထွန်းလင်း', employeeId: 'STN-ALP-A0012', password: '@stnA0012', nrc: '၁၃/သနန(နိုင်)၀၅၄၉၈၀', address: '' },
+    { username: 'A0013', fullName: 'ဦးမျိုး', fatherName: 'ဦးတင်လှ', employeeId: 'STN-ALP-A0013', password: '@stnA0013', nrc: '၉/မကန(နိုင်)၀၆၁၅၈၉', address: '' },
+    { username: 'A0014', fullName: 'မောင်မျိုးသန့်', fatherName: 'ဦးကျော်သန်း', employeeId: 'STN-ALP-A0014', password: '@stnA0014', nrc: '၉/မနမ(နိုင်)၁၄၈၅၁၇', address: '' },
+    { username: 'A0015', fullName: 'မောင်လှမျိုးဆန်း', fatherName: 'ဦးသန်းစိုး', employeeId: 'STN-ALP-A0015', password: '@stnA0015', nrc: '၇/ရတာ(နိုင်)၁၆၅၄၄၁', address: '' },
+    { username: 'A0016', fullName: 'မောင်ခိုင်သူ', fatherName: 'ဦးမျိုးမင်းသန့်', employeeId: 'STN-ALP-A0016', password: '@stnA0016', nrc: '၉/မနမ(နိုင်)၁၄၄၄၃၇', address: '' },
+    { username: 'A0017', fullName: 'မောင်စိုးသူ', fatherName: 'ဦးသန်းအောင်', employeeId: 'STN-ALP-A0017', password: '@stnA0017', nrc: '', address: '' },
+    { username: 'A0018', fullName: 'ဦးအောင်မျိုး', fatherName: 'ဦးဉာဏ်ထွန်း', employeeId: 'STN-ALP-A0018', password: '@stnA0018', nrc: '၉/မယန(နိုင်)၀၄၁၆၅၂', address: '' },
+    { username: 'A0019', fullName: 'မောင်ဆန်းထွန်း', fatherName: 'ဦးကျောက်တိုင်', employeeId: 'STN-ALP-A0019', password: '@stnA0019', nrc: '၇/မအတ(နိုင်)၁၅၈၇၀၅', address: '' },
+    { username: 'A0020', fullName: 'မောင်ဆန်းလင်း', fatherName: 'ဦးဆန်းမောင်', employeeId: 'STN-ALP-A0020', password: '@stnA0020', nrc: '', address: 'ဝါးဘို' },
+    { username: 'A0021', fullName: 'မောင်မျိုးသန့်', fatherName: 'ဦးအေးစိန်', employeeId: 'STN-ALP-A0021', password: '@stnA0021', nrc: '၅/ရဘန(နိုင်)၁၃၉၀၄၇', address: 'ဝါးဘို' },
+    { username: 'A0022', fullName: 'မောင်ဆန်းဆန်းထွေး', fatherName: '', employeeId: 'STN-ALP-A0022', password: '@stnA0022', nrc: '', address: '' },
+    { username: 'A0023', fullName: 'မောင်ပိုင်ချမ်းသာ', fatherName: 'ဦးကျော်ထူး', employeeId: 'STN-ALP-A0023', password: '@stnA0023', nrc: '၉/မယန(နိုင်)၂၄၃၃၃၇', address: '' },
+    { username: 'A0024', fullName: 'မောင်ဖိုးပြည့်', fatherName: 'ဦးအောင်မြင့်', employeeId: 'STN-ALP-A0024', password: '@stnA0024', nrc: '၁၃/', address: '' },
+    { username: 'A0025', fullName: 'မောင်ဆန်းဝင်းပိုင်', fatherName: 'ဦးမြတ်ဝင်း', employeeId: 'STN-ALP-A0025', password: '@stnA0025', nrc: '(ဒ်ု)၀၃၂၅၅၂', address: '' },
+    { username: 'A0026', fullName: 'မောင်ဆန်းအောင်သူ', fatherName: 'ဦးအောင်လွင်', employeeId: 'STN-ALP-A0026', password: '@stnA0026', nrc: '၅/ဒပယ(နိုင်)၁၃၇၂၀၅', address: '' },
+    { username: 'A0027', fullName: 'မောင်အောင်မျိုးသန့်', fatherName: 'ဦးအောင်စိန်', employeeId: 'STN-ALP-A0027', password: '@stnA0027', nrc: '၁၂/မကန(နိုင်)၀၃၅၄၄၅', address: '' },
+    { username: 'A0028', fullName: 'မောင်ပြည့်ဖြိုးအောင်', fatherName: 'ဦးဝင်းဟန်', employeeId: 'STN-ALP-A0028', password: '@stnA0028', nrc: '၁၂/မနမ(နိုင်)၁၄၃၇၀၁', address: '' },
+    { username: 'A0029', fullName: 'မောင်မျိုးပိုင်', fatherName: 'ဦးစိန်ခိုင်', employeeId: 'STN-ALP-A0029', password: '@stnA0029', nrc: '၁၃/', address: '' },
+    { username: 'A0030', fullName: 'မောင်ကျော်သူဦး', fatherName: '', employeeId: 'STN-ALP-A0030', password: '@stnA0030', nrc: '၁၃/၀၇၆၆၆၂', address: '' },
+    { username: 'A0031', fullName: 'မောင်ခိုင်', fatherName: '', employeeId: 'STN-ALP-A0031', password: '@stnA0031', nrc: '', address: '' },
+    { username: 'A0032', fullName: 'ဦးသောင်ထန်း', fatherName: '', employeeId: 'STN-ALP-A0032', password: '@stnA0032', nrc: 'မရှိ', address: '' },
+    { username: 'A0033', fullName: 'မောင်ချမ်းမြေ့', fatherName: 'ဦးထွန်း', employeeId: 'STN-ALP-A0033', password: '@stnA0033', nrc: '၉/မနမ(နိုင်)၁၄၄၇၀၃', address: '' },
+    { username: 'A0034', fullName: 'မောင်ဝင်းစက်ပိုင်', fatherName: 'ဦးတင်မြင့်', employeeId: 'STN-ALP-A0034', password: '@stnA0034', nrc: '၁၂/မနမ(နိုင်)၀၁၅၂၂၆', address: '' },
+    { username: 'A0035', fullName: 'မောင်ထာပြည့်စုံ', fatherName: 'ဦးတင်မျိုးနိုင်', employeeId: 'STN-ALP-A0035', password: '@stnA0035', nrc: '၁၂/မနမ(နိုင်)၁၂၅၀၇၃', address: '' },
+    { username: 'A0036', fullName: 'မဝေဝေမွန်', fatherName: 'ဦးထွန်းဌေး', employeeId: 'STN-ALP-A0036', password: '@stnA0036', nrc: 'မရှိ', address: 'ဝါးဘို' },
+    { username: 'A0037', fullName: 'မစန်းစန်းနွယ်', fatherName: 'ဦးဆန်းဌေး', employeeId: 'STN-ALP-A0037', password: '@stnA0037', nrc: 'မရှိ', address: '' },
+    { username: 'A0038', fullName: 'ဒေါ်စုမွန်', fatherName: 'ဦးတင်ဝင်း', employeeId: 'STN-ALP-A0038', password: '@stnA0038', nrc: '၉/မကန(နိုင်)၀၆၁၅၈၈', address: '' },
+    { username: 'A0039', fullName: 'မအိအိနွယ်', fatherName: 'ဦးလှမျိုး', employeeId: 'STN-ALP-A0039', password: '@stnA0039', nrc: '၉/မနမ(နိုင်)၁၄၁၅၈၇', address: 'မြိုင်မြိုင်' },
+    { username: 'A0040', fullName: 'မဝေဝေအောင်(ခ)မခိုင်', fatherName: 'ဦးကျော်မြင့်', employeeId: 'STN-ALP-A0040', password: '@stnA0040', nrc: '၁၄/မအပ(နိုင်)၀၇၃၈၁၁', address: 'ဆင်မ‌လေး' },
+    { username: 'A0041', fullName: 'ကိုနိုင်ကိုလင်း', fatherName: 'ဦးလှထွေး', employeeId: 'STN-ALP-A0041', password: '@stnA0041', nrc: '၃/ဘအန(နိုင်)၀၀၀၄၄၂', address: 'ဆင်မ‌လေး' },
+    { username: 'A0042', fullName: 'မောင်မျိုးသူ', fatherName: 'ဦးထက်အောင်', employeeId: 'STN-ALP-A0042', password: '@stnA0042', nrc: '၇/မအတ(နိုင်)၂၂၄၆၄၅', address: '' },
+    { username: 'A0043', fullName: 'မောင်ကျော်သူ', fatherName: 'ဦးစိုးနောင်', employeeId: 'STN-ALP-A0043', password: '@stnA0043', nrc: '၅/မနမ(နိုင်)၁၂၂၀၇၇', address: '' },
+    { username: 'A0044', fullName: 'မောင်ကျော်စိုး', fatherName: 'ဦးဘိုနီ', employeeId: 'STN-ALP-A0044', password: '@stnA0044', nrc: '၇/တငန(နိုင်)၁၈၄၆၆၆', address: '' },
+    { username: 'A0045', fullName: 'မောင်မျိုးမင်း', fatherName: 'ဦးဝင်းဌေး', employeeId: 'STN-ALP-A0045', password: '@stnA0045', nrc: '၈/မကန(နိုင်)၃၃၉၃၆၀', address: '' },
+    { username: 'A0046', fullName: 'မောင်တောရာစိုး', fatherName: 'ဦးဝင်းဝေ', employeeId: 'STN-ALP-A0046', password: '@stnA0046', nrc: '၅/မနမ(နိုင်)၃၆၀၇၆၀', address: '' },
+    { username: 'A0047', fullName: 'မောင်ထွေးလှိုင်', fatherName: 'ဦးတင်စိန်', employeeId: 'STN-ALP-A0047', password: '@stnA0047', nrc: '၅/ကသန(နိုင်)၁၁၁၄၆၉', address: '' },
+    { username: 'A0048', fullName: 'မောင်ထွေးပိုင်', fatherName: 'ဦးမျိုးချစ်', employeeId: 'STN-ALP-A0048', password: '@stnA0048', nrc: '၅/ကသန(နိုင်)၁၈၇၇၁၅', address: '' },
+    { username: 'A0049', fullName: 'မောင်ထွန်းကောင်', fatherName: 'ဦးကျော်ဝင်းစိန်', employeeId: 'STN-ALP-A0049', password: '@stnA0049', nrc: '၇/မအတ(နိုင်)၁၅၈ရ၃၇', address: '' },
+    { username: 'A0050', fullName: 'မောင်လင်းထူး', fatherName: 'ဦးသောင်းထွန်း', employeeId: 'STN-ALP-A0050', password: '@stnA0050', nrc: '၇/ကတန(နိုင်)၁၃၀၃၆၀', address: '' },
+    { username: 'A0051', fullName: 'မပြည့်စုံ', fatherName: 'ဦးအေးဌေး', employeeId: 'STN-ALP-A0051', password: '@stnA0051', nrc: '၅/မနမ(နိုင်)၂၅၈၁၁၂', address: '' },
+    { username: 'A0052', fullName: 'မစန်းစန်းအေး', fatherName: 'ဦးချစ်အောင်', employeeId: 'STN-ALP-A0052', password: '@stnA0052', nrc: '၅/မနမ(နိုင်)၀၀၆၂၀၇', address: 'လက်ပံလှ' },
+    { username: 'A0053', fullName: 'မောင်ယုနိုင်', fatherName: 'ဦးမျိုးအောင်', employeeId: 'STN-ALP-A0053', password: '@stnA0053', nrc: '', address: '' },
+    { username: 'A0054', fullName: 'မောင်ထက်ထက်ပိုင်', fatherName: '', employeeId: 'STN-ALP-A0054', password: '@stnA0054', nrc: '', address: '' },
+    { username: 'A0055', fullName: 'ဦးချစ်စန်း', fatherName: '', employeeId: 'STN-ALP-A0055', password: '@stnA0055', nrc: '', address: '' },
+    { username: 'A0056', fullName: 'မောင်ကျော်ဆန်းဝင်း', fatherName: 'ဦးကျော်အောင်', employeeId: 'STN-ALP-A0056', password: '@stnA0056', nrc: 'မရှိ', address: '' },
+    { username: 'A0057', fullName: 'မောင်မျိုးဆန်းအောင်', fatherName: 'ဦးစန်းမြင့်', employeeId: 'STN-ALP-A0057', password: '@stnA0057', nrc: 'မရှိ', address: '' },
+    { username: 'A0058', fullName: 'မောင်မျိုးထက်အောင်', fatherName: 'ဦးကျော်အောင်', employeeId: 'STN-ALP-A0058', password: '@stnA0058', nrc: 'မရှိ', address: '' },
+    { username: 'A0059', fullName: 'မောင်ပြည့်ဖြိုးဝင်း', fatherName: 'ဦးကြီးကို', employeeId: 'STN-ALP-A0059', password: '@stnA0059', nrc: '၉/နထက(နိုင်)၁၄၄၇၈၇', address: '' },
+    { username: 'A0060', fullName: 'မောင်စိုးဝင်း', fatherName: 'ဦးအောင်ထွန်း', employeeId: 'STN-ALP-A0060', password: '@stnA0060', nrc: '၉/မနမ(နိုင်)၁၂၅၇၄၄', address: '' },
+    { username: 'A0061', fullName: 'မောင်သက္ကားပိုင်', fatherName: 'ဦးထွန်းလွင်', employeeId: 'STN-ALP-A0061', password: '@stnA0061', nrc: '၉/ပယန(နိုင်)၁၄၃၂၆၅', address: '' },
+    { username: 'A0062', fullName: 'မောင်ဆန်းလင်း', fatherName: 'ဦးဝင်း', employeeId: 'STN-ALP-A0062', password: '@stnA0062', nrc: '၉/မနမ(နိုင်)၁၉၆၄၃၂', address: '' },
+    { username: 'A0063', fullName: 'မောင်မျိုးမြတ်ထွန်း', fatherName: 'ဦးစန်း', employeeId: 'STN-ALP-A0063', password: '@stnA0063', nrc: '၉/မနမ(နိုင်)၂၁၂၅၄၂', address: '' },
+    { username: 'A0064', fullName: 'မောင်ဝင်းမင်းဌေး', fatherName: 'ဦးဟန်းသောင်', employeeId: 'STN-ALP-A0064', password: '@stnA0064', nrc: '၉/မနမ(နိုင်)၁၄၄၆၃၉', address: '' },
+    { username: 'A0065', fullName: 'မောင်စိုးသူထက်', fatherName: 'ဦးစန်းဝင်း', employeeId: 'STN-ALP-A0065', password: '@stnA0065', nrc: '၉/မနမ(နိုင်)၃၃၃၃၉၃', address: '' },
+    { username: 'A0066', fullName: 'ဦးနန္ဒကိုဝင်း', fatherName: 'ဦးကျော်အောင်', employeeId: 'STN-ALP-A0066', password: '@stnA0066', nrc: '', address: 'ကန်မြဲ' },
+    { username: 'A0067', fullName: 'မောင်ဟိန်းထက်အောင်', fatherName: 'ဦးမြိုင်', employeeId: 'STN-ALP-A0067', password: '@stnA0067', nrc: '၉/မနမ(နိုင်)၁၇၃၆၁၀', address: '' },
+    { username: 'A0068', fullName: 'မောင်မင်းသူအောင်', fatherName: 'ဦးလှစိန်', employeeId: 'STN-ALP-A0068', password: '@stnA0068', nrc: '၉/မနမ(နိုင်)၁၀၀၆၂၇', address: '' },
+    { username: 'A0069', fullName: 'မဆန်းဆန်းထွေး', fatherName: 'ဦးမြတ်စိုး', employeeId: 'STN-ALP-A0069', password: '@stnA0069', nrc: '၉/မနမ(နိုင်)၁၅၀ရ၇၇', address: '' }
+  ];
+
+  for (const emp of employeeData68) {
+    if (!initialUsers.some((u) => u.username.toLowerCase() === emp.username.toLowerCase())) {
+      initialUsers.push({
+        id: `seeded-${emp.username}`,
+        fullName: emp.fullName,
+        fatherName: emp.fatherName,
+        username: emp.username,
+        email: `${emp.username.toLowerCase()}@jpmonitor.com`,
+        employeeId: emp.employeeId,
+        department: 'ထုတ်လုပ်ရေး',
+        site: 'ထုတ်လုပ်ရေး',
+        role: 'OPERATOR',
+        status: 'ACTIVE',
+        nrc: emp.nrc,
+        address: emp.address,
+        permissionOverrides: [],
+        createdAt: new Date().toISOString(),
+        createdBy: 'စနစ်',
+        password: emp.password,
       });
     }
   }

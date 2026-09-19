@@ -6,6 +6,7 @@ public record RegisterRequest(
         String username,
         String password,
         String fullName,
+        String fatherName,
         String email,
         String employeeId,
         String department,
@@ -19,6 +20,7 @@ public record RegisterRequest(
             String username,
             String password,
             String fullName,
+            String fatherName,
             String email,
             String employeeId,
             String department,
@@ -27,6 +29,6 @@ public record RegisterRequest(
             String status,
             List<String> permissions
     ) {
-        this(username, password, fullName, email, employeeId, department, site, role, status, permissions, List.of());
+        this(username, password, fullName, fatherName, email, employeeId, department, site, role, status, permissions, List.of());
     }
 }

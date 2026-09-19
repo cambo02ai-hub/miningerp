@@ -219,6 +219,7 @@ class AuthControllerTest {
                 "newuser",
                 "password123",
                 "New User",
+                null,
                 "newuser@jpmonitor.com",
                 "EMP-001",
                 "Mining Operations",
@@ -263,6 +264,7 @@ class AuthControllerTest {
                 "operator_custom",
                 "password123",
                 "Custom Operator",
+                null,
                 "operator_custom@jpmonitor.com",
                 "EMP-002",
                 "Operations",
@@ -301,6 +303,7 @@ class AuthControllerTest {
                 TEST_USERNAME,
                 "password123",
                 "Existing User",
+                null,
                 "existing@jpmonitor.com",
                 "", "", "", "OPERATOR", "ACTIVE", List.of()
         );
@@ -325,6 +328,7 @@ class AuthControllerTest {
                 TEST_USERNAME,
                 "newpassword123",
                 "Updated Admin Name",
+                null,
                 "updated_admin@jpmonitor.com",
                 "", "", "", "ADMIN", "ACTIVE", List.of()
         );

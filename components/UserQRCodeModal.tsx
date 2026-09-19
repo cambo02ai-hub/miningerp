@@ -18,6 +18,7 @@ export const UserQRCodeModal: React.FC<UserQRCodeModalProps> = ({ user, onClose 
   // Construct structured QR payload with verification link for external camera scanning
   const userData = JSON.stringify({
     fullName: user.fullName,
+    fatherName: user.fatherName || '',
     username: user.username,
     employeeId: user.employeeId || '',
     phone: user.phone || '',
@@ -146,6 +147,11 @@ export const UserQRCodeModal: React.FC<UserQRCodeModalProps> = ({ user, onClose 
             <h3 className="text-base font-bold text-slate-900 leading-tight mb-0.5">
               {user.fullName}
             </h3>
+            {user.fatherName && (
+              <p className="text-xs text-slate-500 font-medium mb-0.5">
+                အဖ - {user.fatherName}
+              </p>
+            )}
             <p className="text-xs font-semibold text-slate-600 mb-1">
               @{user.username} {user.employeeId ? `(ID: ${user.employeeId})` : ''}
             </p>
