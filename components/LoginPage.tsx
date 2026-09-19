@@ -632,7 +632,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </div>
               ) : (
                 <div className="relative w-full aspect-square bg-black rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-inner flex items-center justify-center">
-                  <video ref={videoRef} className="w-full h-full object-cover" />
+                  <video ref={videoRef} className="w-full h-full object-cover" muted>
+                    <track kind="captions" />
+                  </video>
                   {/* Scanner Reticle Overlay */}
                   <div className="absolute inset-0 border-[3px] border-emerald-400/60 rounded-2xl pointer-events-none flex items-center justify-center">
                     <div className="w-48 h-48 border-2 border-emerald-400 border-dashed rounded-xl animate-pulse flex items-center justify-center">
