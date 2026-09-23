@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gold-mining-erp-v1';
+const CACHE_NAME = 'gold-mining-erp-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -31,6 +31,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // Always prefer the network for page navigations so deployments are picked
+  // up immediately instead of serving a cached application shell.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
