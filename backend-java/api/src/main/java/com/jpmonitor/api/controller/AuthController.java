@@ -66,7 +66,6 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Transactional
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         if (request == null || request.username() == null || request.username().isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
