@@ -162,7 +162,7 @@ const App: React.FC = () => {
                 <Route path="/production" element={<ErrorBoundary><ProductionView /></ErrorBoundary>} />
                 <Route path="/contractor-mining" element={<ErrorBoundary><ContractorMiningView /></ErrorBoundary>} />
                 <Route path="/timesheet" element={<ErrorBoundary><TimesheetView /></ErrorBoundary>} />
-                <Route path="/employee" element={<ErrorBoundary><EmployeeView /></ErrorBoundary>} />
+                <Route path="/employee" element={<ErrorBoundary><EmployeeView currentUser={currentUser} /></ErrorBoundary>} />
                 <Route path="/supplier" element={<ErrorBoundary><SupplierView /></ErrorBoundary>} />
                 <Route path="/debt" element={<ErrorBoundary><DebtView /></ErrorBoundary>} />
                 <Route path="/location" element={<ErrorBoundary><LocationView /></ErrorBoundary>} />

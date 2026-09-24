@@ -25,6 +25,7 @@ import { processEmployeePhotoWithGemini } from '../services/aiPhotoEditor';
 
 interface UserManagementViewProps {
   currentUser: any;
+  mode?: 'users' | 'employees';
 }
 
 type AccountForm = {
@@ -71,7 +72,7 @@ const statusLabels: Record<AccountStatus, string> = {
   PENDING: 'အတည်ပြုရန်ကျန်ရှိသည်',
 };
 
-const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) => {
+const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mode = 'users' }) => {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
@@ -92,7 +93,10 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const uniformInputRef = useRef<HTMLInputElement>(null);
 
-  const allowed = isSuperAdmin(currentUser) || hasPermission(currentUser, 'user_management.manage');
+  const isEmployeeMode = mode === 'employees';
+  const allowed = isEmployeeMode
+    ? isSuperAdmin(currentUser) || hasPermission(currentUser, 'employee.view')
+    : isSuperAdmin(currentUser) || hasPermission(currentUser, 'user_management.manage');
 
   const loadUsers = useCallback(async () => {
     try {
@@ -278,6 +282,15 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
       return;
     }
 
+    const nextEmployeeId = (() => {
+      if (editingUser || form.employeeId.trim()) return form.employeeId.trim();
+      const highest = users.reduce((max, user) => {
+        const match = user.employeeId.replace(/\s/g, '').match(/^STN-ALP-A(\d{4})$/i);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return `STN-ALP-A${String(highest + 1).padStart(4, '0')}`;
+    })();
+
     setSaving(true);
     try {
       const payload = {
@@ -286,7 +299,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         fullName: form.fullName.trim(),
         fatherName: form.fatherName.trim(),
         email: form.email.trim(),
-        employeeId: form.employeeId.trim(),
+        employeeId: nextEmployeeId,
         department: form.department.trim(),
         site: form.site.trim(),
         phone: form.phone.trim(),
@@ -327,7 +340,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         fatherName: form.fatherName.trim(),
         username: form.username.trim(),
         email: form.email.trim(),
-        employeeId: form.employeeId.trim(),
+        employeeId: nextEmployeeId,
         department: form.department.trim(),
         site: form.site.trim(),
         phone: form.phone.trim(),
@@ -362,7 +375,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
       recordRBACAudit(editingUser ? 'USER_UPDATED' : 'USER_CREATED', nextUser.username, `${ROLE_LABELS[nextUser.role]} / ${statusLabels[nextUser.status]}`, currentUser);
       setNotice({ type: 'success', text: editingUser ? 'Account အချက်အလက်များကို ပြင်ဆင်ပြီးပါပြီ။' : 'Account အသစ် ဖန်တီးပြီးပါပြီ။' });
       setIsModalOpen(false);
-      if (!editingUser) {
+      if (!editingUser && isEmployeeMode) {
         setQrUser(nextUser);
       }
     } catch (error: any) {
@@ -427,21 +440,21 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2.5 rounded-jpmonitor bg-jpmonitor-red-subtle text-jpmonitor-red"><ShieldCheck size={22} /></div>
-            <h2 className="text-2xl font-semibold text-text-primary">User နှင့် Permission စီမံခန့်ခွဲမှု</h2>
+            <h2 className="text-2xl font-semibold text-text-primary">{isEmployeeMode ? 'ဝန်ထမ်း စီမံခန့်ခွဲမှု' : 'User နှင့် Permission စီမံခန့်ခွဲမှု'}</h2>
           </div>
-          <p className="text-sm text-text-muted">Super Admin သည် Account ဖန်တီးခြင်း၊ Role သတ်မှတ်ခြင်း၊ Photo နှင့် ID Card Reference သတ်မှတ်ခြင်းကို စီမံနိုင်ပါသည်။</p>
+          <p className="text-sm text-text-muted">{isEmployeeMode ? 'ဝန်ထမ်းအချက်အလက်၊ Login Account နှင့် QR ID Badge ကို တစ်နေရာတည်းမှ စီမံပါ။' : 'Super Admin သည် Account ဖန်တီးခြင်း၊ Role သတ်မှတ်ခြင်း၊ Photo နှင့် ID Card Reference သတ်မှတ်ခြင်းကို စီမံနိုင်ပါသည်။'}</p>
         </div>
         {activeTab === 'users' && (
           <div className="flex gap-2">
-            <button
+            {!isEmployeeMode && <button
               onClick={() => setIsSettingsOpen(true)}
               className="inline-flex items-center justify-center gap-2 border border-border bg-bg-surface hover:bg-bg-elevated text-text-primary px-3.5 py-2.5 rounded-jpmonitor font-medium text-sm transition-colors"
               title="ID Card ဒီဇိုင်း Reference သတ်မှတ်ရန်"
             >
               <Settings size={17} /> ID Card Settings
-            </button>
+            </button>}
             <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 bg-jpmonitor-red hover:bg-jpmonitor-red-hover text-white px-4 py-2.5 rounded-jpmonitor font-medium transition-colors">
-              <Plus size={18} /> Account အသစ်ဖန်တီးရန်
+              <Plus size={18} /> {isEmployeeMode ? 'ဝန်ထမ်းအသစ်ထည့်ရန်' : 'Account အသစ်ဖန်တီးရန်'}
             </button>
           </div>
         )}
@@ -458,9 +471,9 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
         <button onClick={() => setActiveTab('users')} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'users' ? 'border-jpmonitor-red text-jpmonitor-red' : 'border-transparent text-text-muted hover:text-text-primary'}`}>
           <UsersRound size={16} className="inline mr-2" /> Account များ ({users.length})
         </button>
-        <button onClick={() => setActiveTab('roles')} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'roles' ? 'border-jpmonitor-red text-jpmonitor-red' : 'border-transparent text-text-muted hover:text-text-primary'}`}>
+        {!isEmployeeMode && <button onClick={() => setActiveTab('roles')} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'roles' ? 'border-jpmonitor-red text-jpmonitor-red' : 'border-transparent text-text-muted hover:text-text-primary'}`}>
           <KeyRound size={16} className="inline mr-2" /> Role နှင့် Permission
-        </button>
+        </button>}
       </div>
 
       {activeTab === 'users' ? (
@@ -517,7 +530,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser }) 
                     </td>
                     <td className="px-5 py-4"><span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-bg-elevated text-text-secondary">{ROLE_LABELS[user.role]}</span></td>
                     <td className="px-5 py-4"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-status-success-bg text-status-success' : user.status === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-jpmonitor-red-subtle text-jpmonitor-red'}`}>{statusLabels[user.status]}</span></td>
-                    <td className="px-5 py-4"><div className="flex justify-end gap-1"><button onClick={() => setQrUser(user)} className="p-2 text-text-muted hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-jpmonitor" title="QR Code / ID Badge ထုတ်ရန်"><QrCode size={16} /></button><button onClick={() => openEdit(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ပြင်ဆင်ရန်"><Edit3 size={16} /></button><button onClick={() => toggleStatus(user)} className="p-2 text-text-muted hover:text-amber-600 hover:bg-amber-50 rounded-jpmonitor" title={user.status === 'ACTIVE' ? 'ယာယီပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}><Lock size={16} /></button><button onClick={() => deleteUser(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ဖယ်ရှားရန်"><Trash2 size={16} /></button></div></td>
+                    <td className="px-5 py-4"><div className="flex justify-end gap-1">{isEmployeeMode && <button onClick={() => setQrUser(user)} className="p-2 text-text-muted hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-jpmonitor" title="QR Code / ID Badge ထုတ်ရန်"><QrCode size={16} /></button>}<button onClick={() => openEdit(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ပြင်ဆင်ရန်"><Edit3 size={16} /></button><button onClick={() => toggleStatus(user)} className="p-2 text-text-muted hover:text-amber-600 hover:bg-amber-50 rounded-jpmonitor" title={user.status === 'ACTIVE' ? 'ယာယီပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}><Lock size={16} /></button><button onClick={() => deleteUser(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ဖယ်ရှားရန်"><Trash2 size={16} /></button></div></td>
                   </tr>
                 ))}
                 {filteredUsers.length === 0 && <tr><td colSpan={6} className="px-5 py-12 text-center text-text-muted">ကိုက်ညီသော Account မတွေ့ပါ။</td></tr>}

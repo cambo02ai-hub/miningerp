@@ -190,7 +190,7 @@ export const ROLE_DEFINITIONS: Array<{
   },
   {
     value: 'OPERATOR',
-    label: 'လုပ်ငန်းဆောင်ရွက်သူ',
+    label: 'လုပ်သား',
     description: 'သက်ဆိုင်ရာ နေ့စဉ်လုပ်ငန်းစာရင်းများကိုသာ ကြည့်ရှု၊ ထည့်သွင်းနိုင်သည်။',
     permissions: ['dashboard.view', 'production.view', 'production.create', 'fleet.view', 'mutation.view', 'mutation.create', 'inventory.view', 'inventory.create', 'maintenance.view', 'maintenance.create', 'hse.view', 'hse.create', 'timesheet.view', 'timesheet.create'].filter((key) => permissionKeys.includes(key as PermissionKey)) as PermissionKey[],
   },
