@@ -66,6 +66,29 @@ const emptyForm = (): AccountForm => ({
   permissionOverrides: [],
 });
 
+const mapApiUser = (u: any): ManagedUser => ({
+  id: u.id || `user-${u.username}`,
+  fullName: u.fullName || u.full_name || u.username,
+  fatherName: u.fatherName || u.father_name || '',
+  username: u.username,
+  email: u.email || '',
+  employeeId: u.employeeId || u.employee_id || '',
+  department: u.department || '',
+  site: u.site || '',
+  phone: u.phone || '',
+  nrc: u.nrc || '',
+  address: u.address || '',
+  position: u.position || '',
+  photoUrl: u.photoUrl || u.photo_url || '',
+  role: normalizeRole(u.role),
+  status: (u.status || (u.isActive === false ? 'SUSPENDED' : 'ACTIVE')) as AccountStatus,
+  permissions: u.permissions,
+  permissionOverrides: u.permissionOverrides || u.permission_overrides || [],
+  createdAt: u.createdAt || u.created_at || new Date().toISOString(),
+  createdBy: u.createdBy || u.created_by || 'စနစ်',
+  lastLoginAt: u.lastLoginAt || u.last_login,
+});
+
 const statusLabels: Record<AccountStatus, string> = {
   ACTIVE: 'အသုံးပြုနိုင်သည်',
   SUSPENDED: 'ယာယီပိတ်ထားသည်',
@@ -106,30 +129,18 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
     try {
       const apiUsers = await authAPI.getUsers();
       if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-        const mappedUsers: ManagedUser[] = apiUsers.map((u: any) => ({
-          id: u.id || `user-${u.username}`,
-          fullName: u.fullName || u.full_name || u.username,
-          fatherName: u.fatherName || u.father_name || '',
-          username: u.username,
-          email: u.email || '',
-          employeeId: u.employeeId || '',
-          department: u.department || '',
-          site: u.site || '',
-          phone: u.phone || '',
-          nrc: u.nrc || '',
-          address: u.address || '',
-          position: u.position || '',
-          photoUrl: u.photoUrl || u.photo_url || '',
-          role: normalizeRole(u.role),
-          status: (u.status || 'ACTIVE') as AccountStatus,
-          permissions: u.permissions,
-          permissionOverrides: u.permissionOverrides || [],
-          createdAt: u.createdAt || new Date().toISOString(),
-          createdBy: u.createdBy || 'စနစ်',
-          lastLoginAt: u.lastLoginAt || u.last_login,
-        }));
-        setUsers(mappedUsers);
-        saveManagedUsers(mappedUsers);
+        const mappedUsers: ManagedUser[] = apiUsers.map(mapApiUser);
+        const serverUsernames = new Set(mappedUsers.map((user) => user.username.trim().toLowerCase()));
+        // Keep pre-backend sample/legacy profiles visible. They can be edited
+        // locally and will be replaced automatically once a matching server
+        // account is created.
+        const legacyUsers = loadManagedUsers(currentUser).filter((user) =>
+          (user.id.startsWith('seeded-') || user.id.startsWith('bootstrap-')) &&
+          !serverUsernames.has(user.username.trim().toLowerCase()),
+        );
+        const combinedUsers = [...mappedUsers, ...legacyUsers];
+        setUsers(combinedUsers);
+        saveManagedUsers(combinedUsers);
         return;
       }
     } catch (err: any) {
@@ -207,12 +218,33 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
     const reader = new FileReader();
     reader.onload = async (event) => {
       const rawUrl = event.target?.result as string;
-      updateField('photoUrl', rawUrl);
+      if (!rawUrl) return;
+
+      // Keep the profile photo small enough for JSON/API and PostgreSQL TEXT
+      // storage. Large phone photos previously made the save request fail or
+      // appear to do nothing on production VPS deployments.
+      const resizedUrl = await new Promise<string>((resolve) => {
+        const image = new Image();
+        image.onload = () => {
+          const maxSize = 1200;
+          const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          const context = canvas.getContext('2d');
+          if (!context) return resolve(rawUrl);
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        image.onerror = () => resolve(rawUrl);
+        image.src = rawUrl;
+      });
+      updateField('photoUrl', resizedUrl);
 
       // Auto process with Gemini AI
       setAiProcessing(true);
       try {
-        const res = await processEmployeePhotoWithGemini(rawUrl);
+        const res = await processEmployeePhotoWithGemini(resizedUrl);
         if (res.editedPhotoUrl) {
           updateField('photoUrl', res.editedPhotoUrl);
         }
@@ -317,9 +349,10 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
         permissionOverrides: form.permissionOverrides,
       };
 
+      let persistedUser: ManagedUser | null = null;
       if (!editingUser) {
         try {
-          await authAPI.register(payload);
+          persistedUser = mapApiUser(await authAPI.register(payload));
         } catch (apiErr: any) {
           if (navigator.onLine && apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
             throw new Error(apiErr.message || 'Backend user registration failed');
@@ -328,9 +361,14 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
         }
       } else {
         try {
-          await authAPI.updateUser(editingUser.username, payload);
+          persistedUser = mapApiUser(await authAPI.updateUser(editingUser.username, payload));
         } catch (apiErr: any) {
-          if (navigator.onLine && apiErr?.message && !apiErr.message.includes('Failed to fetch')) {
+          // Legacy/sample accounts can exist only in localStorage. A 404 means
+          // there is no server row to update; retain the local profile instead
+          // of failing the whole edit operation. Auth/permission errors remain
+          // hard failures and are shown to the user.
+          const isMissingServerUser = /^HTTP 404\b/.test(String(apiErr?.message || '')) || /user not found/i.test(String(apiErr?.message || ''));
+          if (navigator.onLine && apiErr?.message && !apiErr.message.includes('Failed to fetch') && !isMissingServerUser) {
             throw new Error(apiErr.message || 'Backend user update failed');
           }
           console.warn('Backend user update offline/sync warning, updating local profile:', apiErr?.message);
@@ -361,26 +399,35 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
         password: form.password ? form.password : (editingUser?.password || undefined),
       };
 
-      await loadUsers();
+      // Use the server response immediately. Reloading the whole list here used to
+      // overwrite local sample-account edits when those accounts did not exist in
+      // the backend database yet.
+      const savedUser = persistedUser ? { ...nextUser, ...persistedUser, password: nextUser.password } : nextUser;
+      setUsers((previous) => {
+        const withoutCurrent = previous.filter((user) => user.id !== editingUser?.id && user.username.toLowerCase() !== savedUser.username.toLowerCase());
+        const updated = editingUser ? [...withoutCurrent, savedUser] : [savedUser, ...withoutCurrent];
+        saveManagedUsers(updated);
+        return updated;
+      });
 
-      if (currentUser?.username && currentUser.username.toLowerCase() === nextUser.username.toLowerCase()) {
+      if (currentUser?.username && currentUser.username.toLowerCase() === savedUser.username.toLowerCase()) {
         const updatedCurrent = {
           ...currentUser,
-          fullName: nextUser.fullName,
-          email: nextUser.email,
-          role: nextUser.role,
-          status: nextUser.status,
-          permissionOverrides: nextUser.permissionOverrides,
+          fullName: savedUser.fullName,
+          email: savedUser.email,
+          role: savedUser.role,
+          status: savedUser.status,
+          permissionOverrides: savedUser.permissionOverrides,
         };
         const token = localStorage.getItem('auth_token') || 'session-token';
         setAuthData(token, updatedCurrent);
       }
 
-      recordRBACAudit(editingUser ? 'USER_UPDATED' : 'USER_CREATED', nextUser.username, `${ROLE_LABELS[nextUser.role]} / ${statusLabels[nextUser.status]}`, currentUser);
+      recordRBACAudit(editingUser ? 'USER_UPDATED' : 'USER_CREATED', savedUser.username, `${ROLE_LABELS[savedUser.role]} / ${statusLabels[savedUser.status]}`, currentUser);
       setNotice({ type: 'success', text: editingUser ? 'Account အချက်အလက်များကို ပြင်ဆင်ပြီးပါပြီ။' : 'Account အသစ် ဖန်တီးပြီးပါပြီ။' });
       setIsModalOpen(false);
       if (!editingUser && isEmployeeMode) {
-        setQrUser(nextUser);
+        setQrUser(savedUser);
       }
     } catch (error: any) {
       setNotice({ type: 'error', text: error?.message || 'Account ဖန်တီး/ပြင်ဆင်ရာတွင် အမှားတစ်ခု ဖြစ်ပွားခဲ့သည်။' });
