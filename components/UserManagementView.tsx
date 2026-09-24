@@ -94,9 +94,13 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
   const uniformInputRef = useRef<HTMLInputElement>(null);
 
   const isEmployeeMode = mode === 'employees';
+  const isSuperAdminUser = isSuperAdmin(currentUser);
+  const canViewEmployees = isSuperAdminUser || hasPermission(currentUser, 'employee.view');
+  const canCreateEmployees = isSuperAdminUser || hasPermission(currentUser, 'employee.create');
+  const canEditEmployees = isSuperAdminUser || hasPermission(currentUser, 'employee.edit');
   const allowed = isEmployeeMode
-    ? isSuperAdmin(currentUser) || hasPermission(currentUser, 'employee.view')
-    : isSuperAdmin(currentUser) || hasPermission(currentUser, 'user_management.manage');
+    ? canViewEmployees
+    : isSuperAdminUser || hasPermission(currentUser, 'user_management.manage');
 
   const loadUsers = useCallback(async () => {
     try {
@@ -453,9 +457,9 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
             >
               <Settings size={17} /> ID Card Settings
             </button>}
-            <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 bg-jpmonitor-red hover:bg-jpmonitor-red-hover text-white px-4 py-2.5 rounded-jpmonitor font-medium transition-colors">
+            {(!isEmployeeMode || canCreateEmployees) && <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 bg-jpmonitor-red hover:bg-jpmonitor-red-hover text-white px-4 py-2.5 rounded-jpmonitor font-medium transition-colors">
               <Plus size={18} /> {isEmployeeMode ? 'ဝန်ထမ်းအသစ်ထည့်ရန်' : 'Account အသစ်ဖန်တီးရန်'}
-            </button>
+            </button>}
           </div>
         )}
       </div>
@@ -530,7 +534,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
                     </td>
                     <td className="px-5 py-4"><span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-bg-elevated text-text-secondary">{ROLE_LABELS[user.role]}</span></td>
                     <td className="px-5 py-4"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-status-success-bg text-status-success' : user.status === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-jpmonitor-red-subtle text-jpmonitor-red'}`}>{statusLabels[user.status]}</span></td>
-                    <td className="px-5 py-4"><div className="flex justify-end gap-1">{isEmployeeMode && <button onClick={() => setQrUser(user)} className="p-2 text-text-muted hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-jpmonitor" title="QR Code / ID Badge ထုတ်ရန်"><QrCode size={16} /></button>}<button onClick={() => openEdit(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ပြင်ဆင်ရန်"><Edit3 size={16} /></button><button onClick={() => toggleStatus(user)} className="p-2 text-text-muted hover:text-amber-600 hover:bg-amber-50 rounded-jpmonitor" title={user.status === 'ACTIVE' ? 'ယာယီပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}><Lock size={16} /></button><button onClick={() => deleteUser(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ဖယ်ရှားရန်"><Trash2 size={16} /></button></div></td>
+                    <td className="px-5 py-4"><div className="flex justify-end gap-1">{isEmployeeMode && <button onClick={() => setQrUser(user)} className="p-2 text-text-muted hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-jpmonitor" title="QR Code / ID Badge ထုတ်ရန်"><QrCode size={16} /></button>}{(!isEmployeeMode || canEditEmployees) && <button onClick={() => openEdit(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ပြင်ဆင်ရန်"><Edit3 size={16} /></button>}{(!isEmployeeMode || isSuperAdminUser) && <><button onClick={() => toggleStatus(user)} className="p-2 text-text-muted hover:text-amber-600 hover:bg-amber-50 rounded-jpmonitor" title={user.status === 'ACTIVE' ? 'ယာယီပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}><Lock size={16} /></button><button onClick={() => deleteUser(user)} className="p-2 text-text-muted hover:text-jpmonitor-red hover:bg-jpmonitor-red-subtle rounded-jpmonitor" title="ဖယ်ရှားရန်"><Trash2 size={16} /></button></>}</div></td>
                   </tr>
                 ))}
                 {filteredUsers.length === 0 && <tr><td colSpan={6} className="px-5 py-12 text-center text-text-muted">ကိုက်ညီသော Account မတွေ့ပါ။</td></tr>}

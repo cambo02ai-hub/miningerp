@@ -43,9 +43,10 @@ public class AuthController {
     @GetMapping("/users")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getAllUsers(Authentication authentication) {
-        if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)) {
+        if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)
+                && !hasPermission(authentication, "employee.view")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new AuthErrorResponse("Only Super Admin is authorized to access user accounts"));
+                    .body(new AuthErrorResponse("Employee view permission is required to access employee records"));
         }
         List<User> users = userRepository.findAll();
         List<UserDTO> dtoList = users.stream()
@@ -188,9 +189,10 @@ public class AuthController {
     @Transactional
     public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody RegisterRequest request, Authentication authentication) {
         try {
-            if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)) {
+            if (authentication != null && authentication.isAuthenticated() && !isSuperAdmin(authentication)
+                    && !hasPermission(authentication, "employee.edit")) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new AuthErrorResponse("Only Super Admin is authorized to update user accounts"));
+                        .body(new AuthErrorResponse("Employee edit permission is required to update employee records"));
             }
             User user = userRepository.findByUsernameIgnoreCase(username.trim())
                     .or(() -> userRepository.findByUsername(username.trim()))
@@ -355,6 +357,24 @@ public class AuthController {
         if ("myohlaingoo".equalsIgnoreCase(username.trim())) return true;
         return userRepository.findByUsernameIgnoreCase(username.trim())
                 .map(u -> u.getRole() != null && ("ROLE_SUPER_ADMIN".equalsIgnoreCase(u.getRole().getCode()) || "SUPER_ADMIN".equalsIgnoreCase(u.getRole().getCode())))
+                .orElse(false);
+    }
+
+    private boolean hasPermission(Authentication authentication, String permission) {
+        if (authentication == null || !authentication.isAuthenticated() || permission == null || permission.isBlank()) {
+            return false;
+        }
+        String username = authentication.getName();
+        if (username == null || username.isBlank()) return false;
+        return userRepository.findByUsernameIgnoreCase(username.trim())
+                .map(user -> {
+                    if (user.getRole() != null && user.getRole().getPermissions().contains(permission)) {
+                        return true;
+                    }
+                    return user.getParsedPermissionOverrides().stream().anyMatch(override ->
+                            permission.equalsIgnoreCase(override.permission())
+                                    && "ALLOW".equalsIgnoreCase(override.effect()));
+                })
                 .orElse(false);
     }
 
