@@ -130,17 +130,11 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
       const apiUsers = await authAPI.getUsers();
       if (Array.isArray(apiUsers) && apiUsers.length > 0) {
         const mappedUsers: ManagedUser[] = apiUsers.map(mapApiUser);
-        const serverUsernames = new Set(mappedUsers.map((user) => user.username.trim().toLowerCase()));
-        // Keep pre-backend sample/legacy profiles visible. They can be edited
-        // locally and will be replaced automatically once a matching server
-        // account is created.
-        const legacyUsers = loadManagedUsers(currentUser).filter((user) =>
-          (user.id.startsWith('seeded-') || user.id.startsWith('bootstrap-')) &&
-          !serverUsernames.has(user.username.trim().toLowerCase()),
-        );
-        const combinedUsers = [...mappedUsers, ...legacyUsers];
-        setUsers(combinedUsers);
-        saveManagedUsers(combinedUsers);
+        // The backend is authoritative whenever it is reachable. Do not merge
+        // the old local seed/sample accounts back into the directory after an
+        // administrator clears them from production.
+        setUsers(mappedUsers);
+        saveManagedUsers(mappedUsers);
         return;
       }
     } catch (err: any) {
