@@ -1,24 +1,30 @@
 package com.jpmonitor.domains.core.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.util.List;
 
 public record RegisterRequest(
         String username,
         String password,
+        @JsonAlias("fullName")
         String fullName,
+        @JsonAlias("fatherName")
         String fatherName,
         String email,
+        @JsonAlias("employeeId")
         String employeeId,
         String department,
         String site,
         String role,
         String status,
         List<String> permissions,
+        @JsonAlias("permissionOverrides")
         List<PermissionOverrideDTO> permissionOverrides,
         String phone,
         String nrc,
         String address,
         String position,
+        @JsonAlias("photoUrl")
         String photoUrl
 ) {
     public RegisterRequest(
