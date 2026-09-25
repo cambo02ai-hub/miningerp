@@ -123,6 +123,11 @@ export const PublicUserVerificationView: React.FC = () => {
             <h2 className="text-lg font-bold text-slate-900 leading-tight">
               {userProfile.fullName}
             </h2>
+            {userProfile.fatherName && (
+              <p className="text-xs text-slate-500 font-medium mb-0.5">
+                အဖ - {userProfile.fatherName}
+              </p>
+            )}
             <p className="text-xs font-medium text-slate-500 mb-2">
               @{userProfile.username} {userProfile.employeeId ? `(ID: ${userProfile.employeeId})` : ''}
             </p>
