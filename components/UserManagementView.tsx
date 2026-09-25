@@ -214,13 +214,12 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
       const rawUrl = event.target?.result as string;
       if (!rawUrl) return;
 
-      // Keep the profile photo small enough for JSON/API and PostgreSQL TEXT
-      // storage. Large phone photos previously made the save request fail or
-      // appear to do nothing on production VPS deployments.
+      // Keep the profile photo small enough for JSON/API and PostgreSQL TEXT storage.
+      // Maximum dimensions 800px to keep payload size optimal (< 100KB Base64).
       const resizedUrl = await new Promise<string>((resolve) => {
         const image = new Image();
         image.onload = () => {
-          const maxSize = 1200;
+          const maxSize = 800;
           const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
           const canvas = document.createElement('canvas');
           canvas.width = Math.max(1, Math.round(image.width * scale));
@@ -228,14 +227,16 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
           const context = canvas.getContext('2d');
           if (!context) return resolve(rawUrl);
           context.drawImage(image, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
+          resolve(canvas.toDataURL('image/jpeg', 0.80));
         };
         image.onerror = () => resolve(rawUrl);
         image.src = rawUrl;
       });
+
+      // Set uploaded/resized photo URL immediately so it is never lost if AI fails or isn't configured
       updateField('photoUrl', resizedUrl);
 
-      // Auto process with Gemini AI
+      // Auto process with Gemini AI if available
       setAiProcessing(true);
       try {
         const res = await processEmployeePhotoWithGemini(resizedUrl);
@@ -244,7 +245,8 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, mo
         }
         setNotice({ type: 'success', text: res.message });
       } catch {
-        // Keep uploaded photo
+        // Ensure uploaded photo remains preserved if AI processing throws
+        updateField('photoUrl', resizedUrl);
       } finally {
         setAiProcessing(false);
       }

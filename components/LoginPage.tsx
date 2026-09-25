@@ -332,6 +332,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <h3 className="font-bold text-text-primary text-sm truncate">
                       {scannedProfile.fullName || username}
                     </h3>
+                    {scannedProfile.fatherName && (
+                      <p className="text-xs text-text-muted font-medium">
+                        အဖ - {scannedProfile.fatherName}
+                      </p>
+                    )}
                     <p className="text-[11px] text-text-muted">
                       @{username} {scannedProfile.employeeId ? `(ID: ${scannedProfile.employeeId})` : ''}
                     </p>
@@ -567,6 +572,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               <h3 className="text-base font-bold text-text-primary mb-0.5">
                 {scannedProfile.fullName || username}
               </h3>
+              {scannedProfile.fatherName && (
+                <p className="text-xs text-text-muted font-medium mb-0.5">
+                  အဖ - {scannedProfile.fatherName}
+                </p>
+              )}
               <p className="text-xs text-text-muted mb-2">
                 @{username} {scannedProfile.employeeId ? `(ID: ${scannedProfile.employeeId})` : ''}
               </p>
